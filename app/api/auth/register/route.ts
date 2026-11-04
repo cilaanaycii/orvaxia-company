@@ -48,7 +48,10 @@ export async function POST(request: Request) {
   const expectedCode = Buffer.from(invitationCode.trim().toUpperCase());
   const providedCode = Buffer.from(body.invitationCode.trim().toUpperCase());
   if (expectedCode.length !== providedCode.length || !timingSafeEqual(expectedCode, providedCode)) {
-    return NextResponse.json({ error: 'Kode undangan tidak valid.' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Kode undangan tidak cocok. Minta administrator memeriksa CREW_INVITATION_CODE di konfigurasi server dan menerapkan ulang aplikasinya.' },
+      { status: 403 }
+    );
   }
 
   if (

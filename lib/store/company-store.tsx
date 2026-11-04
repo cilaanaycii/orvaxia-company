@@ -1072,8 +1072,15 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       password: password || '',
     });
     if (authError || !authData.user) {
-      toast.error('Email atau kata sandi tidak sesuai.');
-      return { success: false, message: 'Email atau kata sandi tidak sesuai.' };
+      const errorCode = authError && 'code' in authError ? authError.code : undefined;
+      const message =
+        errorCode === 'email_not_confirmed'
+          ? 'Email akun belum dikonfirmasi. Periksa inbox atau minta tautan konfirmasi baru.'
+          : authError?.name === 'AuthRetryableFetchError'
+            ? 'Layanan login tidak dapat dijangkau. Periksa koneksi atau konfigurasi Supabase.'
+            : 'Supabase Auth menolak login. Pastikan akun terdaftar pada proyek Supabase ini dan kata sandinya benar. Jika perlu, gunakan “Lupa kata sandi?”.';
+      toast.error(message);
+      return { success: false, message };
     }
 
     const { data: profileData, error: profileError } = await supabase
