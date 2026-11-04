@@ -37,6 +37,15 @@
   }
 }
 
+/* Hide scrollbars cross-browser while preserving scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Magic Navigation Floating Dock animations and active state */
 .magic-dock-container {
   @apply fixed bottom-6 left-1/2 -translate-x-1/2 z-50;

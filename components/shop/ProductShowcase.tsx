@@ -149,14 +149,14 @@ export function ProductShowcase() {
               <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block mb-2">
                 Pilih Warna Favoritmu
               </label>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {rovella.variants.map((variant) => (
                   <button
                     key={variant.id}
                     onClick={() => setSelectedVariant(variant)}
-                    className={`shrink-0 flex items-center gap-2 rounded-xl px-3 py-2 border transition-all ${
+                    className={`shrink-0 flex items-center gap-2 rounded-xl px-3.5 py-2 border transition-all ${
                       selectedVariant.id === variant.id
-                        ? 'border-brand-navy bg-white shadow-sm ring-2 ring-brand-navy font-bold text-brand-navy'
+                        ? 'border-brand-slate bg-brand-surface/80 text-brand-navy ring-2 ring-brand-slate/40 shadow-xs font-bold'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
@@ -182,7 +182,7 @@ export function ProductShowcase() {
                     onClick={() => setSelectedSize(sz)}
                     className={`rounded-xl p-2.5 text-left border transition-all ${
                       selectedSize.id === sz.id
-                        ? 'border-brand-navy bg-white shadow-sm ring-2 ring-brand-navy font-bold text-brand-navy'
+                        ? 'border-brand-slate bg-brand-surface/80 text-brand-navy ring-2 ring-brand-slate/40 shadow-xs font-bold'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
@@ -203,14 +203,14 @@ export function ProductShowcase() {
               <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block mb-2">
                 Tambahan Charm (Opsional)
               </label>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none flex-wrap">
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-wrap">
                 {rovella.customCharms.map((charm) => (
                   <button
                     key={charm}
                     onClick={() => setSelectedCharm(charm)}
                     className={`rounded-xl px-3 py-2 border transition-all text-left text-xs ${
                       selectedCharm === charm
-                        ? 'border-brand-navy bg-white shadow-sm ring-2 ring-brand-navy font-bold text-brand-navy'
+                        ? 'border-brand-slate bg-brand-surface/80 text-brand-navy ring-2 ring-brand-slate/40 shadow-xs font-bold'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >

@@ -53,7 +53,7 @@ export function TeamRoster() {
         </div>
 
         {/* Division Filter Badges */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 w-full md:w-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 w-full md:w-auto no-scrollbar">
           {divisions.map((div) => (
             <button
               key={div.id}
