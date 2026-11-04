@@ -109,8 +109,8 @@ interface CompanyContextType {
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'orvaxia_company_db_v2';
-const CART_STORAGE_KEY = 'orvaxia_cart_v2';
+const STORAGE_KEY = 'orvaxia_company_db_v3';
+const CART_STORAGE_KEY = 'orvaxia_cart_v3';
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
@@ -133,10 +133,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   // Load from LocalStorage
   useEffect(() => {
     try {
-      // Purge old v1 keys if present
+      // Purge old keys if present to prevent client crashes
       try {
         localStorage.removeItem('orvaxia_company_db_v1');
         localStorage.removeItem('orvaxia_cart_v1');
+        localStorage.removeItem('orvaxia_company_db_v2');
+        localStorage.removeItem('orvaxia_cart_v2');
       } catch {}
 
       const saved = localStorage.getItem(STORAGE_KEY);

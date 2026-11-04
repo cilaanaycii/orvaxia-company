@@ -150,13 +150,13 @@ export function ProductShowcase() {
                 </span>
               </div>
               <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
-                {rovella.variants.map((variant) => (
+                {(rovella.variants || []).map((variant) => (
                   <button
                     key={variant.id}
                     type="button"
                     onClick={() => setSelectedVariant(variant)}
                     className={`shrink-0 flex items-center gap-2.5 rounded-2xl p-2 border transition-all text-left ${
-                      selectedVariant.id === variant.id
+                      selectedVariant?.id === variant.id
                         ? 'border-brand-slate bg-brand-surface/80 text-brand-navy ring-2 ring-brand-slate/40 shadow-xs font-bold'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
@@ -210,7 +210,7 @@ export function ProductShowcase() {
                 Tambahan Aksesoris Charm (Gratis)
               </label>
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-wrap">
-                {rovella.customCharms.map((charm) => (
+                {(rovella.customCharms || []).map((charm) => (
                   <button
                     key={charm}
                     type="button"
