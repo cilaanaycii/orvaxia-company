@@ -42,9 +42,18 @@ export default function OwnerDashboard() {
     inventory,
     resetAllDataToZero,
     currentUser,
+    syncWithCloud,
   } = useCompanyStore();
 
   const [activeTab, setActiveTab] = useState<'approvals' | 'all_crew' | 'settings' | 'po'>('approvals');
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await syncWithCloud();
+    setTimeout(() => setIsSyncing(false), 600);
+    toast.success('Data cloud berhasil disegarkan!');
+  };
 
   // Form states for settings
   const [waNumber, setWaNumber] = useState(siteSettings.whatsappNumber);
@@ -146,6 +155,15 @@ export default function OwnerDashboard() {
             <span className="rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold">
               👑 SUPER ADMIN / OWNER
             </span>
+            <button
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition-all shadow-2xs"
+              title="Periksa pendaftaran crew baru yang masuk dari HP"
+            >
+              <span className={`h-2 w-2 rounded-full bg-emerald-500 ${isSyncing ? 'animate-ping' : 'animate-pulse'}`} />
+              <span>{isSyncing ? 'Menyinkronkan...' : 'Segarkan Data Cloud'}</span>
+            </button>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
             Owner & Website Controller Panel

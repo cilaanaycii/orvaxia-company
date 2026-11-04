@@ -103,6 +103,7 @@ interface CompanyContextType {
   resetAllDataToZero: () => void;
   addInventoryItem: (item: Omit<InventoryItem, 'id' | 'lastUpdated'>) => void;
   setInventoryStock: (id: string, exactStock: number, reason: string) => void;
+  syncWithCloud: () => Promise<void>;
   logout: () => void;
 }
 
@@ -236,12 +237,56 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     currentUser,
   ]);
 
+  // Cloud Sync Handler
+  const syncWithCloud = async () => {
+    try {
+      const res = await fetch('/api/cloud-sync', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data && Array.isArray(data.users) && data.users.length > 0) {
+        setUsers((prev) => {
+          let merged = [...prev];
+          data.users.forEach((cloudUser: UserProfile) => {
+            const idx = merged.findIndex(
+              (u) =>
+                u.id === cloudUser.id ||
+                (u.email && cloudUser.email && u.email.toLowerCase() === cloudUser.email.toLowerCase())
+            );
+            if (idx >= 0) {
+              merged[idx] = { ...merged[idx], ...cloudUser };
+            } else {
+              merged.push(cloudUser);
+            }
+          });
+          return merged;
+        });
+      }
+
+      if (data && Array.isArray(data.orders) && data.orders.length > 0) {
+        setOrders((prev) => {
+          let merged = [...prev];
+          data.orders.forEach((cloudOrder: Order) => {
+            const idx = merged.findIndex((o) => o.id === cloudOrder.id || o.referenceCode === cloudOrder.referenceCode);
+            if (idx >= 0) {
+              merged[idx] = { ...merged[idx], ...cloudOrder };
+            } else {
+              merged.push(cloudOrder);
+            }
+          });
+          return merged;
+        });
+      }
+    } catch {}
+  };
+
+  // Background Cloud Polling (Setiap 4 detik sinkronisasi cloud)
   useEffect(() => {
     if (!isHydrated) return;
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-    } catch {}
-  }, [isHydrated, cart]);
+    syncWithCloud();
+    const interval = setInterval(syncWithCloud, 4000);
+    return () => clearInterval(interval);
+  }, [isHydrated]);
 
   // Actions
   const updateSiteSettings = (settings: Partial<SiteSettings>) => {
@@ -706,6 +751,16 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
     setUsers((prev) => [...prev, newProfile]);
     setCurrentUser(newProfile);
+
+    // Langsung simpan akun ke Cloud Database secara realtime
+    try {
+      fetch('/api/cloud-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: [newProfile] }),
+      }).catch(() => {});
+    } catch {}
+
     toast.success('Pendaftaran staf berhasil diajukan! Menunggu arahan & penugasan dari Owner.');
     return { success: true, message: 'Pendaftaran berhasil', user: newProfile };
   };
@@ -736,6 +791,18 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         return u;
       })
     );
+
+    // Sinkronisasi status aktif kru ke Cloud
+    try {
+      fetch('/api/cloud-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          users: [{ id: userId, role, division, position, status: 'active' }],
+        }),
+      }).catch(() => {});
+    } catch {}
+
     toast.success(`Penugasan berhasil: ditetapkan sebagai ${position} (${division})`);
   };
 
@@ -873,6 +940,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         resetAllDataToZero,
         addInventoryItem,
         setInventoryStock,
+        syncWithCloud,
         rejectStaff,
         logout,
       }}
