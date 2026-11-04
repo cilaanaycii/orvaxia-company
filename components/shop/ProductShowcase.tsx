@@ -146,22 +146,22 @@ export function ProductShowcase() {
           <div className="space-y-4 border-t border-slate-100 pt-4 text-xs">
             {/* 1. Variant Color Selector */}
             <div>
-              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[10px] block mb-2">
-                1. Pilih Warna Rajutan Khas Orvaxia
+              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block mb-2">
+                Pilih Warna Favoritmu
               </label>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {rovella.variants.map((variant) => (
                   <button
                     key={variant.id}
                     onClick={() => setSelectedVariant(variant)}
-                    className={`shrink-0 flex items-center gap-2 rounded-xl px-3 py-1.5 border transition-all ${
+                    className={`shrink-0 flex items-center gap-2 rounded-xl px-3 py-2 border transition-all ${
                       selectedVariant.id === variant.id
-                        ? 'border-brand-slate bg-brand-surface shadow-sm ring-1 ring-brand-slate font-semibold text-brand-navy'
+                        ? 'border-brand-navy bg-white shadow-sm ring-2 ring-brand-navy font-bold text-brand-navy'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
                     <span
-                      className="h-3.5 w-3.5 rounded-full border border-black/15 shadow-inner"
+                      className="h-4 w-4 rounded-full border border-black/15 shadow-inner"
                       style={{ backgroundColor: variant.colorHex }}
                     />
                     <span>{variant.name}</span>
@@ -172,8 +172,8 @@ export function ProductShowcase() {
 
             {/* 2. Bottle Size Selector */}
             <div>
-              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[10px] block mb-2">
-                2. Pilih Ukuran Botol / Tumbler
+              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block mb-2">
+                Ukuran Botol
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {rovella.sizes.map((sz) => (
@@ -182,7 +182,7 @@ export function ProductShowcase() {
                     onClick={() => setSelectedSize(sz)}
                     className={`rounded-xl p-2.5 text-left border transition-all ${
                       selectedSize.id === sz.id
-                        ? 'border-brand-slate bg-brand-surface shadow-sm ring-1 ring-brand-slate font-semibold text-brand-navy'
+                        ? 'border-brand-navy bg-white shadow-sm ring-2 ring-brand-navy font-bold text-brand-navy'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
@@ -200,17 +200,17 @@ export function ProductShowcase() {
 
             {/* 3. Custom Charm Option */}
             <div>
-              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[10px] block mb-2">
-                3. Tambahan Aksesoris Charm Rajut
+              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block mb-2">
+                Tambahan Charm (Opsional)
               </label>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none flex-wrap">
                 {rovella.customCharms.map((charm) => (
                   <button
                     key={charm}
                     onClick={() => setSelectedCharm(charm)}
-                    className={`rounded-xl px-3 py-1.5 border transition-all text-left ${
+                    className={`rounded-xl px-3 py-2 border transition-all text-left text-xs ${
                       selectedCharm === charm
-                        ? 'border-brand-slate bg-brand-surface shadow-sm ring-1 ring-brand-slate font-semibold text-brand-navy'
+                        ? 'border-brand-navy bg-white shadow-sm ring-2 ring-brand-navy font-bold text-brand-navy'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
@@ -261,16 +261,18 @@ export function ProductShowcase() {
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
             <button
-              onClick={handleAddToCart}
-              className="w-full sm:w-1/2 flex items-center justify-center gap-2 rounded-full border-2 border-brand-slate py-3 text-xs font-bold text-brand-slate hover:bg-brand-surface transition-all"
+              onClick={handleDirectCheckout}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-brand-navy py-4 text-sm font-bold text-white shadow-lg hover:bg-brand-slate active:scale-[0.99] transition-all"
             >
-              <ShoppingBag size={16} /> Tambah ke Keranjang
+              <ShoppingBag size={18} />
+              <span>Pesan Pre-Order Sekarang (Rp{totalPrice.toLocaleString('id-ID')})</span>
+              <ArrowRight size={16} />
             </button>
             <button
-              onClick={handleDirectCheckout}
-              className="w-full sm:w-1/2 flex items-center justify-center gap-2 rounded-full bg-brand-slate py-3 text-xs font-bold text-white shadow-md hover:bg-brand-navy hover:shadow-lg transition-all"
+              onClick={handleAddToCart}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-brand-slate py-3 text-xs font-bold text-brand-slate hover:bg-brand-surface active:scale-[0.99] transition-all"
             >
-              Pesan Pre-Order Sekarang (Rp{totalPrice.toLocaleString('id-ID')}) <ArrowRight size={16} />
+              <span>+ Masukkan ke Keranjang</span>
             </button>
           </div>
         </div>

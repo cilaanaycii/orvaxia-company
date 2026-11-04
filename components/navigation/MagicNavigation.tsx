@@ -17,7 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home, href: '/#home', isSection: true },
   { id: 'profile', label: 'Profile', icon: Building2, href: '/#about', isSection: true },
   { id: 'shop', label: 'Shop', icon: ShoppingBag, href: '/#shop', isSection: true },
-  { id: 'team', label: 'Team', icon: Users, href: '/#team', isSection: true },
+  { id: 'team', label: 'Team', icon: Users, href: '/team' },
   { id: 'portal', label: 'Portal', icon: ShieldCheck, href: '/dashboard' },
 ];
 

@@ -1,13 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
 import { POStatusBanner } from '@/components/shop/POStatusBanner';
 import { ProductShowcase } from '@/components/shop/ProductShowcase';
-import { OrgStructureTree } from '@/components/team/OrgStructureTree';
-import { TeamRoster } from '@/components/team/TeamRoster';
 import { useCompanyStore } from '@/lib/store/company-store';
 import {
   ArrowRight,
@@ -24,10 +22,12 @@ import {
   HeartHandshake,
   Layers,
   Leaf,
+  ChevronDown,
 } from 'lucide-react';
 
 export default function HomePage() {
   const { siteSettings, gallery, faqs, cart } = useCompanyStore();
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy selection:bg-brand-lavender/30">
@@ -74,21 +74,21 @@ export default function HomePage() {
                 <span className="text-brand-gradient">Fungsional & Multifungsi.</span>
               </h1>
 
-              <p className="text-sm sm:text-base leading-relaxed text-slate-600 max-w-2xl">
-                Selamat datang di platform resmi <strong>ORVAXIA COMPANY</strong>. Kami berkomitmen menghadirkan kerajinan rajutan tempat botol minum inovatif 3-in-1 yang dapat dilipat menjadi gantungan kunci artistik, diproduksi dengan integritas, ketelitian tangan, dan kepedulian lingkungan.
+              <p className="text-sm sm:text-base leading-relaxed text-slate-600 max-w-2xl font-medium">
+                Tas rajut <strong>Rovella</strong> — tumbler sling 3-in-1 yang bisa dilipat jadi gantungan kunci. Dibuat tangan dengan teliti, ramah lingkungan, dan bisa dipesan sesuai warna & ukuran botol pilihanmu.
               </p>
 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                 <a
                   href="#shop"
-                  className="flex items-center justify-center gap-2 rounded-full bg-brand-slate px-8 py-3.5 text-xs font-bold text-white shadow-md hover:bg-brand-navy hover:shadow-lg transition-all"
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-brand-navy px-8 py-4 text-sm font-bold text-white shadow-lg hover:bg-brand-slate active:scale-[0.99] transition-all"
                 >
-                  <ShoppingBag size={16} /> Pesan Pre-Order Rovella
+                  <ShoppingBag size={18} /> Pesan Pre-Order Rovella
                 </a>
                 <a
                   href="#about"
-                  className="flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-7 py-3.5 text-xs font-semibold text-slate-700 hover:border-brand-slate hover:text-brand-navy shadow-xs transition-all"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-7 py-3.5 text-xs font-semibold text-slate-700 hover:border-brand-slate hover:text-brand-navy shadow-xs transition-all"
                 >
                   Pelajari Profil Perusahaan
                 </a>
@@ -333,25 +333,40 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================= OUR TEAM (31 MEMBERS) & ORG STRUCTURE ================= */}
-      <section id="team" className="py-20 border-b border-brand-lavender/20 bg-[#FAF8F5]">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 space-y-16">
-          {/* Org Structure Tree View */}
-          <OrgStructureTree />
-
-          {/* 31 Members Interactive Grid */}
-          <div className="space-y-6 pt-10 border-t border-slate-200">
-            <div className="text-center max-w-xl mx-auto">
-              <span className="badge-brand">31 Anggota Resmi Perusahaan</span>
-              <h3 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-brand-navy mt-1">
-                Daftar Lengkap Tim ORVAXIA
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Setiap anggota memiliki peran dan tanggung jawab spesifik dalam memastikan kelancaran operasional dan kepuasan pelanggan.
+      {/* ================= OUR TEAM TEASER ================= */}
+      <section id="team" className="py-16 border-b border-brand-lavender/20 bg-[#FAF8F5]">
+        <div className="mx-auto max-w-7xl px-6 lg:px-10">
+          <div className="rounded-3xl border border-brand-lavender/30 bg-white p-7 sm:p-10 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="space-y-3 text-center md:text-left max-w-xl">
+              <span className="badge-brand">Struktur Tim Resmi</span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-brand-navy">
+                Didukung oleh 31 Profesional Berdedikasi
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Dari Produksi, Sales, Finance, HRD, hingga Public Relations — setiap divisi bekerja sinergis memastikan mutu dan ketepatan setiap rajutan Rovella.
               </p>
+              <div className="flex flex-wrap justify-center md:justify-start gap-1.5 pt-2">
+                {['Produksi', 'Sales', 'Finance', 'HRD', 'Marketing', 'PR', 'Kesekretariatan'].map((divName) => (
+                  <span
+                    key={divName}
+                    className="rounded-full bg-brand-surface border border-brand-lavender/30 px-3 py-1 text-[11px] font-semibold text-brand-slate"
+                  >
+                    {divName}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            <TeamRoster />
+            <div className="shrink-0 w-full sm:w-auto">
+              <Link
+                href="/team"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-brand-navy px-8 py-3.5 text-xs font-bold text-white shadow-md hover:bg-brand-slate hover:shadow-lg transition-all"
+              >
+                <Users size={16} />
+                <span>Lihat Seluruh Anggota Tim (31)</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -397,20 +412,42 @@ export default function HomePage() {
       <section id="contact" className="py-20 bg-[#FAF8F5]">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            {/* FAQ */}
+            {/* FAQ Accordion */}
             <div className="lg:col-span-7 space-y-4">
               <span className="badge-brand">FAQ & Panduan Pemesanan</span>
               <h3 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy">
                 Pertanyaan yang Sering Diajukan
               </h3>
 
-              <div className="space-y-3 pt-2">
-                {faqs.map((f) => (
-                  <div key={f.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs text-xs">
-                    <h5 className="font-bold text-brand-navy">{f.question}</h5>
-                    <p className="text-slate-600 mt-1.5 leading-relaxed">{f.answer}</p>
-                  </div>
-                ))}
+              <div className="space-y-2.5 pt-2">
+                {faqs.map((f) => {
+                  const isOpen = openFaq === f.id;
+                  return (
+                    <div
+                      key={f.id}
+                      className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden transition-all"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setOpenFaq(isOpen ? null : f.id)}
+                        className="w-full flex items-center justify-between p-4 text-left font-bold text-brand-navy text-xs sm:text-sm hover:text-brand-slate transition-colors"
+                      >
+                        <span className="pr-3 leading-snug">{f.question}</span>
+                        <ChevronDown
+                          size={16}
+                          className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+                            isOpen ? 'rotate-180 text-brand-navy' : ''
+                          }`}
+                        />
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-4 pt-1 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed bg-brand-surface/20">
+                          {f.answer}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
