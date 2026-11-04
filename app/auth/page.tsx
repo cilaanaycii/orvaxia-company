@@ -59,15 +59,24 @@ export default function AuthPage() {
     }
 
     setIsSubmitting(true);
-    const result = await login(loginEmail, loginPassword);
-    setIsSubmitting(false);
+    try {
+      const result = await login(loginEmail.trim(), loginPassword);
+      if (!result.success || !result.user) {
+        if (result.success) {
+          toast.error('Data akun tidak lengkap. Silakan coba lagi atau hubungi Owner.');
+        }
+        return;
+      }
 
-    if (result.success && result.user) {
       if (result.user.role === 'owner') {
         router.push('/dashboard/owner');
       } else {
         router.push(`/dashboard/${result.user.role || 'production'}`);
       }
+    } catch {
+      toast.error('Login gagal diproses. Periksa koneksi lalu coba lagi.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -340,7 +349,7 @@ export default function AuthPage() {
 
                   {/* Kode Undangan */}
                   <div className="rounded-2xl border-2 border-brand-slate/40 bg-brand-surface/40 p-3.5 space-y-1.5">
-                    <label className="font-bold text-brand-navy block text-xs flex items-center gap-1.5">
+                    <label className="font-bold text-brand-navy text-xs flex items-center gap-1.5">
                       <KeyRound size={14} className="text-brand-slate" />
                       <span>Kode Undangan *</span>
                     </label>

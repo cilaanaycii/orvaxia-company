@@ -756,32 +756,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         message: 'Email ini sudah terdaftar.',
       };
     }
-
     const div = data.division || 'Produksi';
-    let assignedRole: UserRole = 'production';
-    if (div === 'Sales') assignedRole = 'sales';
-    else if (div === 'Finance') assignedRole = 'finance';
-    else if (div === 'Marketing') assignedRole = 'marketing';
-    else if (div === 'HRD') assignedRole = 'hrd';
-    else if (div === 'Public Relations') assignedRole = 'pr';
-    else if (div === 'Kesekretariatan') assignedRole = 'member';
-
     const newProfile: UserProfile = {
       id: `usr-reg-${Date.now()}`,
       email: data.email.trim(),
       password: data.password || 'orvaxia123',
       fullName: data.fullName.trim(),
       phone: data.phone.trim(),
-      role: assignedRole,
-      status: 'active',
+      role: 'member',
+      status: 'pending_approval',
       division: div,
-      position: data.position || `Staff ${div}`,
+      position: data.position || 'Crew Baru (Pending)',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     setUsers((prev) => [...prev, newProfile]);
-    setCurrentUser(newProfile);
 
     // Langsung simpan akun ke Cloud Database secara realtime
     try {
