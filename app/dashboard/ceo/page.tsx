@@ -228,7 +228,7 @@ export default function CEODashboard() {
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-600 mt-1 line-clamp-1 italic">
-                  "{rev.notes}"
+                  &quot;{rev.notes}&quot;
                 </p>
               </div>
             ))}

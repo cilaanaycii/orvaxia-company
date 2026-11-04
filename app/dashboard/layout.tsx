@@ -49,7 +49,7 @@ const DASHBOARD_ROUTES: NavRoute[] = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { currentUser, loginAs, logout } = useCompanyStore();
+  const { currentUser, logout } = useCompanyStore();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
   // 1. Not Authenticated State
@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p><strong>Minat Awal:</strong> {currentUser.division || 'Umum'}</p>
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Akun Anda telah berhasil terdaftar di sistem. Pemegang kendali website (<strong>Owner: rnefviie@gmail.com</strong>) saat ini sedang menetapkan divisi dan tugas operasional untuk Anda.
+            Akun Anda telah berhasil terdaftar di sistem. Owner atau CEO sedang menetapkan divisi dan tugas operasional untuk Anda.
           </p>
           <p className="text-[11px] text-slate-500 italic">
             Silakan informasikan kepada Owner agar akun Anda segera disetujui. Setelah Owner menetapkan peran Anda, klik tombol di bawah untuk membuka dashboard.
@@ -135,9 +135,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // 3. Active Authenticated State
   const isOwner = currentUser.role === 'owner';
+  const isExecutive = isOwner || currentUser.role === 'ceo';
+  const visibleRoutes = isExecutive
+    ? DASHBOARD_ROUTES
+    : DASHBOARD_ROUTES.filter((route) => route.role === currentUser.role);
+
+  const requestedRoute = DASHBOARD_ROUTES.find((route) => route.path === pathname);
+  if (!isExecutive && requestedRoute && requestedRoute.role !== currentUser.role) {
+    const assignedRoute = DASHBOARD_ROUTES.find((route) => route.role === currentUser.role);
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md rounded-3xl border border-brand-lavender/40 bg-white p-8 shadow-sm">
+          <h2 className="font-serif text-2xl font-bold text-brand-navy">Akses dashboard dibatasi</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Crew hanya dapat membuka dashboard sesuai penugasan. Akses lintas divisi hanya untuk CEO dan Owner.
+          </p>
+          {assignedRoute && (
+            <Link
+              href={assignedRoute.path}
+              className="mt-5 inline-flex rounded-full bg-brand-slate px-5 py-3 text-xs font-bold text-white"
+            >
+              Buka dashboard tugas saya
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleRoleSelect = (role: UserRole) => {
-    loginAs(role);
     setRoleMenuOpen(false);
     router.push(`/dashboard/${role}`);
   };
@@ -189,7 +215,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             {/* Owner Role Switcher Dropdown (Super Admin only) */}
-            {isOwner && (
+            {isExecutive && (
               <div className="relative mt-3">
                 <button
                   type="button"
@@ -230,9 +256,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Navigation Links for Internal Dashboards */}
           <nav className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2.5 block mb-1">
-              {isOwner ? 'Semua Divisi & Kontrol' : 'Menu Navigasi'}
+              {isExecutive ? 'Semua Divisi & Kontrol' : 'Menu Navigasi'}
             </span>
-            {DASHBOARD_ROUTES.map((route) => {
+            {visibleRoutes.map((route) => {
               const Icon = route.icon;
               const isActive = pathname === route.path;
               const isUserAssignedRole = currentUser.role === route.role;

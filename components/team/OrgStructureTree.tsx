@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { TeamMember } from '@/lib/types';
 import { UserCheck, Shield, ChevronRight, Sparkles } from 'lucide-react';
@@ -88,9 +89,12 @@ export function OrgStructureTree() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-brand-slate bg-brand-surface shadow-inner shrink-0">
-                <img
+                <Image
                   src={selectedMember.avatarUrl}
                   alt={selectedMember.name}
+                  fill
+                  unoptimized
+                  sizes="56px"
                   className="h-full w-full object-cover"
                 />
               </div>

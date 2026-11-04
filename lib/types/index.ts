@@ -15,7 +15,6 @@ export type AccountStatus = 'pending_approval' | 'active' | 'suspended' | 'inact
 export interface UserProfile {
   id: string;
   email: string;
-  password?: string;
   fullName: string;
   phone: string;
   role: UserRole;

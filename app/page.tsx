@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
@@ -183,7 +184,7 @@ export default function HomePage() {
               <div className="rounded-2xl border border-brand-lavender/30 bg-brand-surface/50 p-4 space-y-2 text-xs">
                 <span className="font-bold text-brand-navy block">Komitmen Resmi Perusahaan:</span>
                 <p className="text-slate-600 leading-relaxed">
-                  "Menghadirkan produk yang sesuai dengan kebutuhan konsumen sekaligus memberikan pengalaman penggunaan yang lebih praktis dan menyenangkan dengan semangat kolaborasi dan integritas."
+                  &quot;Menghadirkan produk yang sesuai dengan kebutuhan konsumen sekaligus memberikan pengalaman penggunaan yang lebih praktis dan menyenangkan dengan semangat kolaborasi dan integritas.&quot;
                 </p>
               </div>
             </div>
@@ -253,7 +254,7 @@ export default function HomePage() {
                 Menjadi Perusahaan Rajutan Terdepan
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed italic bg-brand-surface/40 p-4 rounded-2xl border border-brand-lavender/20">
-                "Menjadi perusahaan rajutan yang kreatif, berkualitas tinggi, dan inovatif yang memprioritaskan kepedulian dan kolaborasi."
+                &quot;Menjadi perusahaan rajutan yang kreatif, berkualitas tinggi, dan inovatif yang memprioritaskan kepedulian dan kolaborasi.&quot;
               </p>
             </div>
 
@@ -390,9 +391,12 @@ export default function HomePage() {
                 key={item.id}
                 className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 aspect-square shadow-sm"
               >
-                <img
+                <Image
                   src={item.imageUrl}
                   alt={item.title}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end text-white">

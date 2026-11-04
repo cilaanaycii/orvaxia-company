@@ -12,7 +12,6 @@ import {
   Plus,
   UserCheck,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function MemberDashboard() {
   const {
@@ -27,11 +26,9 @@ export default function MemberDashboard() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('2026-11-10');
 
-  // Filter tasks assigned to current member or division
+  // Personal workspace tasks are scoped to the signed-in crew member.
   const myTasks = tasks.filter(
-    (t) =>
-      t.assignedToName?.includes(currentUser?.fullName || '') ||
-      t.division === currentUser?.division
+    (task) => task.assignedToId === currentUser?.id
   );
 
   // Recent evaluation feedback for current member
@@ -39,11 +36,11 @@ export default function MemberDashboard() {
     (r) => r.memberName.includes(currentUser?.fullName || '')
   );
 
-  const handleCreateTask = (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle) return;
 
-    addTask({
+    const saved = await addTask({
       title: newTaskTitle,
       description: 'Dibuat secara mandiri oleh anggota',
       division: currentUser?.division || 'Produksi',
@@ -54,8 +51,7 @@ export default function MemberDashboard() {
       deadline: newTaskDeadline,
     });
 
-    setNewTaskTitle('');
-    toast.success('Tugas baru dicatat');
+    if (saved) setNewTaskTitle('');
   };
 
   return (
@@ -220,7 +216,7 @@ export default function MemberDashboard() {
                   </span>
                 </div>
                 <p className="bg-white p-3 rounded-xl border border-purple-200 text-slate-700 italic">
-                  "{myReview.notes}"
+                  &quot;{myReview.notes}&quot;
                 </p>
                 {myReview.developmentRecommendations && (
                   <p className="text-[11px] text-purple-900 font-medium">

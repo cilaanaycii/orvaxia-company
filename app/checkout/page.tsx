@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
@@ -310,7 +311,7 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
                           </p>
                           {item.customizationNotes && (
                             <p className="text-[11px] text-brand-slate italic mt-0.5">
-                              Catatan: "{item.customizationNotes}"
+                              Catatan: &quot;{item.customizationNotes}&quot;
                             </p>
                           )}
                           <p className="font-serif font-bold text-xs text-brand-navy mt-1">
@@ -623,11 +624,15 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
 
                     {customFilePreview && (
                       <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 p-2 bg-slate-50">
-                        <img
-                          src={customFilePreview}
-                          alt="Preview"
-                          className="h-16 w-16 rounded-lg object-cover border"
-                        />
+                        <div className="relative h-16 w-16 shrink-0">
+                          <Image
+                            src={customFilePreview}
+                            alt="Preview"
+                            fill
+                            unoptimized
+                            className="rounded-lg border object-cover"
+                          />
+                        </div>
                         <div className="text-[11px]">
                           <p className="font-semibold text-slate-800">{customFile?.name}</p>
                           <p className="text-slate-500">
