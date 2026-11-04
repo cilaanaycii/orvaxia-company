@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { ProductVariant } from '@/lib/types';
 import { ShoppingBag, ArrowRight, ShieldCheck, Clock, Sparkles } from 'lucide-react';
@@ -63,9 +64,12 @@ export function ProductShowcase() {
           <div className="relative w-full aspect-square max-w-md rounded-3xl overflow-hidden border border-brand-lavender/40 shadow-sm flex flex-col items-center justify-center p-4 bg-gradient-to-br from-brand-surface via-white to-brand-cream/80">
             {/* Foto Varian Gambar Nyata dari Marketing */}
             {selectedVariant?.image ? (
-              <img
+              <Image
                 src={selectedVariant.image}
                 alt={selectedVariant.name}
+                fill
+                unoptimized
+                sizes="(max-width: 1024px) 100vw, 42vw"
                 className="w-full h-full object-cover rounded-2xl transition-all duration-300"
               />
             ) : (
@@ -156,9 +160,13 @@ export function ProductShowcase() {
                     }`}
                   >
                     {variant.image ? (
-                      <img
+                      <Image
                         src={variant.image}
                         alt={variant.name}
+                        width={40}
+                        height={40}
+                        unoptimized
+                        sizes="40px"
                         className="h-10 w-10 rounded-xl object-cover border border-slate-200"
                       />
                     ) : (

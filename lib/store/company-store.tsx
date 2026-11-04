@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   UserProfile,
   TeamMember,
@@ -20,6 +20,8 @@ import {
   PaymentStatus,
   UserRole,
 } from '@/lib/types';
+import { supabase } from '@/lib/supabase/client';
+import { mapSupabaseProfile, SupabaseProfileRow } from '@/lib/supabase/profile';
 import {
   INITIAL_SITE_SETTINGS,
   INITIAL_PO_PERIOD,
@@ -28,14 +30,86 @@ import {
   INITIAL_ORDERS,
   INITIAL_INVENTORY,
   INITIAL_TRANSACTIONS,
-  INITIAL_PERFORMANCE_REVIEWS,
   INITIAL_TASKS,
   INITIAL_ANNOUNCEMENTS,
   INITIAL_FAQS,
   INITIAL_GALLERY,
-  INITIAL_USERS,
 } from '@/lib/data/initial-data';
 import { toast } from 'sonner';
+
+interface PerformanceReviewRow {
+  id: string;
+  member_id: string | null;
+  member_name: string;
+  member_division: string;
+  reviewer_id: string | null;
+  reviewer_name: string;
+  review_date: string;
+  period: string;
+  score_responsibility: number;
+  score_punctuality: number;
+  score_quality: number;
+  score_collaboration: number;
+  score_productivity: number;
+  score_communication: number;
+  score_consistency: number;
+  average_score: number;
+  notes: string;
+  recommendations: string;
+}
+
+interface CrewTaskRow {
+  id: string;
+  title: string;
+  description: string;
+  division: string;
+  assigned_to_id: string | null;
+  assigned_to_name: string | null;
+  priority: TaskItem['priority'];
+  status: TaskItem['status'];
+  deadline: string;
+  created_at: string;
+}
+
+function mapCrewTask(row: CrewTaskRow): TaskItem {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    division: row.division,
+    assignedToId: row.assigned_to_id || undefined,
+    assignedToName: row.assigned_to_name || undefined,
+    priority: row.priority,
+    status: row.status,
+    deadline: row.deadline,
+    createdAt: row.created_at.slice(0, 10),
+  };
+}
+
+function mapPerformanceReview(row: PerformanceReviewRow): PerformanceReview {
+  return {
+    id: row.id,
+    memberId: row.member_id || '',
+    memberName: row.member_name,
+    memberDivision: row.member_division,
+    reviewerId: row.reviewer_id || '',
+    reviewerName: row.reviewer_name,
+    reviewDate: row.review_date,
+    period: row.period,
+    scores: {
+      responsibility: row.score_responsibility,
+      punctuality: row.score_punctuality,
+      quality: row.score_quality,
+      collaboration: row.score_collaboration,
+      productivity: row.score_productivity,
+      communication: row.score_communication,
+      consistency: row.score_consistency,
+    },
+    averageScore: Number(row.average_score),
+    notes: row.notes,
+    developmentRecommendations: row.recommendations,
+  };
+}
 
 export interface CartItem {
   id: string;
@@ -54,7 +128,6 @@ export interface CartItem {
 
 interface CompanyContextType {
   currentUser: UserProfile | null;
-  setCurrentUser: (user: UserProfile | null) => void;
   users: UserProfile[];
   siteSettings: SiteSettings;
   updateSiteSettings: (settings: Partial<SiteSettings>) => void;
@@ -77,10 +150,10 @@ interface CompanyContextType {
   transactions: Transaction[];
   addTransaction: (trx: Omit<Transaction, 'id' | 'referenceCode'>) => void;
   performanceReviews: PerformanceReview[];
-  addPerformanceReview: (review: Omit<PerformanceReview, 'id'>) => void;
+  addPerformanceReview: (review: Omit<PerformanceReview, 'id'>) => Promise<boolean>;
   tasks: TaskItem[];
-  addTask: (task: Omit<TaskItem, 'id' | 'createdAt'>) => void;
-  updateTaskStatus: (taskId: string, status: 'todo' | 'in_progress' | 'completed') => void;
+  addTask: (task: Omit<TaskItem, 'id' | 'createdAt'>) => Promise<boolean>;
+  updateTaskStatus: (taskId: string, status: 'todo' | 'in_progress' | 'completed') => Promise<void>;
   announcements: Announcement[];
   addAnnouncement: (ann: Omit<Announcement, 'id' | 'createdAt'>) => void;
   deleteAnnouncement: (id: string) => void;
@@ -94,17 +167,16 @@ interface CompanyContextType {
   clearCart: () => void;
   // Auth Helpers
   login: (email: string, password?: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
-  loginAs: (role: UserRole) => void;
-  registerStaff: (data: { fullName: string; email: string; phone: string; password?: string; invitationCode?: string; division?: string; position?: string }) => { success: boolean; message: string; user?: UserProfile };
-  approveStaff: (userId: string, role: UserRole, division: string, position: string) => void;
-  changeUserRole: (userId: string, role: UserRole, division: string, position: string) => void;
-  rejectStaff: (userId: string) => void;
-  deleteUser: (userId: string) => void;
+  registerStaff: (data: { fullName: string; email: string; phone: string; password?: string; invitationCode?: string; division?: string; position?: string }) => Promise<{ success: boolean; message: string; userId?: string }>;
+  approveStaff: (userId: string, role: UserRole, division: string, position: string) => Promise<void>;
+  changeUserRole: (userId: string, role: UserRole, division: string, position: string) => Promise<void>;
+  rejectStaff: (userId: string) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
   resetAllDataToZero: () => void;
   addInventoryItem: (item: Omit<InventoryItem, 'id' | 'lastUpdated'>) => void;
   setInventoryStock: (id: string, exactStock: number, reason: string) => void;
-  syncWithCloud: () => Promise<void>;
-  logout: () => void;
+  syncWithCloud: () => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
@@ -115,20 +187,26 @@ const CART_STORAGE_KEY = 'orvaxia_cart_v3';
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({
+    ...INITIAL_SITE_SETTINGS,
+    crewInvitationCode: '',
+  });
   const [poPeriod, setPoPeriod] = useState<POPeriod>(INITIAL_PO_PERIOD);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(INITIAL_TEAM_MEMBERS);
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
-  const [performanceReviews, setPerformanceReviews] = useState<PerformanceReview[]>(INITIAL_PERFORMANCE_REVIEWS);
+  const [performanceReviews, setPerformanceReviews] = useState<PerformanceReview[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
   const [faqs] = useState<FAQItem[]>(INITIAL_FAQS);
   const [gallery] = useState<GalleryItem[]>(INITIAL_GALLERY);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const hasExecutiveAccess =
+    currentUser?.status === 'active' &&
+    (currentUser.role === 'owner' || currentUser.role === 'ceo');
 
   // Load from LocalStorage
   useEffect(() => {
@@ -144,30 +222,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        let loadedUsers: UserProfile[] = parsed.users || INITIAL_USERS;
-        const ownerExists = loadedUsers.some(
-          (u) => u.email.toLowerCase() === 'rnefviie@gmail.com'
-        );
-        if (!ownerExists) {
-          loadedUsers = [INITIAL_USERS[0], ...loadedUsers];
-        } else {
-          loadedUsers = loadedUsers.map((u) => {
-            if (u.email.toLowerCase() === 'rnefviie@gmail.com') {
-              return {
-                ...u,
-                role: 'owner' as const,
-                status: 'active' as const,
-                password: 'orvaxiajaya',
-              };
-            }
-            return u;
-          });
-        }
-        setUsers(loadedUsers);
         if (parsed.siteSettings) {
           setSiteSettings({
             ...parsed.siteSettings,
-            crewInvitationCode: parsed.siteSettings.crewInvitationCode || 'ORVAXIA2026',
+            crewInvitationCode: '',
           });
         }
         if (parsed.poPeriod) setPoPeriod(parsed.poPeriod);
@@ -176,19 +234,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         if (parsed.orders) setOrders(parsed.orders);
         if (parsed.inventory) setInventory(parsed.inventory);
         if (parsed.transactions) setTransactions(parsed.transactions);
-        if (parsed.performanceReviews) setPerformanceReviews(parsed.performanceReviews);
-        if (parsed.tasks) setTasks(parsed.tasks);
         if (parsed.announcements) setAnnouncements(parsed.announcements);
-        if (parsed.currentUser) {
-          const matched = loadedUsers.find(
-            (u) =>
-              u.id === parsed.currentUser.id ||
-              u.email.toLowerCase() === parsed.currentUser.email.toLowerCase()
-          );
-          setCurrentUser(matched || parsed.currentUser);
-        }
-      } else {
-        setUsers(INITIAL_USERS);
       }
       const savedCart = localStorage.getItem(CART_STORAGE_KEY);
       if (savedCart) {
@@ -201,12 +247,127 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (!supabase) {
+      setCurrentUser(null);
+      setUsers([]);
+      setPerformanceReviews([]);
+      setTasks([]);
+      return;
+    }
+
+    let active = true;
+    const authClient = supabase;
+    const loadProfile = async (userId: string | null) => {
+      if (!userId) {
+        setCurrentUser(null);
+        setUsers([]);
+        setPerformanceReviews([]);
+        setTasks([]);
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await authClient
+        .from('profiles')
+        .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!active) return;
+      if (profileError || !profileData) {
+        setCurrentUser(null);
+        setUsers([]);
+        setPerformanceReviews([]);
+        setTasks([]);
+        await authClient.auth.signOut();
+        toast.error(profileError ? 'Profil akun gagal dimuat dari Supabase.' : 'Profil akun tidak ditemukan.');
+        return;
+      }
+
+      const currentProfile = mapSupabaseProfile(profileData as SupabaseProfileRow);
+      if (currentProfile.status === 'suspended' || currentProfile.status === 'inactive') {
+        setCurrentUser(null);
+        setUsers([]);
+        setPerformanceReviews([]);
+        setTasks([]);
+        await authClient.auth.signOut();
+        toast.error('Akun crew tidak aktif. Hubungi Owner.');
+        return;
+      }
+
+      setCurrentUser(currentProfile);
+      const { data: taskRows, error: taskError } = await authClient
+        .from('crew_tasks')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!active) return;
+      if (taskError) {
+        setTasks([]);
+        toast.error('Daftar tugas gagal dimuat dari Supabase.');
+      } else {
+        setTasks((taskRows || []).map((task) => mapCrewTask(task as CrewTaskRow)));
+      }
+
+      const isExecutive =
+        currentProfile.status === 'active' &&
+        (currentProfile.role === 'owner' || currentProfile.role === 'ceo');
+      if (!isExecutive) {
+        setPerformanceReviews([]);
+      }
+      const { data: profiles, error: profilesError } = await authClient
+        .from('profiles')
+        .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
+        .order('full_name');
+
+      if (!active) return;
+      if (profilesError) {
+        setUsers([currentProfile]);
+        toast.error('Data crew tidak dapat dimuat sesuai hak akses akun.');
+        return;
+      }
+
+      setUsers((profiles || []).map((profile) => mapSupabaseProfile(profile as SupabaseProfileRow)));
+
+      if (!isExecutive) return;
+      const { data: reviews, error: reviewsError } = await authClient
+        .from('performance_reviews')
+        .select('*')
+        .order('review_date', { ascending: false });
+      if (!active) return;
+      if (reviewsError) {
+        setPerformanceReviews([]);
+        toast.error('Evaluasi crew gagal dimuat dari Supabase.');
+      } else {
+        setPerformanceReviews((reviews || []).map((review) => mapPerformanceReview(review as PerformanceReviewRow)));
+      }
+    };
+
+    authClient.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        toast.error('Sesi Supabase gagal diperiksa.');
+        return;
+      }
+      void loadProfile(data.session?.user.id || null);
+    });
+
+    const { data: authListener } = authClient.auth.onAuthStateChange((_event, session) => {
+      queueMicrotask(() => {
+        if (active) void loadProfile(session?.user.id || null);
+      });
+    });
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [isHydrated]);
+
   // Save to LocalStorage
   useEffect(() => {
     if (!isHydrated) return;
     try {
       const stateToSave = {
-        users,
         siteSettings,
         poPeriod,
         products,
@@ -214,10 +375,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         orders,
         inventory,
         transactions,
-        performanceReviews,
-        tasks,
         announcements,
-        currentUser,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch {
@@ -225,7 +383,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     }
   }, [
     isHydrated,
-    users,
     siteSettings,
     poPeriod,
     products,
@@ -233,36 +390,79 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     orders,
     inventory,
     transactions,
-    performanceReviews,
-    tasks,
     announcements,
-    currentUser,
   ]);
 
   // Cloud Sync Handler
-  const syncWithCloud = async () => {
+  const syncWithCloud = useCallback(async (): Promise<boolean> => {
+    if (!supabase || !hasExecutiveAccess) return false;
+
     try {
-      const res = await fetch('/api/cloud-sync', { cache: 'no-store' });
-      if (!res.ok) return;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        toast.error('Sesi Supabase gagal diperiksa.');
+        return false;
+      }
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) return false;
+
+      const res = await fetch('/api/cloud-sync', {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        toast.error('Data cloud gagal disegarkan.');
+        return false;
+      }
       const data = await res.json();
 
-      if (data && Array.isArray(data.users) && data.users.length > 0) {
-        setUsers((prev) => {
-          let merged = [...prev];
-          data.users.forEach((cloudUser: UserProfile) => {
-            const idx = merged.findIndex(
-              (u) =>
-                u.id === cloudUser.id ||
-                (u.email && cloudUser.email && u.email.toLowerCase() === cloudUser.email.toLowerCase())
-            );
-            if (idx >= 0) {
-              merged[idx] = { ...merged[idx], ...cloudUser };
-            } else {
-              merged.push(cloudUser);
-            }
-          });
-          return merged;
-        });
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
+        .order('full_name');
+      if (error) {
+        toast.error('Daftar crew gagal dimuat dari Supabase.');
+        return false;
+      } else {
+        const mappedProfiles = (profiles || []).map((profile) =>
+          mapSupabaseProfile(profile as SupabaseProfileRow)
+        );
+        setUsers(mappedProfiles);
+        const signedInProfile = mappedProfiles.find(
+          (profile) => profile.id === sessionData.session?.user.id
+        );
+        const isExecutive =
+          signedInProfile?.status === 'active' &&
+          (signedInProfile.role === 'owner' || signedInProfile.role === 'ceo');
+        if (!isExecutive) {
+          setPerformanceReviews([]);
+          setTasks([]);
+          return false;
+        }
+
+        const { data: taskRows, error: taskError } = await supabase
+          .from('crew_tasks')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (taskError) {
+          toast.error('Daftar tugas gagal dimuat dari Supabase.');
+          return false;
+        }
+        setTasks((taskRows || []).map((task) => mapCrewTask(task as CrewTaskRow)));
+
+        const { data: reviews, error: reviewsError } = await supabase
+          .from('performance_reviews')
+          .select('*')
+          .order('review_date', { ascending: false });
+        if (reviewsError) {
+          setPerformanceReviews([]);
+          toast.error('Evaluasi crew gagal dimuat dari Supabase.');
+          return false;
+        } else {
+          setPerformanceReviews(
+            (reviews || []).map((review) => mapPerformanceReview(review as PerformanceReviewRow))
+          );
+        }
       }
 
       if (data && Array.isArray(data.orders) && data.orders.length > 0) {
@@ -279,20 +479,25 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           return merged;
         });
       }
-    } catch {}
-  };
+      return true;
+    } catch (error) {
+      console.error('Cloud sync failed', error);
+      toast.error('Sinkronisasi cloud gagal. Coba lagi nanti.');
+      return false;
+    }
+  }, [hasExecutiveAccess]);
 
   // Background Cloud Polling (Setiap 4 detik sinkronisasi cloud)
   useEffect(() => {
     if (!isHydrated) return;
-    syncWithCloud();
-    const interval = setInterval(syncWithCloud, 4000);
+    void syncWithCloud();
+    const interval = setInterval(() => void syncWithCloud(), 4000);
     return () => clearInterval(interval);
-  }, [isHydrated]);
+  }, [isHydrated, syncWithCloud]);
 
   // Actions
   const updateSiteSettings = (settings: Partial<SiteSettings>) => {
-    setSiteSettings((prev) => ({ ...prev, ...settings }));
+    setSiteSettings((prev) => ({ ...prev, ...settings, crewInvitationCode: '' }));
     toast.success('Pengaturan perusahaan berhasil diperbarui');
   };
 
@@ -319,6 +524,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateTeamMember = (id: string, member: Partial<TeamMember>) => {
+    if (!hasExecutiveAccess) {
+      toast.error('Hanya CEO dan Owner yang dapat mengubah data anggota crew.');
+      return;
+    }
     setTeamMembers((prev) =>
       prev.map((m) => (m.id === id ? { ...m, ...member } : m))
     );
@@ -589,28 +798,119 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     setTransactions((prev) => [newTrx, ...prev]);
   };
 
-  const addPerformanceReview = (review: Omit<PerformanceReview, 'id'>) => {
-    const newReview: PerformanceReview = {
-      ...review,
-      id: `rev-${Date.now()}`,
-    };
+  const addPerformanceReview = async (review: Omit<PerformanceReview, 'id'>): Promise<boolean> => {
+    if (!hasExecutiveAccess) {
+      toast.error('Hanya CEO dan Owner yang dapat mengelola evaluasi crew.');
+      return false;
+    }
+    if (!supabase || !currentUser) {
+      toast.error('Supabase belum dikonfigurasi atau sesi akun tidak tersedia.');
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('performance_reviews')
+      .insert({
+        member_id: null,
+        member_name: review.memberName,
+        member_division: review.memberDivision,
+        reviewer_id: currentUser.id,
+        reviewer_name: currentUser.fullName,
+        review_date: review.reviewDate,
+        period: review.period,
+        score_responsibility: review.scores.responsibility,
+        score_punctuality: review.scores.punctuality,
+        score_quality: review.scores.quality,
+        score_collaboration: review.scores.collaboration,
+        score_productivity: review.scores.productivity,
+        score_communication: review.scores.communication,
+        score_consistency: review.scores.consistency,
+        average_score: review.averageScore,
+        notes: review.notes,
+        recommendations: review.developmentRecommendations,
+      })
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      toast.error('Evaluasi gagal disimpan. Pastikan hak akses CEO atau Owner aktif.');
+      return false;
+    }
+
+    const newReview = mapPerformanceReview(data as PerformanceReviewRow);
     setPerformanceReviews((prev) => [newReview, ...prev]);
     toast.success(`Evaluasi kinerja untuk ${review.memberName} berhasil disimpan`);
+    return true;
   };
 
-  const addTask = (task: Omit<TaskItem, 'id' | 'createdAt'>) => {
-    const newTask: TaskItem = {
-      ...task,
-      id: `tsk-${Date.now()}`,
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
+  const addTask = async (task: Omit<TaskItem, 'id' | 'createdAt'>): Promise<boolean> => {
+    if (!supabase || !currentUser || currentUser.status !== 'active') {
+      toast.error('Sesi crew aktif tidak tersedia.');
+      return false;
+    }
+    const taskForUser = hasExecutiveAccess
+      ? task
+      : {
+          ...task,
+          assignedToId: currentUser!.id,
+          assignedToName: currentUser!.fullName,
+          division: currentUser!.division || task.division,
+        };
+    const { data, error } = await supabase
+      .from('crew_tasks')
+      .insert({
+        title: taskForUser.title,
+        description: taskForUser.description,
+        division: taskForUser.division,
+        assigned_to_id: taskForUser.assignedToId || null,
+        assigned_to_name: taskForUser.assignedToName || null,
+        priority: taskForUser.priority,
+        status: taskForUser.status,
+        deadline: taskForUser.deadline,
+      })
+      .select('*')
+      .single();
+    if (error || !data) {
+      console.error('Task creation failed', error);
+      toast.error('Tugas gagal disimpan. Periksa sesi dan hak akses akun.');
+      return false;
+    }
+
+    const newTask = mapCrewTask(data as CrewTaskRow);
     setTasks((prev) => [newTask, ...prev]);
-    toast.success('Tugas baru berhasil ditambahkan');
+    toast.success(hasExecutiveAccess ? 'Tugas baru berhasil ditambahkan' : 'Tugas pribadi berhasil dibuat');
+    return true;
   };
 
-  const updateTaskStatus = (taskId: string, status: 'todo' | 'in_progress' | 'completed') => {
+  const updateTaskStatus = async (
+    taskId: string,
+    status: 'todo' | 'in_progress' | 'completed'
+  ): Promise<void> => {
+    const task = tasks.find((item) => item.id === taskId);
+    if (
+      !supabase ||
+      !currentUser ||
+      currentUser.status !== 'active' ||
+      !task ||
+      (!hasExecutiveAccess && task.assignedToId !== currentUser.id)
+    ) {
+      toast.error('Anda hanya dapat memperbarui status tugas yang ditugaskan kepada Anda.');
+      return;
+    }
+    const { data, error } = await supabase
+      .from('crew_tasks')
+      .update({ status })
+      .eq('id', taskId)
+      .select('*')
+      .maybeSingle();
+    if (error || !data) {
+      console.error('Task status update failed', error);
+      toast.error('Status tugas gagal disimpan. Periksa hak akses akun.');
+      return;
+    }
+    const updatedTask = mapCrewTask(data as CrewTaskRow);
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status } : t))
+      prev.map((item) => (item.id === taskId ? updatedTask : item))
     );
     toast.success(`Status tugas diperbarui menjadi: ${status}`);
   };
@@ -635,89 +935,45 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     password?: string
   ): Promise<{ success: boolean; message: string; user?: UserProfile }> => {
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = (password || '').trim();
-
-    // Check if Owner login:
-    if (cleanEmail === 'rnefviie@gmail.com') {
-      if (cleanPassword !== 'orvaxiajaya') {
-        toast.error('Kata sandi Owner tidak sesuai');
-        return { success: false, message: 'Kata sandi Owner salah!' };
-      }
-      let ownerUser = users.find((u) => u.email.toLowerCase() === 'rnefviie@gmail.com');
-      if (!ownerUser) {
-        ownerUser = INITIAL_USERS[0];
-        setUsers((prev) => [ownerUser!, ...prev.filter((u) => u.email.toLowerCase() !== 'rnefviie@gmail.com')]);
-      }
-      setCurrentUser(ownerUser);
-      toast.success('Selamat datang kembali, Owner!');
-      return { success: true, message: 'Berhasil masuk sebagai Owner', user: ownerUser };
+    if (!supabase) {
+      toast.error('Login crew belum dikonfigurasi oleh administrator.');
+      return { success: false, message: 'Supabase Auth belum dikonfigurasi.' };
     }
 
-    // 1. Cek di memori lokal
-    let foundUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
-
-    // 2. Jika belum ada di lokal, periksa langsung ke Cloud Database!
-    if (!foundUser) {
-      try {
-        const res = await fetch('/api/cloud-sync', { cache: 'no-store' });
-        if (res.ok) {
-          const cloudData = await res.json();
-          if (Array.isArray(cloudData.users)) {
-            const matchedFromCloud = cloudData.users.find(
-              (u: any) => u.email && u.email.toLowerCase() === cleanEmail
-            );
-            if (matchedFromCloud) {
-              foundUser = matchedFromCloud;
-              setUsers((prev) => [...prev.filter((u) => u.id !== matchedFromCloud.id), matchedFromCloud]);
-            }
-          }
-        }
-      } catch {}
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password || '',
+    });
+    if (authError || !authData.user) {
+      toast.error('Email atau kata sandi tidak sesuai.');
+      return { success: false, message: 'Email atau kata sandi tidak sesuai.' };
     }
 
-    if (!foundUser) {
-      toast.error('Email ini belum terdaftar sebagai Crew');
-      return {
-        success: false,
-        message: 'Email pribadi belum terdaftar. Silakan daftar di tab "Daftar Crew".',
-      };
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    if (profileError || !profileData) {
+      await supabase.auth.signOut();
+      toast.error('Profil crew belum siap. Hubungi Owner untuk bantuan.');
+      return { success: false, message: 'Profil crew belum ditemukan.' };
     }
 
-    if (foundUser.password && cleanPassword && foundUser.password !== cleanPassword) {
-      toast.error('Kata sandi tidak sesuai');
-      return { success: false, message: 'Kata sandi tidak sesuai. Silakan periksa kembali.' };
+    const profile = mapSupabaseProfile(profileData as SupabaseProfileRow);
+    if (profile.status === 'suspended' || profile.status === 'inactive') {
+      await supabase.auth.signOut();
+      toast.error('Akun crew tidak aktif. Hubungi Owner.');
+      return { success: false, message: 'Akun crew tidak aktif.' };
     }
 
-    setCurrentUser(foundUser);
-    toast.success(`Selamat datang, ${foundUser.fullName}!`);
-    return { success: true, message: 'Berhasil masuk', user: foundUser };
+    setCurrentUser(profile);
+    toast.success(`Selamat datang, ${profile.fullName}!`);
+    return { success: true, message: 'Berhasil masuk', user: profile };
   };
 
-  const loginAs = (role: UserRole) => {
-    const matched = users.find((u) => u.role === role && u.status === 'active');
-    if (matched) {
-      setCurrentUser(matched);
-      toast.success(`Beralih peran sebagai: ${matched.position || matched.role.toUpperCase()}`);
-    } else {
-      // Create temporary active user for that role if not found
-      const tempUser: UserProfile = {
-        id: `usr-${role}`,
-        email: `${role}@orvaxia.com`,
-        fullName: `Akun ${role.toUpperCase()} Orvaxia`,
-        phone: '0881027291245',
-        role,
-        status: 'active',
-        division: role === 'ceo' ? 'Executive' : role.toUpperCase(),
-        position: `${role.toUpperCase()} Officer`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setCurrentUser(tempUser);
-      toast.success(`Masuk sebagai: ${role.toUpperCase()}`);
-    }
-  };
-
-  const registerStaff = (data: {
+  const registerStaff = async (data: {
     fullName: string;
     email: string;
     phone: string;
@@ -725,125 +981,88 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     invitationCode?: string;
     division?: string;
     position?: string;
-  }): { success: boolean; message: string; user?: UserProfile } => {
-    // 1. Verify Secret Invitation Code from Owner
-    const expectedCode = (siteSettings.crewInvitationCode || 'ORVAXIA2026').trim().toUpperCase();
-    const providedCode = (data.invitationCode || '').trim().toUpperCase();
-
-    if (!providedCode || providedCode !== expectedCode) {
-      toast.error('Kode khusus Owner salah! Hanya kru resmi dengan kode yang dapat mendaftar.');
-      return {
-        success: false,
-        message: 'Kode khusus tidak valid. Kode pendaftaran crew hanya diberikan oleh Owner.',
-      };
-    }
-
-    const cleanEmail = data.email.trim().toLowerCase();
-
-    if (cleanEmail === 'rnefviie@gmail.com') {
-      toast.error('Email rnefviie@gmail.com adalah akun Owner. Silakan login dengan kata sandi orvaxiajaya.');
-      return {
-        success: false,
-        message: 'Email ini milik akun Owner.',
-      };
-    }
-
-    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      toast.error('Email ini sudah terdaftar. Silakan masuk menggunakan kata sandi Anda.');
-      return {
-        success: false,
-        message: 'Email ini sudah terdaftar.',
-      };
-    }
-    const div = data.division || 'Produksi';
-    const newProfile: UserProfile = {
-      id: `usr-reg-${Date.now()}`,
-      email: data.email.trim(),
-      password: data.password || 'orvaxia123',
-      fullName: data.fullName.trim(),
-      phone: data.phone.trim(),
-      role: 'member',
-      status: 'pending_approval',
-      division: div,
-      position: data.position || 'Crew Baru (Pending)',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setUsers((prev) => [...prev, newProfile]);
-
-    // Langsung simpan akun ke Cloud Database secara realtime
+  }): Promise<{ success: boolean; message: string; userId?: string }> => {
     try {
-      fetch('/api/cloud-sync', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ users: [newProfile] }),
-      }).catch(() => {});
-    } catch {}
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error || 'Pendaftaran crew gagal diproses.');
+        return { success: false, message: result.error || 'Pendaftaran crew gagal diproses.' };
+      }
 
-    toast.success('Pendaftaran staf berhasil diajukan! Menunggu arahan & penugasan dari Owner.');
-    return { success: true, message: 'Pendaftaran berhasil', user: newProfile };
+      toast.success(
+        result.requiresEmailConfirmation
+          ? 'Pendaftaran terkirim. Periksa email untuk konfirmasi, lalu tunggu persetujuan Owner.'
+          : 'Pendaftaran crew berhasil. Akun menunggu persetujuan Owner.'
+      );
+      return { success: true, message: 'Pendaftaran berhasil', userId: result.userId };
+    } catch {
+      toast.error('Tidak dapat terhubung ke server pendaftaran.');
+      return { success: false, message: 'Tidak dapat terhubung ke server pendaftaran.' };
+    }
   };
 
-  const changeUserRole = (
+  const changeUserRole = async (
     userId: string,
     role: UserRole,
     division: string,
     position: string
   ) => {
-    const now = new Date().toISOString();
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === userId) {
-          const updated: UserProfile = {
-            ...u,
-            status: 'active',
-            role,
-            division,
-            position,
-            updatedAt: now,
-          };
-          if (currentUser?.id === userId) {
-            setCurrentUser(updated);
-          }
-          return updated;
-        }
-        return u;
-      })
-    );
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return;
+    }
 
-    // Sinkronisasi status aktif kru ke Cloud
-    try {
-      fetch('/api/cloud-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          users: [{ id: userId, role, division, position, status: 'active' }],
-        }),
-      }).catch(() => {});
-    } catch {}
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ role, division, position, status: 'active', updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
+      .maybeSingle();
 
+    if (error || !data) {
+      toast.error('Perubahan crew ditolak. Pastikan akun memiliki izin CEO atau Owner.');
+      return;
+    }
+
+    const updatedUser = mapSupabaseProfile(data as SupabaseProfileRow);
+    setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)));
+    if (currentUser?.id === userId) setCurrentUser(updatedUser);
     toast.success(`Penugasan berhasil: ditetapkan sebagai ${position} (${division})`);
   };
 
-  const approveStaff = (
+  const approveStaff = async (
     userId: string,
     role: UserRole,
     division: string,
     position: string
   ) => {
-    changeUserRole(userId, role, division, position);
+    await changeUserRole(userId, role, division, position);
   };
 
-  const deleteUser = (userId: string) => {
-    const target = users.find((u) => u.id === userId);
-    if (target?.email.toLowerCase() === 'rnefviie@gmail.com') {
-      toast.error('Akun Owner utama tidak dapat dihapus!');
+  const deleteUser = async (userId: string) => {
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
       return;
     }
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
-    toast.success('Akun crew berhasil dihapus');
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ status: 'inactive', updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select('id')
+      .maybeSingle();
+    if (error || !data) {
+      toast.error('Crew tidak dapat dinonaktifkan. Pastikan izin CEO atau Owner.');
+      return;
+    }
+    setUsers((prev) => prev.map((user) => (
+      user.id === userId ? { ...user, status: 'inactive' } : user
+    )));
+    toast.success('Akun crew berhasil dinonaktifkan');
   };
 
   const resetAllDataToZero = () => {
@@ -891,23 +1110,36 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     toast.success(`Material "${item.name}" berhasil ditambahkan`);
   };
 
-  const rejectStaff = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? {
-              ...u,
-              status: 'suspended' as const,
-              updatedAt: new Date().toISOString(),
-            }
-          : u
-      )
-    );
+  const rejectStaff = async (userId: string) => {
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return;
+    }
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ status: 'suspended', updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select('id')
+      .maybeSingle();
+    if (error || !data) {
+      toast.error('Akun crew tidak dapat ditangguhkan. Pastikan izin CEO atau Owner.');
+      return;
+    }
+    setUsers((prev) => prev.map((user) => (
+      user.id === userId ? { ...user, status: 'suspended' } : user
+    )));
     toast.info('Akun anggota telah ditolak/ditangguhkan');
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (supabase) {
+      const { error } = await supabase.auth.signOut();
+      if (error) toast.error('Sesi Supabase gagal ditutup.');
+    }
     setCurrentUser(null);
+    setUsers([]);
+    setPerformanceReviews([]);
+    setTasks([]);
     toast.info('Anda telah keluar');
   };
 
@@ -915,7 +1147,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     <CompanyContext.Provider
       value={{
         currentUser,
-        setCurrentUser,
         users,
         siteSettings,
         updateSiteSettings,
@@ -953,7 +1184,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         updateCartQuantity,
         clearCart,
         login,
-        loginAs,
         registerStaff,
         approveStaff,
         changeUserRole,

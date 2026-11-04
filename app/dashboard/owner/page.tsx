@@ -22,7 +22,6 @@ import {
   Check,
   X,
   KeyRound,
-  Copy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,15 +49,14 @@ export default function OwnerDashboard() {
 
   const handleManualSync = async () => {
     setIsSyncing(true);
-    await syncWithCloud();
-    setTimeout(() => setIsSyncing(false), 600);
-    toast.success('Data cloud berhasil disegarkan!');
+    const synced = await syncWithCloud();
+    setIsSyncing(false);
+    if (synced) toast.success('Data cloud berhasil disegarkan!');
   };
 
   // Form states for settings
   const [waNumber, setWaNumber] = useState(siteSettings.whatsappNumber);
   const [email, setEmail] = useState(siteSettings.email);
-  const [invitationCode, setInvitationCode] = useState(siteSettings.crewInvitationCode || 'ORVAXIA2026');
   const [bankAccount, setBankAccount] = useState(siteSettings.paymentInfo.accountNumber);
   const [bankHolder, setBankHolder] = useState(siteSettings.paymentInfo.accountHolder);
   const [shippingRange6To7, setShippingRange6To7] = useState(siteSettings.shippingRules.range6To7Km);
@@ -96,7 +94,6 @@ export default function OwnerDashboard() {
     updateSiteSettings({
       whatsappNumber: waNumber,
       email,
-      crewInvitationCode: invitationCode.trim().toUpperCase(),
       paymentInfo: {
         ...siteSettings.paymentInfo,
         accountNumber: bankAccount,
@@ -169,7 +166,7 @@ export default function OwnerDashboard() {
             Owner & Website Controller Panel
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Akun Masuk: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-brand-slate">rnefviie@gmail.com</code> · Anda berhak penuh mengarahkan posisi/role setiap crew dan mengatur seluruh sistem.
+            Akun Masuk: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-brand-slate">{currentUser?.email}</code> · Anda berhak penuh mengarahkan posisi/role setiap crew dan mengatur seluruh sistem.
           </p>
         </div>
 
@@ -218,7 +215,7 @@ export default function OwnerDashboard() {
         </div>
       </div>
 
-      {/* Secret Crew Invitation Code Banner for Owner */}
+      {/* Crew invitation codes are server-side environment configuration. */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 border border-amber-300 p-4 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -226,28 +223,13 @@ export default function OwnerDashboard() {
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-xs text-amber-950">Kode Khusus Pendaftaran Crew Saat Ini:</span>
-              <code className="font-mono font-bold text-sm text-amber-900 bg-white px-2.5 py-0.5 rounded-lg border border-amber-300 shadow-2xs tracking-wider">
-                {siteSettings.crewInvitationCode || 'ORVAXIA2026'}
-              </code>
+              <span className="font-bold text-xs text-amber-950">Kode undangan crew disimpan aman di server.</span>
             </div>
             <p className="text-[11px] text-amber-800/80 mt-0.5">
-              Bagikan kode ini hanya kepada 31 anggota & kru resmi agar orang biasa tidak dapat sembarangan mendaftar menjadi crew.
+              Atur melalui variabel lingkungan CREW_INVITATION_CODE pada konfigurasi server, lalu bagikan secara pribadi kepada crew resmi.
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            navigator.clipboard.writeText(siteSettings.crewInvitationCode || 'ORVAXIA2026');
-            toast.success(`Kode khusus "${siteSettings.crewInvitationCode || 'ORVAXIA2026'}" berhasil disalin!`);
-          }}
-          className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 shadow-sm transition-all flex items-center gap-1.5 shrink-0"
-        >
-          <Copy size={13} />
-          <span>Salin Kode Undangan</span>
-        </button>
       </div>
 
       {/* Division Summary Quick Stats */}
@@ -618,7 +600,7 @@ export default function OwnerDashboard() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {users.map((usr) => {
-                    const isUserOwner = usr.email.toLowerCase() === 'rnefviie@gmail.com';
+                    const isUserOwner = usr.role === 'owner';
 
                     return (
                       <tr key={usr.id} className="hover:bg-slate-50/80">
@@ -769,21 +751,6 @@ export default function OwnerDashboard() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                   />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="font-semibold text-slate-800 block mb-1">
-                    Kode Khusus Undangan Pendaftaran Crew
-                  </label>
-                  <input
-                    type="text"
-                    value={invitationCode}
-                    onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
-                    className="w-full rounded-xl border border-amber-300 bg-amber-50/50 p-2.5 font-mono font-bold tracking-wider text-amber-950 uppercase focus:border-brand-slate focus:outline-none"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Wajib dimasukkan oleh calon anggota di formulir pendaftaran crew agar pengunjung biasa tidak dapat sembarangan mendaftar menjadi crew.
-                  </p>
                 </div>
 
                 <div className="sm:col-span-2">

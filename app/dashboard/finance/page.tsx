@@ -246,7 +246,7 @@ export default function FinanceDashboard() {
             <div className="p-8 text-center border border-dashed rounded-2xl">
               <p className="text-sm font-semibold text-slate-700">Buku kas saat ini bersih (Rp0)</p>
               <p className="text-xs text-slate-400 mt-1">
-                Gunakan tab "+ Catat Pengeluaran/Pemasukan" untuk mencatat belanja benang, aksesoris, atau pengeluaran operasional secara mandiri.
+                Gunakan tab &quot;+ Catat Pengeluaran/Pemasukan&quot; untuk mencatat belanja benang, aksesoris, atau pengeluaran operasional secara mandiri.
               </p>
             </div>
           ) : (

@@ -11,7 +11,6 @@ import {
   FAQItem,
   GalleryItem,
   Order,
-  UserProfile,
 } from '@/lib/types';
 
 export const INITIAL_SITE_SETTINGS: SiteSettings = {
@@ -35,7 +34,7 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
     range6To7Km: 4000,
     rangeAbove7Km: 5000,
   },
-  crewInvitationCode: 'ORVAXIA2026',
+  crewInvitationCode: '',
 };
 
 export const INITIAL_PO_PERIOD: POPeriod = {
@@ -797,22 +796,5 @@ export const INITIAL_GALLERY: GalleryItem[] = [
     imageUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=80',
     caption: 'Pengemasan rapi dan higienis siap didistribusikan ke pelanggan.',
     date: '2026-11-03',
-  },
-];
-
-// Official Owner & Website Controller Account
-export const INITIAL_USERS: UserProfile[] = [
-  {
-    id: 'usr-owner-rnefviie',
-    email: 'rnefviie@gmail.com',
-    password: 'orvaxiajaya',
-    fullName: 'Owner / Pemegang Kendali Website',
-    phone: '0881027291245',
-    role: 'owner',
-    status: 'active',
-    division: 'Executive',
-    position: 'Owner & Pemegang Kendali Website',
-    createdAt: '2026-11-01T00:00:00Z',
-    updatedAt: '2026-11-01T00:00:00Z',
   },
 ];

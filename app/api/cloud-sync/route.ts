@@ -1,10 +1,64 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const CLOUD_BIN_URL = 'https://extendsclass.com/api/json-storage/bin/bfafbaa';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+async function authorizeExecutive(request: Request) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const token = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+
+  if (!supabaseUrl || !supabaseAnonKey || !token) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'Sesi eksekutif diperlukan.' }, { status: 401 }),
+    };
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !userData.user) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'Sesi Supabase tidak valid.' }, { status: 401 }),
+    };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role,status')
+    .eq('id', userData.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'Hak akses akun gagal diverifikasi.' }, { status: 500 }),
+    };
+  }
+  if (
+    !profile ||
+    profile.status !== 'active' ||
+    (profile.role !== 'owner' && profile.role !== 'ceo')
+  ) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'Akses cloud dibatasi untuk CEO dan Owner.' }, { status: 403 }),
+    };
+  }
+
+  return { ok: true as const, supabase };
+}
+
+export async function GET(request: Request) {
+  const authorization = await authorizeExecutive(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     const res = await fetch(CLOUD_BIN_URL, {
       cache: 'no-store',
@@ -18,18 +72,35 @@ export async function GET() {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    const publicData = { ...data };
+    delete publicData.users;
+    if (publicData.siteSettings) {
+      publicData.siteSettings = { ...publicData.siteSettings, crewInvitationCode: '' };
+    }
+    return NextResponse.json(publicData);
   } catch (error) {
     return NextResponse.json({ error: 'Cloud connection error', details: String(error) }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
+  const authorization = await authorizeExecutive(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     const incomingData = await request.json();
+    if (!incomingData || typeof incomingData !== 'object' || Array.isArray(incomingData)) {
+      return NextResponse.json({ error: 'Invalid sync payload' }, { status: 400 });
+    }
+    if (Object.prototype.hasOwnProperty.call(incomingData, 'users')) {
+      return NextResponse.json(
+        { error: 'Crew profiles dikelola melalui Supabase Auth.' },
+        { status: 403 }
+      );
+    }
 
     // 1. Fetch current cloud state first to merge safely
-    let currentData: any = { users: [], orders: [] };
+    let currentData: any = { orders: [] };
     try {
       const getRes = await fetch(CLOUD_BIN_URL, { cache: 'no-store' });
       if (getRes.ok) {
@@ -38,20 +109,6 @@ export async function POST(request: Request) {
     } catch {}
 
     // Merge users: keep existing + update/add incoming
-    let mergedUsers = Array.isArray(currentData.users) ? [...currentData.users] : [];
-    if (Array.isArray(incomingData.users)) {
-      incomingData.users.forEach((inUser: any) => {
-        const idx = mergedUsers.findIndex(
-          (u: any) => u.id === inUser.id || (u.email && inUser.email && u.email.toLowerCase() === inUser.email.toLowerCase())
-        );
-        if (idx >= 0) {
-          mergedUsers[idx] = { ...mergedUsers[idx], ...inUser };
-        } else {
-          mergedUsers.push(inUser);
-        }
-      });
-    }
-
     // Merge orders if present
     let mergedOrders = Array.isArray(currentData.orders) ? [...currentData.orders] : [];
     if (Array.isArray(incomingData.orders)) {
@@ -65,11 +122,14 @@ export async function POST(request: Request) {
       });
     }
 
+    const siteSettings = {
+      ...(incomingData.siteSettings || currentData.siteSettings || {}),
+      crewInvitationCode: '',
+    };
     const payloadToSave = {
       app: 'orvaxia_company_official',
-      users: mergedUsers,
       orders: mergedOrders,
-      siteSettings: incomingData.siteSettings || currentData.siteSettings || { crewInvitationCode: 'ORVAXIA2026' },
+      siteSettings,
       lastSyncedAt: new Date().toISOString(),
     };
 

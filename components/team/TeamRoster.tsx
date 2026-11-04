@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { TeamMember } from '@/lib/types';
 import { Search, UserCheck, Shield, ChevronRight, Mail, Phone } from 'lucide-react';
@@ -81,9 +82,12 @@ export function TeamRoster() {
             <div>
               <div className="flex items-center gap-3">
                 <div className="relative h-12 w-12 rounded-full overflow-hidden border border-brand-lavender/50 bg-slate-100 shrink-0">
-                  <img
+                  <Image
                     src={member.avatarUrl}
                     alt={member.name}
+                    fill
+                    unoptimized
+                    sizes="48px"
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
@@ -134,10 +138,13 @@ export function TeamRoster() {
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-brand-slate shadow-sm shrink-0">
-                  <img
+                <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-brand-slate shadow-sm shrink-0">
+                  <Image
                     src={activeModalMember.avatarUrl}
                     alt={activeModalMember.name}
+                    fill
+                    unoptimized
+                    sizes="64px"
                     className="h-full w-full object-cover"
                   />
                 </div>

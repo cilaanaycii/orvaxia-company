@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { Product, ProductVariant } from '@/lib/types';
 import {
@@ -286,9 +287,12 @@ export default function MarketingDashboard() {
                 <div>
                   <div className="relative aspect-4/3 w-full bg-slate-100 overflow-hidden">
                     {variant.image ? (
-                      <img
+                      <Image
                         src={variant.image}
                         alt={variant.name}
+                        fill
+                        unoptimized
+                        sizes="(max-width: 768px) 100vw, 33vw"
                         className="w-full h-full object-cover"
                       />
                     ) : (

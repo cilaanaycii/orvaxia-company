@@ -66,21 +66,52 @@ orvaxia/
 
 ---
 
-## 🔑 Akun Uji Coba Cepat (Multi-Role Switcher)
+## 🔐 Supabase Auth & Crew Access
 
-Anda dapat langsung menguji setiap dashboard melalui menu dropdown **"Ganti Peran Divisi"** di bilah navigasi kiri dashboard, atau login menggunakan profil berikut:
+Internal login and crew profiles require Supabase Auth. Crew registration creates a
+`member` profile with `pending_approval` status. Only active CEO and Owner profiles
+can read or manage other profiles; these rules are enforced by Supabase Row Level
+Security (RLS), not just by dashboard navigation.
 
-| Peran (Role) | Akses Fitur Utama |
-| :--- | :--- |
-| **Owner / Super Admin** | Menyetujui pendaftaran anggota, mengubah role, konfigurasi WA/bank/ongkir. |
-| **CEO Executive** | Mengawasi laba bersih, omset terverifikasi, status PO, dan perkembangan divisi. |
-| **Produksi** | Antrean pesanan rajut, catatan kustomisasi ukuran botol, kontrol stok benang. |
-| **Sales** | Penugasan kurir antarkelas, input nomor resi ekspedisi, konfirmasi serah terima. |
-| **Marketing** | Pengaturan harga dasar, varian warna, foto produk, dan banner promo. |
-| **HRD** | Penilaian berkala 31 anggota dengan 7 indikator resmi & ekspor cetak PDF. |
-| **Finance** | Verifikasi pembayaran tunai/online & buku kas arus masuk/keluar. |
-| **Public Relations (PR)** | Pengumuman publik, pemeliharaan media sosial (@orvaxia.company), FAQ. |
-| **General Member** | Checklist tugas pribadi dengan tenggat waktu dan catatan bimbingan HRD. |
+1. Copy `.env.example` to `.env.local` and set your Supabase project URL, anon key,
+   and a long, private `CREW_INVITATION_CODE`. Never use the anon key as a secret.
+2. Apply the migrations in `supabase/migrations` to the Supabase project.
+3. Create the initial Owner and CEO identities through Supabase Auth. Then promote
+   them from the Supabase SQL editor using their verified email addresses:
+
+   ```sql
+   UPDATE public.profiles
+   SET role = 'owner', status = 'active', division = 'Executive',
+       position = 'Owner', updated_at = now()
+   WHERE lower(email) = lower('owner@example.com');
+
+   UPDATE public.profiles
+   SET role = 'ceo', status = 'active', division = 'Executive',
+       position = 'CEO', updated_at = now()
+   WHERE lower(email) = lower('ceo@example.com');
+   ```
+
+4. Restart the Next.js server after changing environment variables. Set the same
+   server-only invitation code in the production hosting environment.
+
+Legacy local/cloud crew accounts are not automatically trusted or imported.
+Recreate identities in Supabase Auth and assign privileged roles only through the
+Supabase SQL editor. Passwords from the legacy account store must not be reused;
+reset them in Supabase Auth.
+
+Regular crew can only open their assigned dashboard. Owner and CEO can access all
+dashboards. Profile visibility and management, plus crew performance-review access,
+are additionally enforced by database RLS.
+
+Crew tasks are stored in Supabase: crew can read and update only tasks assigned to
+their account, while CEO and Owner can access all tasks. Task ownership and allowed
+updates are enforced by database RLS and table privileges.
+
+The legacy cloud-sync endpoint also requires an active CEO or Owner session. Before
+deploying, remove the old cloud-bin contents and rotate its access if it may contain
+legacy account data. Some operational dashboard data is still stored in browser
+`localStorage`; those areas need database-backed RLS before they can be considered
+secure across devices or against someone with access to the same browser profile.
 
 ---
 

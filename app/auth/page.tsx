@@ -22,7 +22,7 @@ type AuthTab = 'customer' | 'login' | 'register_crew';
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login, registerStaff, loginAs, siteSettings } = useCompanyStore();
+  const { login, registerStaff } = useCompanyStore();
   const [authTab, setAuthTab] = useState<AuthTab>('customer');
 
   // Customer Form
@@ -47,7 +47,6 @@ export default function AuthPage() {
 
   const handleCustomerLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    loginAs('customer');
     router.push('/checkout');
   };
 
@@ -70,8 +69,12 @@ export default function AuthPage() {
 
       if (result.user.role === 'owner') {
         router.push('/dashboard/owner');
+      } else if (result.user.role === 'ceo') {
+        router.push('/dashboard/ceo');
+      } else if (result.user.status === 'pending_approval') {
+        router.push('/dashboard');
       } else {
-        router.push(`/dashboard/${result.user.role || 'production'}`);
+        router.push(`/dashboard/${result.user.role}`);
       }
     } catch {
       toast.error('Login gagal diproses. Periksa koneksi lalu coba lagi.');
@@ -80,41 +83,39 @@ export default function AuthPage() {
     }
   };
 
-  const handleStaffRegister = (e: React.FormEvent) => {
+  const handleStaffRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError(null);
-
-    const expectedCode = (siteSettings.crewInvitationCode || 'ORVAXIA2026').trim().toUpperCase();
     const inputCode = staffCode.trim().toUpperCase();
-
-    // Validasi ketat kode undangan: tidak boleh sembarang huruf/angka
-    if (!inputCode || inputCode !== expectedCode) {
-      const msg = 'Kode undangan salah! Pastikan kamu memasukkan kode resmi dari tim Orvaxia.';
-      setRegError(msg);
-      toast.error(msg);
-      return;
-    }
 
     if (!staffName || !staffEmail || !staffPhone || !staffPassword) {
       toast.error('Mohon lengkapi seluruh formulir pendaftaran');
       return;
     }
 
-    const result = registerStaff({
-      fullName: staffName,
-      email: staffEmail,
-      phone: staffPhone,
-      password: staffPassword,
-      invitationCode: inputCode,
-      division: staffDivision,
-      position: staffNotes ? `Calon ${staffDivision} (${staffNotes})` : `Calon ${staffDivision}`,
-    });
+    setIsSubmitting(true);
+    try {
+      const result = await registerStaff({
+        fullName: staffName,
+        email: staffEmail,
+        phone: staffPhone,
+        password: staffPassword,
+        invitationCode: inputCode,
+        division: staffDivision,
+        position: staffNotes ? `Calon ${staffDivision} (${staffNotes})` : `Calon ${staffDivision}`,
+      });
 
-    if (result.success) {
-      setRegisteredSuccess(true);
-      toast.success('Pendaftaran crew berhasil dikirim ke Owner!');
-    } else {
-      setRegError(result.message);
+      if (result.success) {
+        setRegisteredSuccess(true);
+      } else {
+        setRegError(result.message);
+      }
+    } catch {
+      const message = 'Pendaftaran gagal diproses. Periksa koneksi lalu coba lagi.';
+      setRegError(message);
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -421,6 +422,7 @@ export default function AuthPage() {
                     <input
                       type="password"
                       required
+                      minLength={6}
                       placeholder="Minimal 6 karakter"
                       value={staffPassword}
                       onChange={(e) => setStaffPassword(e.target.value)}
@@ -462,7 +464,8 @@ export default function AuthPage() {
 
                   <button
                     type="submit"
-                    className="w-full mt-2 rounded-2xl bg-brand-navy py-3.5 font-bold text-white shadow-md hover:bg-brand-slate transition-all"
+                    disabled={isSubmitting}
+                    className="w-full mt-2 rounded-2xl bg-brand-navy py-3.5 font-bold text-white shadow-md hover:bg-brand-slate transition-all disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Daftar Akun Crew
                   </button>

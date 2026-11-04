@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { TeamMember, PerformanceReview } from '@/lib/types';
 import {
@@ -47,14 +48,14 @@ export default function HRDDashboard() {
     ).toFixed(1)
   );
 
-  const handleSubmitEvaluation = (e: React.FormEvent) => {
+  const handleSubmitEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!evalNotes) {
       toast.error('Mohon isi catatan evaluasi');
       return;
     }
 
-    addPerformanceReview({
+    const saved = await addPerformanceReview({
       memberId: selectedMember.id,
       memberName: selectedMember.name,
       memberDivision: selectedMember.division,
@@ -76,6 +77,7 @@ export default function HRDDashboard() {
       developmentRecommendations: recommendations,
     });
 
+    if (!saved) return;
     setEvalNotes('');
     setRecommendations('');
     setActiveTab('history');
@@ -86,6 +88,17 @@ export default function HRDDashboard() {
     m.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.division.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (currentUser?.role !== 'owner' && currentUser?.role !== 'ceo') {
+    return (
+      <div className="rounded-3xl border border-amber-200 bg-white p-8 text-center shadow-sm">
+        <h2 className="font-serif text-2xl font-bold text-brand-navy">Akses evaluasi crew dibatasi</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Data dan evaluasi crew hanya dapat dikelola oleh CEO dan Owner.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -167,10 +180,13 @@ export default function HRDDashboard() {
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-brand-lavender transition-all space-y-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full overflow-hidden border border-brand-lavender/50 bg-slate-100 shrink-0">
-                    <img
+                  <div className="relative h-12 w-12 rounded-full overflow-hidden border border-brand-lavender/50 bg-slate-100 shrink-0">
+                    <Image
                       src={member.avatarUrl}
                       alt={member.name}
+                      fill
+                      unoptimized
+                      sizes="48px"
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -437,7 +453,7 @@ export default function HRDDashboard() {
             <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center space-y-2">
               <p className="text-sm font-semibold text-slate-700">Belum ada riwayat penilaian kinerja anggota</p>
               <p className="text-xs text-slate-400">
-                Divisi HRD dapat menilai 31 anggota ORVAXIA melalui tab "Form Penilaian 7 Indikator" di atas.
+                Divisi HRD dapat menilai 31 anggota ORVAXIA melalui tab &quot;Form Penilaian 7 Indikator&quot; di atas.
               </p>
             </div>
           ) : (

@@ -249,7 +249,7 @@ export default function ProductionDashboard() {
                         )}
                         {item?.customization?.customNotes && (
                           <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 font-medium">
-                            Catatan Pemesan: "{item.customization.customNotes}"
+                            Catatan Pemesan: &quot;{item.customization.customNotes}&quot;
                           </p>
                         )}
                       </div>
