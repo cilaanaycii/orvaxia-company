@@ -106,6 +106,11 @@ Regular crew can only open their assigned dashboard. Owner and CEO can access al
 dashboards. Profile visibility and management, plus crew performance-review access,
 are additionally enforced by database RLS.
 
+The crew directory and performance reviews are stored in Supabase. If the
+directory table is empty, the initial 31-member roster is seeded when an active
+Owner or CEO opens the app; evaluations are linked to the selected database
+member.
+
 Crew tasks are stored in Supabase: crew can read and update only tasks assigned to
 their account, while CEO and Owner can access all tasks. Task ownership and allowed
 updates are enforced by database RLS and table privileges.

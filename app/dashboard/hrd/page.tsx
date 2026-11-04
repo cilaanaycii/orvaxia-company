@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
-import { TeamMember, PerformanceReview } from '@/lib/types';
 import {
   Users2,
   Award,
@@ -21,7 +20,9 @@ export default function HRDDashboard() {
   const { teamMembers, performanceReviews, addPerformanceReview, currentUser } = useCompanyStore();
   const [activeTab, setActiveTab] = useState<'roster' | 'evaluate' | 'history'>('roster');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMember, setSelectedMember] = useState<TeamMember>(teamMembers[0]);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+  const selectedMember =
+    teamMembers.find((member) => member.id === selectedMemberId) || teamMembers[0] || null;
 
   // Form states for the 7 evaluation metrics
   const [period, setPeriod] = useState('November 2026');
@@ -50,6 +51,10 @@ export default function HRDDashboard() {
 
   const handleSubmitEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedMember) {
+      toast.error('Pilih anggota crew yang akan dievaluasi.');
+      return;
+    }
     if (!evalNotes) {
       toast.error('Mohon isi catatan evaluasi');
       return;
@@ -95,6 +100,17 @@ export default function HRDDashboard() {
         <h2 className="font-serif text-2xl font-bold text-brand-navy">Akses evaluasi crew dibatasi</h2>
         <p className="mt-2 text-sm text-slate-600">
           Data dan evaluasi crew hanya dapat dikelola oleh CEO dan Owner.
+        </p>
+      </div>
+    );
+  }
+
+  if (!selectedMember) {
+    return (
+      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <h2 className="font-serif text-2xl font-bold text-brand-navy">Data anggota crew belum tersedia</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Muat ulang halaman setelah database anggota crew berhasil disinkronkan.
         </p>
       </div>
     );
@@ -207,7 +223,7 @@ export default function HRDDashboard() {
                   </span>
                   <button
                     onClick={() => {
-                      setSelectedMember(member);
+                      setSelectedMemberId(member.id);
                       setActiveTab('evaluate');
                     }}
                     className="rounded-lg bg-brand-surface px-2.5 py-1 text-[11px] font-bold text-brand-slate hover:bg-brand-slate hover:text-white transition-colors"
@@ -254,10 +270,7 @@ export default function HRDDashboard() {
               <label className="font-semibold text-slate-800 block mb-1">Pilih Anggota</label>
               <select
                 value={selectedMember.id}
-                onChange={(e) => {
-                  const m = teamMembers.find((tm) => tm.id === e.target.value);
-                  if (m) setSelectedMember(m);
-                }}
+                onChange={(e) => setSelectedMemberId(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
               >
                 {teamMembers.map((tm) => (

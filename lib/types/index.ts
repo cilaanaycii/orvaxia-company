@@ -30,10 +30,10 @@ export interface TeamMember {
   id: string;
   name: string;
   position: string;
-  division: 'Executive' | 'Kesekretariatan' | 'Finance' | 'HRD' | 'Marketing' | 'Produksi' | 'Public Relations' | 'Sales';
+  division: string;
   bio: string;
   responsibilities: string[];
-  status: 'Aktif' | 'Cuti' | 'Non-aktif';
+  status: string;
   avatarUrl: string;
   phone?: string;
   email?: string;

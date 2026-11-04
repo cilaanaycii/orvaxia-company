@@ -71,6 +71,38 @@ interface CrewTaskRow {
   created_at: string;
 }
 
+interface TeamMemberRow {
+  id: string;
+  name: string;
+  position: string;
+  division: string;
+  bio: string;
+  responsibilities: unknown;
+  status: string;
+  avatar_url: string;
+  phone: string | null;
+  email: string | null;
+  sort_order: number;
+}
+
+function mapTeamMember(row: TeamMemberRow): TeamMember {
+  return {
+    id: row.id,
+    name: row.name,
+    position: row.position,
+    division: row.division,
+    bio: row.bio,
+    responsibilities: Array.isArray(row.responsibilities)
+      ? row.responsibilities.filter((item): item is string => typeof item === 'string')
+      : [],
+    status: row.status === 'Tidak Aktif' ? 'Non-aktif' : row.status,
+    avatarUrl: row.avatar_url,
+    phone: row.phone || undefined,
+    email: row.email || undefined,
+    sortOrder: row.sort_order,
+  };
+}
+
 function mapCrewTask(row: CrewTaskRow): TaskItem {
   return {
     id: row.id,
@@ -138,7 +170,7 @@ interface CompanyContextType {
   updateProduct: (id: string, prod: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   teamMembers: TeamMember[];
-  updateTeamMember: (id: string, member: Partial<TeamMember>) => void;
+  updateTeamMember: (id: string, member: Partial<TeamMember>) => Promise<void>;
   orders: Order[];
   createOrder: (orderData: Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'>) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus, changedBy: string, notes?: string) => void;
@@ -230,7 +262,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         }
         if (parsed.poPeriod) setPoPeriod(parsed.poPeriod);
         if (parsed.products) setProducts(parsed.products);
-        if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
         if (parsed.orders) setOrders(parsed.orders);
         if (parsed.inventory) setInventory(parsed.inventory);
         if (parsed.transactions) setTransactions(parsed.transactions);
@@ -259,12 +290,63 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
     let active = true;
     const authClient = supabase;
+    const loadTeamMembers = async (isExecutive: boolean) => {
+      const { data: rows, error } = await authClient
+        .from('team_members')
+        .select('id,name,position,division,bio,responsibilities,status,avatar_url,phone,email,sort_order')
+        .order('sort_order');
+
+      if (!active) return;
+      if (error) {
+        console.error('Team roster load failed', error);
+        toast.error('Database anggota crew gagal dimuat.');
+        return;
+      }
+
+      if (rows?.length) {
+        setTeamMembers(rows.map((row) => mapTeamMember(row as TeamMemberRow)));
+        return;
+      }
+
+      if (!isExecutive) {
+        setTeamMembers(INITIAL_TEAM_MEMBERS);
+        return;
+      }
+
+      const { data: seededRows, error: seedError } = await authClient
+        .from('team_members')
+        .insert(
+          INITIAL_TEAM_MEMBERS.map((member) => ({
+            name: member.name,
+            position: member.position,
+            division: member.division,
+            bio: member.bio,
+            responsibilities: member.responsibilities,
+            status: member.status,
+            avatar_url: member.avatarUrl,
+            phone: member.phone || null,
+            email: member.email || null,
+            sort_order: member.sortOrder,
+          }))
+        )
+        .select('id,name,position,division,bio,responsibilities,status,avatar_url,phone,email,sort_order');
+
+      if (!active) return;
+      if (seedError) {
+        console.error('Initial team roster seed failed', seedError);
+        toast.error('Data awal anggota crew gagal disimpan ke database.');
+        return;
+      }
+      setTeamMembers((seededRows || []).map((row) => mapTeamMember(row as TeamMemberRow)));
+    };
+
     const loadProfile = async (userId: string | null) => {
       if (!userId) {
         setCurrentUser(null);
         setUsers([]);
         setPerformanceReviews([]);
         setTasks([]);
+        await loadTeamMembers(false);
         return;
       }
 
@@ -312,6 +394,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const isExecutive =
         currentProfile.status === 'active' &&
         (currentProfile.role === 'owner' || currentProfile.role === 'ceo');
+      await loadTeamMembers(isExecutive);
+      if (!active) return;
       if (!isExecutive) {
         setPerformanceReviews([]);
       }
@@ -371,7 +455,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         siteSettings,
         poPeriod,
         products,
-        teamMembers,
         orders,
         inventory,
         transactions,
@@ -386,7 +469,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     siteSettings,
     poPeriod,
     products,
-    teamMembers,
     orders,
     inventory,
     transactions,
@@ -523,14 +605,48 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     toast.success('Produk dihapus');
   };
 
-  const updateTeamMember = (id: string, member: Partial<TeamMember>) => {
+  const updateTeamMember = async (id: string, member: Partial<TeamMember>) => {
     if (!hasExecutiveAccess) {
       toast.error('Hanya CEO dan Owner yang dapat mengubah data anggota crew.');
       return;
     }
-    setTeamMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...member } : m))
-    );
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return;
+    }
+
+    const currentMember = teamMembers.find((item) => item.id === id);
+    if (!currentMember) {
+      toast.error('Anggota crew tidak ditemukan.');
+      return;
+    }
+    const updatedMember = { ...currentMember, ...member };
+    const { data, error } = await supabase
+      .from('team_members')
+      .update({
+        name: updatedMember.name,
+        position: updatedMember.position,
+        division: updatedMember.division,
+        bio: updatedMember.bio,
+        responsibilities: updatedMember.responsibilities,
+        status: updatedMember.status,
+        avatar_url: updatedMember.avatarUrl,
+        phone: updatedMember.phone || null,
+        email: updatedMember.email || null,
+        sort_order: updatedMember.sortOrder,
+      })
+      .eq('id', id)
+      .select('id,name,position,division,bio,responsibilities,status,avatar_url,phone,email,sort_order')
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error('Team member update failed', error);
+      toast.error('Data anggota crew gagal diperbarui di database.');
+      return;
+    }
+
+    const savedMember = mapTeamMember(data as TeamMemberRow);
+    setTeamMembers((prev) => prev.map((item) => (item.id === id ? savedMember : item)));
     toast.success('Data anggota berhasil diperbarui');
   };
 
@@ -808,10 +924,21 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
 
+    const { data: member, error: memberError } = await supabase
+      .from('team_members')
+      .select('id')
+      .eq('id', review.memberId)
+      .maybeSingle();
+    if (memberError || !member) {
+      console.error('Performance review crew lookup failed', memberError);
+      toast.error('Anggota crew belum terhubung ke database. Muat ulang data crew dan coba lagi.');
+      return false;
+    }
+
     const { data, error } = await supabase
       .from('performance_reviews')
       .insert({
-        member_id: null,
+        member_id: member.id,
         member_name: review.memberName,
         member_division: review.memberDivision,
         reviewer_id: currentUser.id,
