@@ -15,6 +15,9 @@ import {
   Clock,
   Plus,
   Minus,
+  Edit2,
+  Check,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,11 +27,26 @@ export default function ProductionDashboard() {
     updateOrderStatus,
     inventory,
     updateInventory,
+    setInventoryStock,
+    addInventoryItem,
     currentUser,
   } = useCompanyStore();
 
-  const [activeTab, setActiveTab] = useState<'queue' | 'inventory' | 'qc'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'inventory'>('queue');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  // New inventory modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newMatName, setNewMatName] = useState('');
+  const [newMatCat, setNewMatCat] = useState<'Benang Rajut' | 'Aksesoris Gantungan' | 'Packaging & Label' | 'Lainnya'>('Benang Rajut');
+  const [newMatStock, setNewMatStock] = useState(0);
+  const [newMatUnit, setNewMatUnit] = useState('gulung (100g)');
+  const [newMatMin, setNewMatMin] = useState(10);
+  const [newMatCost, setNewMatCost] = useState(14000);
+
+  // Quick edit stock inline state
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingStockVal, setEditingStockVal] = useState<number>(0);
 
   // Filter production-relevant orders
   const productionOrders = orders.filter((o) => {
@@ -56,6 +74,32 @@ export default function ProductionDashboard() {
     );
   };
 
+  const handleSaveStock = (id: string) => {
+    setInventoryStock(id, editingStockVal, 'Input Mandiri Crew Produksi');
+    setEditingItemId(null);
+  };
+
+  const handleCreateMaterial = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMatName) {
+      toast.error('Mohon isi nama material');
+      return;
+    }
+
+    addInventoryItem({
+      name: newMatName,
+      category: newMatCat,
+      stock: Number(newMatStock),
+      unit: newMatUnit,
+      minThreshold: Number(newMatMin),
+      unitCost: Number(newMatCost),
+    });
+
+    setNewMatName('');
+    setNewMatStock(0);
+    setShowAddModal(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -71,7 +115,7 @@ export default function ProductionDashboard() {
             Production Management & Quality Control
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Daftar antrean pengerjaan rajut Rovella, catatan kustomisasi ukuran botol, kontrol stok benang, dan inspeksi QC.
+            Daftar antrean pengerjaan rajut Rovella, catatan kustomisasi botol, kontrol stok benang, dan inspeksi QC.
           </p>
         </div>
 
@@ -127,118 +171,244 @@ export default function ProductionDashboard() {
             ))}
           </div>
 
-          {/* Orders Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {productionOrders.map((order) => {
-              const item = order.items[0];
+          {/* Orders Cards or Empty State */}
+          {productionOrders.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-3">
+              <div className="h-14 w-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                <Scissors size={28} />
+              </div>
+              <h3 className="font-serif text-base font-bold text-slate-800">
+                Belum Ada Antrean Pesanan Rajutan
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Saat pembeli melakukan pre-order di etalase Rovella dan diverifikasi, pesanan rajutan akan otomatis masuk ke antrean kerja di sini.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {productionOrders.map((order) => {
+                const item = order.items[0];
 
-              return (
-                <div
-                  key={order.id}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-4 hover:border-brand-lavender transition-all"
-                >
-                  <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-xs text-brand-slate">
-                          {order.referenceCode}
-                        </span>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-700 uppercase">
-                          {order.deliveryType}
-                        </span>
+                return (
+                  <div
+                    key={order.id}
+                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-4 hover:border-brand-lavender transition-all"
+                  >
+                    <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs text-brand-slate">
+                            {order.referenceCode}
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-700 uppercase">
+                            {order.deliveryType}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 mt-1">
+                          {order.customerName} ({order.schoolName} - {order.className})
+                        </h4>
                       </div>
-                      <h4 className="font-bold text-sm text-slate-900 mt-1">
-                        {order.customerName} ({order.schoolName} - {order.className})
-                      </h4>
-                    </div>
 
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
-                        order.orderStatus === 'in_production'
-                          ? 'bg-blue-100 text-blue-800'
-                          : order.orderStatus === 'quality_check'
-                          ? 'bg-purple-100 text-purple-800'
-                          : order.orderStatus === 'packaging'
-                          ? 'bg-amber-100 text-amber-800'
-                          : order.orderStatus === 'ready_to_ship'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {order.orderStatus.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-
-                  {/* Product Specification & Customization Notes */}
-                  <div className="rounded-2xl bg-brand-surface/40 p-3.5 text-xs space-y-2 border border-brand-lavender/20">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-brand-navy">
-                        {item?.productName} ({item?.variantName})
-                      </span>
-                      <span className="font-bold text-slate-700">Jumlah: {item?.quantity} pcs</span>
-                    </div>
-
-                    <div className="text-[11px] text-slate-600 space-y-1">
-                      <p>
-                        <span className="font-semibold text-slate-800">Spesifikasi Botol:</span>{' '}
-                        {item?.sizeName}
-                      </p>
-                      {item?.customCharm && (
-                        <p>
-                          <span className="font-semibold text-slate-800">Aksesoris Charm:</span>{' '}
-                          {item.customCharm}
-                        </p>
-                      )}
-                      {item?.customization?.customNotes && (
-                        <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 font-medium">
-                          Catatan Pemesan: "{item.customization.customNotes}"
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Advance Workflow Button */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                    <span className="text-[10px] text-slate-400">
-                      Tercatat: {new Date(order.createdAt).toLocaleDateString('id-ID')}
-                    </span>
-
-                    {order.orderStatus !== 'ready_to_ship' && order.orderStatus !== 'shipped' && order.orderStatus !== 'completed' && (
-                      <button
-                        onClick={() => handleAdvanceStatus(order.id, order.orderStatus)}
-                        className="flex items-center gap-1.5 rounded-full bg-brand-slate px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-navy shadow-sm transition-all"
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
+                          order.orderStatus === 'in_production'
+                            ? 'bg-blue-100 text-blue-800'
+                            : order.orderStatus === 'quality_check'
+                            ? 'bg-purple-100 text-purple-800'
+                            : order.orderStatus === 'packaging'
+                            ? 'bg-amber-100 text-amber-800'
+                            : order.orderStatus === 'ready_to_ship'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
                       >
-                        {order.orderStatus === 'pending_confirmation' || order.orderStatus === 'payment_verified'
-                          ? 'Mulai Perajutan'
-                          : order.orderStatus === 'in_production'
-                          ? 'Kirim ke Quality Check'
-                          : order.orderStatus === 'quality_check'
-                          ? 'QC Lolos, Masuk Pengemasan'
-                          : 'Selesai Kemas (Siap Kirim)'}{' '}
-                        <ArrowRight size={12} />
-                      </button>
-                    )}
+                        {order.orderStatus.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+
+                    {/* Order Details & Customization Note */}
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between text-slate-700">
+                        <span className="font-semibold">Varian Warna:</span>
+                        <span className="font-bold text-brand-slate">{item?.variantName}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-700">
+                        <span className="font-semibold">Ukuran Tumbler:</span>
+                        <span>{item?.sizeName}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-700">
+                        <span className="font-semibold">Charm Tambahan:</span>
+                        <span>{item?.customCharm || 'Tidak ada'}</span>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 text-[11px] space-y-1">
+                        {item?.customization?.bottleSize && (
+                          <p className="text-slate-600">
+                            <strong>Ukuran Botol:</strong> {item.customization.bottleSize}
+                          </p>
+                        )}
+                        {item?.customization?.customNotes && (
+                          <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 font-medium">
+                            Catatan Pemesan: "{item.customization.customNotes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Advance Workflow Button */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <span className="text-[10px] text-slate-400">
+                        Tercatat: {new Date(order.createdAt).toLocaleDateString('id-ID')}
+                      </span>
+
+                      {order.orderStatus !== 'ready_to_ship' && order.orderStatus !== 'shipped' && order.orderStatus !== 'completed' && (
+                        <button
+                          onClick={() => handleAdvanceStatus(order.id, order.orderStatus)}
+                          className="flex items-center gap-1.5 rounded-full bg-brand-slate px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-navy shadow-sm transition-all"
+                        >
+                          {order.orderStatus === 'pending_confirmation' || order.orderStatus === 'payment_verified'
+                            ? 'Mulai Perajutan'
+                            : order.orderStatus === 'in_production'
+                            ? 'Kirim ke Quality Check'
+                            : order.orderStatus === 'quality_check'
+                            ? 'QC Lolos, Masuk Pengemasan'
+                            : 'Selesai Kemas (Siap Kirim)'}{' '}
+                          <ArrowRight size={12} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {/* ================= TAB 2: INVENTORY ================= */}
       {activeTab === 'inventory' && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <h3 className="font-serif text-lg font-bold text-brand-navy">
                 Inventaris Bahan Baku & Aksesoris Rajutan
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Pastikan ketersediaan benang Milk Cotton dan kemasan memenuhi target pre-order.
+                Stok awal telah di-reset ke 0. Crew produksi dapat mengubah angka stok langsung atau menambah jenis bahan baru.
               </p>
             </div>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 rounded-full bg-brand-slate px-4 py-2 text-xs font-bold text-white hover:bg-brand-navy shadow-xs transition-all"
+            >
+              <Plus size={14} />
+              <span>Tambah Material Baru</span>
+            </button>
           </div>
+
+          {/* Add Material Modal / Form */}
+          {showAddModal && (
+            <form
+              onSubmit={handleCreateMaterial}
+              className="rounded-2xl border-2 border-brand-slate bg-brand-surface/40 p-4 space-y-3 text-xs"
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h4 className="font-bold text-brand-navy">Tambah Data Material / Benang Baru</h4>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="text-slate-400 hover:text-slate-700 font-bold"
+                >
+                  ✕ Batal
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Nama Material *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Benang Milk Cotton Kuning"
+                    value={newMatName}
+                    onChange={(e) => setNewMatName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Kategori</label>
+                  <select
+                    value={newMatCat}
+                    onChange={(e) => setNewMatCat(e.target.value as any)}
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                  >
+                    <option value="Benang Rajut">Benang Rajut</option>
+                    <option value="Aksesoris Gantungan">Aksesoris Gantungan / Charm</option>
+                    <option value="Packaging & Label">Packaging & Label</option>
+                    <option value="Lainnya">Lainnya / Perlengkapan</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Stok Awal</label>
+                  <input
+                    type="number"
+                    value={newMatStock}
+                    onChange={(e) => setNewMatStock(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Satuan Ukuran</label>
+                  <input
+                    type="text"
+                    value={newMatUnit}
+                    onChange={(e) => setNewMatUnit(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Batas Minimum Peringatan</label>
+                  <input
+                    type="number"
+                    value={newMatMin}
+                    onChange={(e) => setNewMatMin(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Estimasi Biaya Satuan (Rp)</label>
+                  <input
+                    type="number"
+                    value={newMatCost}
+                    onChange={(e) => setNewMatCost(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="rounded-xl border border-slate-200 px-4 py-1.5 font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-brand-slate px-5 py-1.5 font-bold text-white hover:bg-brand-navy shadow-sm"
+                >
+                  Simpan Material
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -249,48 +419,92 @@ export default function ProductionDashboard() {
                   <th className="pb-3 font-semibold">Sisa Stok</th>
                   <th className="pb-3 font-semibold">Batas Minimum</th>
                   <th className="pb-3 font-semibold">Biaya Satuan</th>
-                  <th className="pb-3 font-semibold text-right">Kelola Stok</th>
+                  <th className="pb-3 font-semibold text-right">Kelola & Edit Angka</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {inventory.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="py-3 font-bold text-slate-900">{item.name}</td>
-                    <td className="py-3 text-slate-600">{item.category}</td>
-                    <td className="py-3 font-bold">
-                      <span
-                        className={
-                          item.stock <= item.minThreshold
-                            ? 'text-rose-600 flex items-center gap-1'
-                            : 'text-slate-900'
-                        }
-                      >
-                        {item.stock} {item.unit}
-                        {item.stock <= item.minThreshold && (
-                          <span title="Stok Hampir Habis!"><ShieldAlert size={12} /></span>
+                {inventory.map((item) => {
+                  const isEditing = editingItemId === item.id;
+
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50">
+                      <td className="py-3 font-bold text-slate-900">{item.name}</td>
+                      <td className="py-3 text-slate-600">{item.category}</td>
+                      <td className="py-3 font-bold">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              value={editingStockVal}
+                              onChange={(e) => setEditingStockVal(Number(e.target.value))}
+                              className="w-20 rounded-lg border border-brand-slate p-1 text-xs font-bold"
+                            />
+                            <span className="text-[10px] text-slate-500">{item.unit}</span>
+                            <button
+                              onClick={() => handleSaveStock(item.id)}
+                              className="rounded bg-emerald-600 p-1 text-white hover:bg-emerald-700"
+                              title="Simpan"
+                            >
+                              <Check size={12} />
+                            </button>
+                            <button
+                              onClick={() => setEditingItemId(null)}
+                              className="rounded bg-slate-200 p-1 text-slate-700 hover:bg-slate-300"
+                              title="Batal"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className={
+                              item.stock <= item.minThreshold
+                                ? 'text-rose-600 flex items-center gap-1'
+                                : 'text-slate-900'
+                            }
+                          >
+                            {item.stock} {item.unit}
+                            {item.stock <= item.minThreshold && (
+                              <span title="Stok Minimum!"><ShieldAlert size={12} /></span>
+                            )}
+                          </span>
                         )}
-                      </span>
-                    </td>
-                    <td className="py-3 text-slate-500">{item.minThreshold} {item.unit}</td>
-                    <td className="py-3 text-slate-700">Rp{item.unitCost.toLocaleString('id-ID')}</td>
-                    <td className="py-3 text-right space-x-1">
-                      <button
-                        onClick={() => updateInventory(item.id, item.stock - 1, 'Penggunaan Produksi')}
-                        className="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
-                        title="Gunakan 1"
-                      >
-                        <Minus size={12} />
-                      </button>
-                      <button
-                        onClick={() => updateInventory(item.id, item.stock + 5, 'Pengadaan Stok Masuk')}
-                        className="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
-                        title="Tambah 5"
-                      >
-                        <Plus size={12} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3 text-slate-500">{item.minThreshold} {item.unit}</td>
+                      <td className="py-3 text-slate-700">Rp{item.unitCost.toLocaleString('id-ID')}</td>
+                      <td className="py-3 text-right space-x-1">
+                        {!isEditing && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingItemId(item.id);
+                                setEditingStockVal(item.stock);
+                              }}
+                              className="rounded-lg border border-slate-200 px-2 py-1 text-slate-700 hover:bg-slate-100 font-semibold"
+                              title="Ubah Angka Stok"
+                            >
+                              Edit Angka
+                            </button>
+                            <button
+                              onClick={() => updateInventory(item.id, item.stock - 1, 'Penggunaan Produksi')}
+                              className="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
+                              title="Gunakan 1"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <button
+                              onClick={() => updateInventory(item.id, item.stock + 5, 'Pengadaan Stok Masuk')}
+                              className="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
+                              title="Tambah 5"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

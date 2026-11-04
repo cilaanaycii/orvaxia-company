@@ -93,21 +93,27 @@ interface CompanyContextType {
   updateCartQuantity: (itemId: string, qty: number) => void;
   clearCart: () => void;
   // Auth Helpers
+  login: (email: string, password?: string) => { success: boolean; message: string; user?: UserProfile };
   loginAs: (role: UserRole) => void;
-  registerStaff: (data: { fullName: string; email: string; phone: string; division: string; position: string }) => void;
+  registerStaff: (data: { fullName: string; email: string; phone: string; password?: string; invitationCode?: string; division?: string; position?: string }) => { success: boolean; message: string; user?: UserProfile };
   approveStaff: (userId: string, role: UserRole, division: string, position: string) => void;
+  changeUserRole: (userId: string, role: UserRole, division: string, position: string) => void;
   rejectStaff: (userId: string) => void;
+  deleteUser: (userId: string) => void;
+  resetAllDataToZero: () => void;
+  addInventoryItem: (item: Omit<InventoryItem, 'id' | 'lastUpdated'>) => void;
+  setInventoryStock: (id: string, exactStock: number, reason: string) => void;
   logout: () => void;
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'orvaxia_company_db_v1';
-const CART_STORAGE_KEY = 'orvaxia_cart_v1';
+const STORAGE_KEY = 'orvaxia_company_db_v2';
+const CART_STORAGE_KEY = 'orvaxia_cart_v2';
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(INITIAL_USERS[0]); // Default to Owner for full inspection
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
   const [poPeriod, setPoPeriod] = useState<POPeriod>(INITIAL_PO_PERIOD);
@@ -126,11 +132,41 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   // Load from LocalStorage
   useEffect(() => {
     try {
+      // Purge old v1 keys if present
+      try {
+        localStorage.removeItem('orvaxia_company_db_v1');
+        localStorage.removeItem('orvaxia_cart_v1');
+      } catch {}
+
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.users) setUsers(parsed.users);
-        if (parsed.siteSettings) setSiteSettings(parsed.siteSettings);
+        let loadedUsers: UserProfile[] = parsed.users || INITIAL_USERS;
+        const ownerExists = loadedUsers.some(
+          (u) => u.email.toLowerCase() === 'rnefviie@gmail.com'
+        );
+        if (!ownerExists) {
+          loadedUsers = [INITIAL_USERS[0], ...loadedUsers];
+        } else {
+          loadedUsers = loadedUsers.map((u) => {
+            if (u.email.toLowerCase() === 'rnefviie@gmail.com') {
+              return {
+                ...u,
+                role: 'owner' as const,
+                status: 'active' as const,
+                password: 'orvaxiajaya',
+              };
+            }
+            return u;
+          });
+        }
+        setUsers(loadedUsers);
+        if (parsed.siteSettings) {
+          setSiteSettings({
+            ...parsed.siteSettings,
+            crewInvitationCode: parsed.siteSettings.crewInvitationCode || 'ORVAXIA2026',
+          });
+        }
         if (parsed.poPeriod) setPoPeriod(parsed.poPeriod);
         if (parsed.products) setProducts(parsed.products);
         if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
@@ -140,7 +176,16 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         if (parsed.performanceReviews) setPerformanceReviews(parsed.performanceReviews);
         if (parsed.tasks) setTasks(parsed.tasks);
         if (parsed.announcements) setAnnouncements(parsed.announcements);
-        if (parsed.currentUser) setCurrentUser(parsed.currentUser);
+        if (parsed.currentUser) {
+          const matched = loadedUsers.find(
+            (u) =>
+              u.id === parsed.currentUser.id ||
+              u.email.toLowerCase() === parsed.currentUser.email.toLowerCase()
+          );
+          setCurrentUser(matched || parsed.currentUser);
+        }
+      } else {
+        setUsers(INITIAL_USERS);
       }
       const savedCart = localStorage.getItem(CART_STORAGE_KEY);
       if (savedCart) {
@@ -538,6 +583,49 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     toast.success('Pengumuman dihapus');
   };
 
+  const login = (
+    email: string,
+    password?: string
+  ): { success: boolean; message: string; user?: UserProfile } => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    // Check if Owner login:
+    if (cleanEmail === 'rnefviie@gmail.com') {
+      if (cleanPassword !== 'orvaxiajaya') {
+        toast.error('Kata sandi Owner tidak sesuai');
+        return { success: false, message: 'Kata sandi Owner salah!' };
+      }
+      let ownerUser = users.find((u) => u.email.toLowerCase() === 'rnefviie@gmail.com');
+      if (!ownerUser) {
+        ownerUser = INITIAL_USERS[0];
+        setUsers((prev) => [ownerUser!, ...prev.filter((u) => u.email.toLowerCase() !== 'rnefviie@gmail.com')]);
+      }
+      setCurrentUser(ownerUser);
+      toast.success('Selamat datang kembali, Pemegang Kendali Website (Owner)!');
+      return { success: true, message: 'Berhasil masuk sebagai Owner', user: ownerUser };
+    }
+
+    // Check crew users
+    const foundUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (!foundUser) {
+      toast.error('Email ini belum terdaftar sebagai Crew');
+      return {
+        success: false,
+        message: 'Email pribadi belum terdaftar. Silakan pilih tab "Daftar Akun Crew" untuk mendaftar.',
+      };
+    }
+
+    if (foundUser.password && cleanPassword && foundUser.password !== cleanPassword) {
+      toast.error('Kata sandi tidak sesuai');
+      return { success: false, message: 'Kata sandi tidak sesuai. Silakan periksa kembali.' };
+    }
+
+    setCurrentUser(foundUser);
+    toast.success(`Selamat datang, ${foundUser.fullName}!`);
+    return { success: true, message: 'Berhasil masuk', user: foundUser };
+  };
+
   const loginAs = (role: UserRole) => {
     const matched = users.find((u) => u.role === role && u.status === 'active');
     if (matched) {
@@ -566,23 +654,89 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     fullName: string;
     email: string;
     phone: string;
-    division: string;
-    position: string;
-  }) => {
+    password?: string;
+    invitationCode?: string;
+    division?: string;
+    position?: string;
+  }): { success: boolean; message: string; user?: UserProfile } => {
+    // 1. Verify Secret Invitation Code from Owner
+    const expectedCode = (siteSettings.crewInvitationCode || 'ORVAXIA2026').trim().toUpperCase();
+    const providedCode = (data.invitationCode || '').trim().toUpperCase();
+
+    if (!providedCode || providedCode !== expectedCode) {
+      toast.error('Kode khusus Owner salah! Hanya kru resmi dengan kode yang dapat mendaftar.');
+      return {
+        success: false,
+        message: 'Kode khusus tidak valid. Kode pendaftaran crew hanya diberikan oleh Owner.',
+      };
+    }
+
+    const cleanEmail = data.email.trim().toLowerCase();
+
+    if (cleanEmail === 'rnefviie@gmail.com') {
+      toast.error('Email rnefviie@gmail.com adalah akun Owner. Silakan login dengan kata sandi orvaxiajaya.');
+      return {
+        success: false,
+        message: 'Email ini milik akun Owner.',
+      };
+    }
+
+    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      toast.error('Email ini sudah terdaftar. Silakan masuk menggunakan kata sandi Anda.');
+      return {
+        success: false,
+        message: 'Email ini sudah terdaftar.',
+      };
+    }
+
     const newProfile: UserProfile = {
       id: `usr-reg-${Date.now()}`,
-      email: data.email,
-      fullName: data.fullName,
-      phone: data.phone,
+      email: data.email.trim(),
+      password: data.password || 'orvaxia123',
+      fullName: data.fullName.trim(),
+      phone: data.phone.trim(),
       role: 'member',
       status: 'pending_approval',
-      division: data.division,
-      position: data.position,
+      division: data.division || 'Menunggu Arahan',
+      position: data.position || 'Crew Baru (Pending)',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
     setUsers((prev) => [...prev, newProfile]);
-    toast.success('Pendaftaran staf berhasil diajukan! Menunggu persetujuan Owner.');
+    setCurrentUser(newProfile);
+    toast.success('Pendaftaran staf berhasil diajukan! Menunggu arahan & penugasan dari Owner.');
+    return { success: true, message: 'Pendaftaran berhasil', user: newProfile };
+  };
+
+  const changeUserRole = (
+    userId: string,
+    role: UserRole,
+    division: string,
+    position: string
+  ) => {
+    const now = new Date().toISOString();
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated: UserProfile = {
+            ...u,
+            status: 'active',
+            role,
+            division,
+            position,
+            updatedAt: now,
+          };
+          if (currentUser?.id === userId) {
+            setCurrentUser(updated);
+          }
+          return updated;
+        }
+        return u;
+      })
+    );
+    toast.success(`Penugasan berhasil: ditetapkan sebagai ${position} (${division})`);
   };
 
   const approveStaff = (
@@ -591,21 +745,62 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     division: string,
     position: string
   ) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
+    changeUserRole(userId, role, division, position);
+  };
+
+  const deleteUser = (userId: string) => {
+    const target = users.find((u) => u.id === userId);
+    if (target?.email.toLowerCase() === 'rnefviie@gmail.com') {
+      toast.error('Akun Owner utama tidak dapat dihapus!');
+      return;
+    }
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    toast.success('Akun crew berhasil dihapus');
+  };
+
+  const resetAllDataToZero = () => {
+    setOrders([]);
+    setTransactions([]);
+    setPerformanceReviews([]);
+    setTasks([]);
+    setPoPeriod((prev) => ({
+      ...prev,
+      orderedCount: 0,
+      quota: 0,
+    }));
+    setInventory((prev) =>
+      prev.map((it) => ({
+        ...it,
+        stock: 0,
+        lastUpdated: new Date().toISOString().slice(0, 10),
+      }))
+    );
+    toast.success('Semua data operasional berhasil di-reset menjadi 0!');
+  };
+
+  const setInventoryStock = (id: string, exactStock: number, reason: string) => {
+    setInventory((prev) =>
+      prev.map((it) =>
+        it.id === id
           ? {
-              ...u,
-              status: 'active' as const,
-              role,
-              division,
-              position,
-              updatedAt: new Date().toISOString(),
+              ...it,
+              stock: Math.max(0, exactStock),
+              lastUpdated: new Date().toISOString().slice(0, 10),
             }
-          : u
+          : it
       )
     );
-    toast.success('Akun anggota disetujui dan role resmi telah ditetapkan');
+    toast.success(`Stok material diperbarui menjadi ${exactStock} (${reason})`);
+  };
+
+  const addInventoryItem = (item: Omit<InventoryItem, 'id' | 'lastUpdated'>) => {
+    const newItem: InventoryItem = {
+      ...item,
+      id: `inv-${Date.now()}`,
+      lastUpdated: new Date().toISOString().slice(0, 10),
+    };
+    setInventory((prev) => [...prev, newItem]);
+    toast.success(`Material "${item.name}" berhasil ditambahkan`);
   };
 
   const rejectStaff = (userId: string) => {
@@ -669,9 +864,15 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         removeFromCart,
         updateCartQuantity,
         clearCart,
+        login,
         loginAs,
         registerStaff,
         approveStaff,
+        changeUserRole,
+        deleteUser,
+        resetAllDataToZero,
+        addInventoryItem,
+        setInventoryStock,
         rejectStaff,
         logout,
       }}

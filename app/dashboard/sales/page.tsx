@@ -74,8 +74,21 @@ export default function SalesDashboard() {
           Daftar Pesanan & Status Pengiriman ({orders.length})
         </h3>
 
-        <div className="space-y-4">
-          {orders.map((order) => {
+        {orders.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-3">
+            <div className="h-14 w-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+              <Truck size={28} />
+            </div>
+            <h3 className="font-serif text-base font-bold text-slate-800">
+              Belum Ada Pesanan yang Perlu Didistribusikan
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Setelah pelanggan melakukan pre-order dan pesanan selesai diproduksi, tim Sales dapat menugaskan kurir antarkelas SMKN 2 Buduran atau menginput nomor resi ekspedisi di sini.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => {
             const isReady = order.orderStatus === 'ready_to_ship';
             const isShipped = order.orderStatus === 'shipped';
             const isCompleted = order.orderStatus === 'completed';
@@ -199,6 +212,7 @@ export default function SalesDashboard() {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

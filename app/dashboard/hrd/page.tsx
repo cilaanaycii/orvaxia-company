@@ -433,12 +433,20 @@ export default function HRDDashboard() {
             </button>
           </div>
 
-          <div className="space-y-4">
-            {performanceReviews.map((rev) => (
-              <div
-                key={rev.id}
-                className="rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-brand-lavender transition-all"
-              >
+          {performanceReviews.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center space-y-2">
+              <p className="text-sm font-semibold text-slate-700">Belum ada riwayat penilaian kinerja anggota</p>
+              <p className="text-xs text-slate-400">
+                Divisi HRD dapat menilai 31 anggota ORVAXIA melalui tab "Form Penilaian 7 Indikator" di atas.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {performanceReviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-brand-lavender transition-all"
+                >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                   <div>
                     <h4 className="font-bold text-sm text-slate-900">{rev.memberName}</h4>
@@ -494,6 +502,7 @@ export default function HRDDashboard() {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
     </div>

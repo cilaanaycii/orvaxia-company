@@ -242,42 +242,51 @@ export default function FinanceDashboard() {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
-                  <th className="pb-3 font-semibold">Kode Transaksi</th>
-                  <th className="pb-3 font-semibold">Tanggal</th>
-                  <th className="pb-3 font-semibold">Kategori</th>
-                  <th className="pb-3 font-semibold">Keterangan</th>
-                  <th className="pb-3 font-semibold">Metode</th>
-                  <th className="pb-3 font-semibold text-right">Nominal</th>
-                  <th className="pb-3 font-semibold text-right">Pencatat</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {transactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50">
-                    <td className="py-3 font-mono font-bold text-slate-900">{t.referenceCode}</td>
-                    <td className="py-3 text-slate-500">{t.date}</td>
-                    <td className="py-3">
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-                        {t.category}
-                      </span>
-                    </td>
-                    <td className="py-3 text-slate-700 max-w-xs truncate">{t.description}</td>
-                    <td className="py-3 text-slate-500">{t.paymentMethod}</td>
-                    <td className={`py-3 text-right font-bold ${
-                      t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
-                    }`}>
-                      {t.type === 'income' ? '+' : '-'}Rp{t.amount.toLocaleString('id-ID')}
-                    </td>
-                    <td className="py-3 text-right text-slate-400 text-[11px]">{t.recordedBy}</td>
+          {transactions.length === 0 ? (
+            <div className="p-8 text-center border border-dashed rounded-2xl">
+              <p className="text-sm font-semibold text-slate-700">Buku kas saat ini bersih (Rp0)</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Gunakan tab "+ Catat Pengeluaran/Pemasukan" untuk mencatat belanja benang, aksesoris, atau pengeluaran operasional secara mandiri.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
+                    <th className="pb-3 font-semibold">Kode Transaksi</th>
+                    <th className="pb-3 font-semibold">Tanggal</th>
+                    <th className="pb-3 font-semibold">Kategori</th>
+                    <th className="pb-3 font-semibold">Keterangan</th>
+                    <th className="pb-3 font-semibold">Metode</th>
+                    <th className="pb-3 font-semibold text-right">Nominal</th>
+                    <th className="pb-3 font-semibold text-right">Pencatat</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {transactions.map((t) => (
+                    <tr key={t.id} className="hover:bg-slate-50">
+                      <td className="py-3 font-mono font-bold text-slate-900">{t.referenceCode}</td>
+                      <td className="py-3 text-slate-500">{t.date}</td>
+                      <td className="py-3">
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                          {t.category}
+                        </span>
+                      </td>
+                      <td className="py-3 text-slate-700 max-w-xs truncate">{t.description}</td>
+                      <td className="py-3 text-slate-500">{t.paymentMethod}</td>
+                      <td className={`py-3 text-right font-bold ${
+                        t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
+                      }`}>
+                        {t.type === 'income' ? '+' : '-'}Rp{t.amount.toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3 text-right text-slate-400 text-[11px]">{t.recordedBy}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

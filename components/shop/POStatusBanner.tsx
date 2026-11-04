@@ -38,7 +38,10 @@ export function POStatusBanner() {
     return () => clearInterval(interval);
   }, [poPeriod.endsAt]);
 
-  const percentage = Math.min(100, Math.round((poPeriod.orderedCount / poPeriod.quota) * 100));
+  const percentage =
+    poPeriod.quota > 0
+      ? Math.min(100, Math.round((poPeriod.orderedCount / poPeriod.quota) * 100))
+      : 0;
 
   return (
     <div className="w-full rounded-2xl border border-brand-lavender/40 bg-gradient-to-r from-brand-surface via-white to-brand-cream p-5 shadow-sm">

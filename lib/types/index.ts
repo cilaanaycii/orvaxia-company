@@ -15,6 +15,7 @@ export type AccountStatus = 'pending_approval' | 'active' | 'suspended' | 'inact
 export interface UserProfile {
   id: string;
   email: string;
+  password?: string;
   fullName: string;
   phone: string;
   role: UserRole;
@@ -264,4 +265,5 @@ export interface SiteSettings {
     range6To7Km: number; // admin configurable, e.g. 4000
     rangeAbove7Km: number; // 5000
   };
+  crewInvitationCode: string;
 }

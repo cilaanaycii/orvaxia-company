@@ -40,7 +40,7 @@ export default function CEODashboard() {
           performanceReviews.reduce((acc, r) => acc + r.averageScore, 0) /
           performanceReviews.length
         ).toFixed(1)
-      : '92.5';
+      : '0';
 
   return (
     <div className="space-y-6">
