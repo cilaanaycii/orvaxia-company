@@ -349,7 +349,7 @@ export default function AuthPage() {
 
                   {/* Kode Undangan */}
                   <div className="rounded-2xl border-2 border-brand-slate/40 bg-brand-surface/40 p-3.5 space-y-1.5">
-                    <label className="font-bold text-brand-navy block text-xs flex items-center gap-1.5">
+                    <label className="font-bold text-brand-navy text-xs flex items-center gap-1.5">
                       <KeyRound size={14} className="text-brand-slate" />
                       <span>Kode Undangan *</span>
                     </label>
