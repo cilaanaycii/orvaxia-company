@@ -93,7 +93,7 @@ interface CompanyContextType {
   updateCartQuantity: (itemId: string, qty: number) => void;
   clearCart: () => void;
   // Auth Helpers
-  login: (email: string, password?: string) => { success: boolean; message: string; user?: UserProfile };
+  login: (email: string, password?: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
   loginAs: (role: UserRole) => void;
   registerStaff: (data: { fullName: string; email: string; phone: string; password?: string; invitationCode?: string; division?: string; position?: string }) => { success: boolean; message: string; user?: UserProfile };
   approveStaff: (userId: string, role: UserRole, division: string, position: string) => void;
@@ -630,10 +630,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     toast.success('Pengumuman dihapus');
   };
 
-  const login = (
+  const login = async (
     email: string,
     password?: string
-  ): { success: boolean; message: string; user?: UserProfile } => {
+  ): Promise<{ success: boolean; message: string; user?: UserProfile }> => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = (password || '').trim();
 
@@ -649,17 +649,37 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         setUsers((prev) => [ownerUser!, ...prev.filter((u) => u.email.toLowerCase() !== 'rnefviie@gmail.com')]);
       }
       setCurrentUser(ownerUser);
-      toast.success('Selamat datang kembali, Pemegang Kendali Website (Owner)!');
+      toast.success('Selamat datang kembali, Owner!');
       return { success: true, message: 'Berhasil masuk sebagai Owner', user: ownerUser };
     }
 
-    // Check crew users
-    const foundUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    // 1. Cek di memori lokal
+    let foundUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    // 2. Jika belum ada di lokal, periksa langsung ke Cloud Database!
+    if (!foundUser) {
+      try {
+        const res = await fetch('/api/cloud-sync', { cache: 'no-store' });
+        if (res.ok) {
+          const cloudData = await res.json();
+          if (Array.isArray(cloudData.users)) {
+            const matchedFromCloud = cloudData.users.find(
+              (u: any) => u.email && u.email.toLowerCase() === cleanEmail
+            );
+            if (matchedFromCloud) {
+              foundUser = matchedFromCloud;
+              setUsers((prev) => [...prev.filter((u) => u.id !== matchedFromCloud.id), matchedFromCloud]);
+            }
+          }
+        }
+      } catch {}
+    }
+
     if (!foundUser) {
       toast.error('Email ini belum terdaftar sebagai Crew');
       return {
         success: false,
-        message: 'Email pribadi belum terdaftar. Silakan pilih tab "Daftar Akun Crew" untuk mendaftar.',
+        message: 'Email pribadi belum terdaftar. Silakan daftar di tab "Daftar Crew".',
       };
     }
 
@@ -737,16 +757,25 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    const div = data.division || 'Produksi';
+    let assignedRole: UserRole = 'production';
+    if (div === 'Sales') assignedRole = 'sales';
+    else if (div === 'Finance') assignedRole = 'finance';
+    else if (div === 'Marketing') assignedRole = 'marketing';
+    else if (div === 'HRD') assignedRole = 'hrd';
+    else if (div === 'Public Relations') assignedRole = 'pr';
+    else if (div === 'Kesekretariatan') assignedRole = 'member';
+
     const newProfile: UserProfile = {
       id: `usr-reg-${Date.now()}`,
       email: data.email.trim(),
       password: data.password || 'orvaxia123',
       fullName: data.fullName.trim(),
       phone: data.phone.trim(),
-      role: 'member',
-      status: 'pending_approval',
-      division: data.division || 'Menunggu Arahan',
-      position: data.position || 'Crew Baru (Pending)',
+      role: assignedRole,
+      status: 'active',
+      division: div,
+      position: data.position || `Staff ${div}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

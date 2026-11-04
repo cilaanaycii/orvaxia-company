@@ -51,7 +51,7 @@ export default function AuthPage() {
     router.push('/checkout');
   };
 
-  const handleInternalLogin = (e: React.FormEvent) => {
+  const handleInternalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
       toast.error('Mohon isi email dan kata sandi');
@@ -59,16 +59,14 @@ export default function AuthPage() {
     }
 
     setIsSubmitting(true);
-    const result = login(loginEmail, loginPassword);
+    const result = await login(loginEmail, loginPassword);
     setIsSubmitting(false);
 
     if (result.success && result.user) {
       if (result.user.role === 'owner') {
         router.push('/dashboard/owner');
-      } else if (result.user.status === 'pending_approval') {
-        router.push('/dashboard');
       } else {
-        router.push(`/dashboard/${result.user.role}`);
+        router.push(`/dashboard/${result.user.role || 'production'}`);
       }
     }
   };
@@ -221,10 +219,6 @@ export default function AuthPage() {
                     className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
                   />
                 </div>
-              </div>
-
-              <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-[11px] text-emerald-800 leading-relaxed">
-                ✨ <strong>Pre-Order Gratis!</strong> Produk tas rajut Rovella tidak dipungut biaya produk. Kamu hanya membayar ongkos kirim saat pesanan dikirim.
               </div>
 
               <button

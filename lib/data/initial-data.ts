@@ -140,7 +140,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       'Desain kelopak bunga handmade',
       'Pengait premium anti karat',
     ],
-    basePrice: 15000,
+    basePrice: 0,
     category: 'Aksesoris Rajut',
     status: 'published',
     isFeatured: false,
@@ -168,7 +168,7 @@ export const INITIAL_PRODUCTS: Product[] = [
         priceAdjustment: 0,
       },
     ],
-    customCharms: ['Tanpa Charm Tambahan (Rp0)'],
+    customCharms: ['Tanpa Charm Tambahan'],
   },
 ];
 

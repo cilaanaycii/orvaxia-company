@@ -144,7 +144,7 @@ export default function HomePage() {
                 <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs">
                   <div>
                     <span className="text-[10px] text-slate-400 block">Harga Produk:</span>
-                    <span className="font-serif font-bold text-sm text-emerald-700">GRATIS (Rp0)</span>
+                    <span className="font-serif font-bold text-sm text-brand-navy">Gratis (Hanya Ongkir)</span>
                   </div>
                   <a
                     href="#shop"

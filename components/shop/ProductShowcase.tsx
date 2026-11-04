@@ -99,21 +99,15 @@ export function ProductShowcase() {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-500">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Estimasi pengerjaan rajut: <strong>5–7 hari kerja</strong></span>
-          </div>
+          <p className="mt-2 text-center text-xs text-slate-500">
+            Estimasi pengerjaan rajut: <strong>5–7 hari kerja</strong>
+          </p>
         </div>
 
         {/* Product Details & Form */}
         <div className="lg:col-span-7 flex flex-col justify-between space-y-5">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="badge-brand">Produk Unggulan Resmi</span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                <ShieldCheck size={12} /> 100% Buatan Tangan
-              </span>
-            </div>
+            <span className="badge-brand">Produk Unggulan Resmi</span>
 
             <h3 className="font-serif text-3xl font-bold text-brand-navy tracking-tight mt-2">
               {rovella.name}
@@ -126,13 +120,13 @@ export function ProductShowcase() {
               {rovella.description}
             </p>
 
-            {/* Price Display: GRATIS! */}
-            <div className="mt-4 flex items-baseline gap-3 p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200">
-              <span className="font-serif text-3xl font-extrabold text-emerald-700">
-                GRATIS (Rp0)
+            {/* Price Display Clean */}
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy">
+                Gratis
               </span>
-              <span className="text-xs text-emerald-800 font-medium">
-                *Hanya bayar ongkos kirim saat checkout
+              <span className="text-xs text-slate-500">
+                (Hanya bayar ongkir)
               </span>
             </div>
           </div>
