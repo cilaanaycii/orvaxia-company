@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 
 type AuthTab = 'customer' | 'login' | 'register_crew';
 
@@ -33,6 +34,7 @@ export default function AuthPage() {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRecoverySending, setIsRecoverySending] = useState(false);
 
   // Crew Register Form
   const [staffCode, setStaffCode] = useState('');
@@ -80,6 +82,31 @@ export default function AuthPage() {
       toast.error('Login gagal diproses. Periksa koneksi lalu coba lagi.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePasswordRecovery = async () => {
+    if (!loginEmail.trim()) {
+      toast.error('Masukkan email akun terlebih dahulu.');
+      return;
+    }
+    if (!supabase) {
+      toast.error('Login Supabase belum dikonfigurasi.');
+      return;
+    }
+
+    setIsRecoverySending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail.trim(), {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      if (error) {
+        toast.error(`Email reset gagal dikirim: ${error.message}`);
+        return;
+      }
+      toast.success('Tautan reset kata sandi dikirim. Periksa inbox dan folder Spam.');
+    } finally {
+      setIsRecoverySending(false);
     }
   };
 
@@ -288,6 +315,17 @@ export default function AuthPage() {
                     className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
                   />
                 </div>
+              </div>
+
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => void handlePasswordRecovery()}
+                  disabled={isRecoverySending}
+                  className="font-semibold text-brand-slate hover:text-brand-navy hover:underline disabled:opacity-50"
+                >
+                  {isRecoverySending ? 'Mengirim tautan...' : 'Lupa kata sandi?'}
+                </button>
               </div>
 
               <button

@@ -75,8 +75,11 @@ Security (RLS), not just by dashboard navigation.
 
 1. Copy `.env.example` to `.env.local` and set your Supabase project URL, anon key,
    and a long, private `CREW_INVITATION_CODE`. Never use the anon key as a secret.
-2. Apply the migrations in `supabase/migrations` to the Supabase project.
-3. Create the initial Owner and CEO identities through Supabase Auth. Then promote
+2. In Supabase Authentication → URL Configuration, add the production URL
+   `https://<your-production-domain>/auth/reset-password` to the Redirect URLs list
+   so password recovery can return to the reset-password page.
+3. Apply the migrations in `supabase/migrations` to the Supabase project.
+4. Create the initial Owner and CEO identities through Supabase Auth. Then promote
    them from the Supabase SQL editor using their verified email addresses:
 
    ```sql
@@ -91,7 +94,7 @@ Security (RLS), not just by dashboard navigation.
    WHERE lower(email) = lower('ceo@example.com');
    ```
 
-4. Restart the Next.js server after changing environment variables. Set the same
+5. Restart the Next.js server after changing environment variables. Set the same
    server-only invitation code in the production hosting environment.
 
 Legacy local/cloud crew accounts are not automatically trusted or imported.
