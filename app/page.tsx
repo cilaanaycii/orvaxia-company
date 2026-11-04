@@ -30,7 +30,7 @@ export default function HomePage() {
   const { siteSettings, gallery, faqs, cart } = useCompanyStore();
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] pb-28 text-brand-navy selection:bg-brand-lavender/30">
+    <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy selection:bg-brand-lavender/30">
       {/* ================= HERO SECTION ================= */}
       <section id="home" className="relative overflow-hidden border-b border-brand-lavender/20 bg-gradient-to-b from-white via-brand-surface/40 to-[#FAF8F5] pt-6 pb-20">
         {/* Subtle Brand Accent Lines */}

@@ -149,12 +149,12 @@ export function ProductShowcase() {
               <label className="font-semibold text-slate-800 uppercase tracking-wider text-[10px] block mb-2">
                 1. Pilih Warna Rajutan Khas Orvaxia
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {rovella.variants.map((variant) => (
                   <button
                     key={variant.id}
                     onClick={() => setSelectedVariant(variant)}
-                    className={`flex items-center gap-2 rounded-xl px-3 py-1.5 border transition-all ${
+                    className={`shrink-0 flex items-center gap-2 rounded-xl px-3 py-1.5 border transition-all ${
                       selectedVariant.id === variant.id
                         ? 'border-brand-slate bg-brand-surface shadow-sm ring-1 ring-brand-slate font-semibold text-brand-navy'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
@@ -175,7 +175,7 @@ export function ProductShowcase() {
               <label className="font-semibold text-slate-800 uppercase tracking-wider text-[10px] block mb-2">
                 2. Pilih Ukuran Botol / Tumbler
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {rovella.sizes.map((sz) => (
                   <button
                     key={sz.id}
@@ -203,7 +203,7 @@ export function ProductShowcase() {
               <label className="font-semibold text-slate-800 uppercase tracking-wider text-[10px] block mb-2">
                 3. Tambahan Aksesoris Charm Rajut
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none flex-wrap">
                 {rovella.customCharms.map((charm) => (
                   <button
                     key={charm}
@@ -221,8 +221,8 @@ export function ProductShowcase() {
             </div>
 
             {/* Quantity & Custom Note */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2">
-              <div className="sm:col-span-3">
+            <div className="grid grid-cols-12 gap-3 pt-2">
+              <div className="col-span-4">
                 <label className="font-semibold text-slate-800 text-[10px] uppercase block mb-1">
                   Jumlah
                 </label>
@@ -243,9 +243,9 @@ export function ProductShowcase() {
                 </div>
               </div>
 
-              <div className="sm:col-span-9">
+              <div className="col-span-8">
                 <label className="font-semibold text-slate-800 text-[10px] uppercase block mb-1">
-                  Catatan Custom (Warna tali, inisial, ukuran botol spesifik)
+                  Catatan Custom
                 </label>
                 <input
                   type="text"
@@ -259,7 +259,7 @@ export function ProductShowcase() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-100">
+          <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
             <button
               onClick={handleAddToCart}
               className="w-full sm:w-1/2 flex items-center justify-center gap-2 rounded-full border-2 border-brand-slate py-3 text-xs font-bold text-brand-slate hover:bg-brand-surface transition-all"

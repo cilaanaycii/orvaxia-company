@@ -53,12 +53,12 @@ export function TeamRoster() {
         </div>
 
         {/* Division Filter Badges */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 w-full md:w-auto scrollbar-none">
           {divisions.map((div) => (
             <button
               key={div.id}
               onClick={() => setSelectedDivision(div.id)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                 selectedDivision === div.id
                   ? 'bg-brand-slate text-white shadow-sm'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -71,7 +71,7 @@ export function TeamRoster() {
       </div>
 
       {/* Roster Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {filteredMembers.map((member) => (
           <div
             key={member.id}
