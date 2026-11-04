@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 40 20% 98%;
+  --foreground: 224 45% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 224 45% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 45% 15%;
+  --primary: 224 20% 46%; /* Bru Slate #606C8D */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 279 17% 65%; /* Lavender #A99AB3 */
+  --secondary-foreground: 224 45% 15%;
+  --muted: 220 15% 95%;
+  --muted-foreground: 220 10% 45%;
+  --accent: 53 92% 84%; /* Pastel Yellow #FDF5AE */
+  --accent-foreground: 224 45% 15%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 15% 88%;
+  --input: 220 15% 88%;
+  --ring: 224 20% 46%;
+  --radius: 0.85rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Magic Navigation Floating Dock animations and active state */
+.magic-dock-container {
+  @apply fixed bottom-6 left-1/2 -translate-x-1/2 z-50;
+  filter: drop-shadow(0 14px 28px rgba(26, 34, 56, 0.18));
+}
+
+.magic-dock {
+  @apply relative flex items-center justify-around gap-1.5 md:gap-3 px-3 py-2 md:px-5 md:py-2.5 rounded-full border border-white/60 bg-white/90 backdrop-blur-xl shadow-lg;
+}
+
+.magic-dock-item {
+  @apply relative flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full text-brand-slate transition-all duration-300 hover:text-brand-navy;
+}
+
+.magic-dock-item.active {
+  @apply -translate-y-3 text-white font-semibold;
+}
+
+.magic-dock-item.active .magic-dock-circle {
+  @apply absolute inset-0 rounded-full bg-brand-slate shadow-[0_8px_20px_rgba(96,108,141,0.45)] ring-4 ring-white/90 scale-100 opacity-100 transition-all duration-300;
+}
+
+.magic-dock-circle {
+  @apply scale-75 opacity-0 transition-all duration-300 -z-10;
+}
+
+/* Clean artisanal subtle accents */
+.text-brand-gradient {
+  background: linear-gradient(135deg, #606C8D 0%, #837592 50%, #A99AB3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.badge-brand {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-brand-surface text-brand-navy border border-brand-lavender/30;
+}
