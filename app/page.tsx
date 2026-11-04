@@ -143,14 +143,14 @@ export default function HomePage() {
 
                 <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Harga Pre-Order:</span>
-                    <span className="font-serif font-bold text-sm text-brand-navy">Rp35.000</span>
+                    <span className="text-[10px] text-slate-400 block">Harga Produk:</span>
+                    <span className="font-serif font-bold text-sm text-emerald-700">GRATIS (Rp0)</span>
                   </div>
                   <a
                     href="#shop"
                     className="flex items-center gap-1 rounded-full bg-brand-surface px-4 py-2 font-bold text-brand-slate hover:bg-brand-slate hover:text-white transition-all text-xs"
                   >
-                    Pilih Varian <ArrowRight size={13} />
+                    Pesan Pre-Order <ArrowRight size={13} />
                   </a>
                 </div>
               </div>

@@ -859,7 +859,7 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
 
             {/* ================= STEP 6: SUCCESS & WHATSAPP ================= */}
             {step === 6 && completedOrder && (
-              <div className="rounded-3xl border border-emerald-200 bg-white p-8 shadow-md text-center space-y-6">
+              <div className="rounded-3xl border border-emerald-200 bg-white p-6 sm:p-8 shadow-md text-center space-y-6">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mx-auto">
                   <CheckCircle2 size={36} />
                 </div>
@@ -869,36 +869,91 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
                   <h3 className="font-serif text-2xl font-bold text-brand-navy mt-2">
                     Pre-Order Berhasil Didaftarkan!
                   </h3>
-                  <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
-                    Kode referensi pesanan Anda telah dibuat dan dicatat dalam sistem operasional internal ORVAXIA COMPANY.
+                  <p className="text-xs text-slate-600 max-w-md mx-auto mt-1 leading-relaxed">
+                    Produk tas rajut Rovella <strong>Gratis (Rp0)</strong>, tagihan Anda hanya biaya ongkos kirim sebesar <strong>Rp{shippingCost.toLocaleString('id-ID')}</strong>.
                   </p>
                 </div>
 
                 {/* Reference Code Box */}
-                <div className="mx-auto max-w-sm rounded-2xl border-2 border-dashed border-brand-slate bg-brand-surface/60 p-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Kode Pesanan Unik:
+                <div className="mx-auto max-w-md rounded-2xl border-2 border-dashed border-brand-slate bg-brand-surface/60 p-4">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                    Kode Pesanan Unik Kamu:
                   </span>
-                  <p className="font-mono text-xl font-bold text-brand-slate tracking-wider mt-0.5">
+                  <p className="font-mono text-2xl font-bold text-brand-navy tracking-wider mt-1">
                     {completedOrder.referenceCode}
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Estimasi Pengerjaan PO: ±{poPeriod.productionEstimateDays} Hari Kerja
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-bold">
+                    <Clock size={13} />
+                    <span>Estimasi Pre-Order: 5–7 Hari Kerja</span>
+                  </div>
+                </div>
+
+                {/* Real-time Order Progress Tracking Bar */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5 text-left max-w-lg mx-auto space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="font-serif font-bold text-xs text-brand-navy flex items-center gap-1.5">
+                      <Truck size={14} className="text-brand-slate" />
+                      <span>Pelacakan Proses Barang:</span>
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      Status Saat Ini: Menunggu Konfirmasi
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-1.5 text-center pt-2">
+                    <div className="space-y-1">
+                      <div className="h-7 w-7 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center mx-auto shadow-sm">
+                        ✓
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-800 block">Diterima</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="h-7 w-7 rounded-full bg-brand-slate/20 text-brand-slate text-[11px] font-bold flex items-center justify-center mx-auto">
+                        2
+                      </div>
+                      <span className="text-[9px] font-medium text-slate-500 block">Dirajut</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="h-7 w-7 rounded-full bg-slate-200 text-slate-500 text-[11px] font-bold flex items-center justify-center mx-auto">
+                        3
+                      </div>
+                      <span className="text-[9px] font-medium text-slate-500 block">Dikemas</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="h-7 w-7 rounded-full bg-slate-200 text-slate-500 text-[11px] font-bold flex items-center justify-center mx-auto">
+                        4
+                      </div>
+                      <span className="text-[9px] font-medium text-slate-500 block">Diantar</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="h-7 w-7 rounded-full bg-slate-200 text-slate-500 text-[11px] font-bold flex items-center justify-center mx-auto">
+                        5
+                      </div>
+                      <span className="text-[9px] font-medium text-slate-500 block">Selesai</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 text-center pt-1 border-t border-slate-200/60">
+                    Proses rajut, pengemasan, dan pengantaran akan terus diperbarui oleh divisi Produksi & Sales.
                   </p>
                 </div>
 
                 {/* WhatsApp Gateway CTA */}
-                <div className="pt-2 max-w-md mx-auto space-y-3">
+                <div className="pt-2 max-w-md mx-auto space-y-2.5">
                   <a
                     href={generateWhatsAppLink()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-8 py-3.5 text-xs font-bold text-white shadow-md hover:bg-[#20ba5a] hover:shadow-lg transition-all"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-8 py-4 text-xs font-bold text-white shadow-md hover:bg-[#20ba5a] hover:shadow-lg transition-all"
                   >
-                    <MessageCircle size={18} /> Lanjut Konfirmasi ke WhatsApp Admin
+                    <MessageCircle size={18} /> Konfirmasi Pesanan ke WhatsApp Admin
                   </a>
                   <p className="text-[11px] text-slate-500">
-                    Pesan WhatsApp telah disiapkan otomatis dengan rincian lengkap pesanan Anda.
+                    Kirim konfirmasi agar tim Orvaxia langsung memasukkan pesananmu ke jadwal rajut.
                   </p>
                 </div>
 

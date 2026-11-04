@@ -6,35 +6,35 @@ import { useRouter } from 'next/navigation';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
-import { ArrowRight, ArrowLeft, CheckCircle2, KeyRound } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  Lock,
+  Mail,
+  Phone,
+  User,
+  KeyRound,
+  AlertCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
-type Tab = 'customer' | 'login' | 'register_crew';
-
-const INPUT =
-  'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-brand-navy placeholder:text-slate-400 focus:border-brand-slate focus:bg-white focus:outline-none transition-colors';
-
-const LABEL = 'block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide';
-
-const BTN_PRIMARY =
-  'w-full rounded-2xl bg-brand-navy py-3.5 text-sm font-bold text-white hover:bg-brand-slate transition-colors flex items-center justify-center gap-2';
-
-const BTN_GHOST =
-  'w-full rounded-2xl border border-slate-200 py-3.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2';
+type AuthTab = 'customer' | 'login' | 'register_crew';
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login, registerStaff, loginAs } = useCompanyStore();
+  const { login, registerStaff, loginAs, siteSettings } = useCompanyStore();
+  const [authTab, setAuthTab] = useState<AuthTab>('customer');
 
-  const [tab, setTab] = useState<Tab>('customer');
+  // Customer Form
+  const [custName, setCustName] = useState('');
+  const [custPhone, setCustPhone] = useState('');
 
-  // Login
+  // Login Form
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Register — step 1: kode undangan, step 2: data diri
-  const [regStep, setRegStep] = useState<1 | 2>(1);
+  // Crew Register Form
   const [staffCode, setStaffCode] = useState('');
   const [staffName, setStaffName] = useState('');
   const [staffEmail, setStaffEmail] = useState('');
@@ -42,298 +42,442 @@ export default function AuthPage() {
   const [staffPassword, setStaffPassword] = useState('');
   const [staffDivision, setStaffDivision] = useState('Produksi');
   const [staffNotes, setStaffNotes] = useState('');
-  const [registered, setRegistered] = useState(false);
+  const [regError, setRegError] = useState<string | null>(null);
+  const [registeredSuccess, setRegisteredSuccess] = useState(false);
 
-  // Customer
-  const [custName, setCustName] = useState('');
-  const [custPhone, setCustPhone] = useState('');
-
-  const switchTab = (t: Tab) => {
-    setTab(t);
-    setRegStep(1);
-    setRegistered(false);
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    const result = login(loginEmail, loginPassword);
-    setIsSubmitting(false);
-    if (result.success && result.user) {
-      if (result.user.role === 'owner') router.push('/dashboard/owner');
-      else if (result.user.status === 'pending_approval') router.push('/dashboard');
-      else router.push(`/dashboard/${result.user.role}`);
-    }
-  };
-
-  const handleRegStep1 = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!staffCode.trim()) { toast.error('Masukkan kode undangan'); return; }
-    setRegStep(2);
-  };
-
-  const handleRegSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const result = registerStaff({
-      fullName: staffName,
-      email: staffEmail,
-      phone: staffPhone,
-      password: staffPassword,
-      invitationCode: staffCode,
-      division: staffDivision,
-      position: staffNotes ? `Calon ${staffDivision} (${staffNotes})` : `Calon ${staffDivision}`,
-    });
-    if (result.success) setRegistered(true);
-  };
-
-  const handleCustomer = (e: React.FormEvent) => {
+  const handleCustomerLogin = (e: React.FormEvent) => {
     e.preventDefault();
     loginAs('customer');
     router.push('/checkout');
   };
 
+  const handleInternalLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      toast.error('Mohon isi email dan kata sandi');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = login(loginEmail, loginPassword);
+    setIsSubmitting(false);
+
+    if (result.success && result.user) {
+      if (result.user.role === 'owner') {
+        router.push('/dashboard/owner');
+      } else if (result.user.status === 'pending_approval') {
+        router.push('/dashboard');
+      } else {
+        router.push(`/dashboard/${result.user.role}`);
+      }
+    }
+  };
+
+  const handleStaffRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegError(null);
+
+    const expectedCode = (siteSettings.crewInvitationCode || 'ORVAXIA2026').trim().toUpperCase();
+    const inputCode = staffCode.trim().toUpperCase();
+
+    // Validasi ketat kode undangan: tidak boleh sembarang huruf/angka
+    if (!inputCode || inputCode !== expectedCode) {
+      const msg = 'Kode undangan salah! Pastikan kamu memasukkan kode resmi dari tim Orvaxia.';
+      setRegError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (!staffName || !staffEmail || !staffPhone || !staffPassword) {
+      toast.error('Mohon lengkapi seluruh formulir pendaftaran');
+      return;
+    }
+
+    const result = registerStaff({
+      fullName: staffName,
+      email: staffEmail,
+      phone: staffPhone,
+      password: staffPassword,
+      invitationCode: inputCode,
+      division: staffDivision,
+      position: staffNotes ? `Calon ${staffDivision} (${staffNotes})` : `Calon ${staffDivision}`,
+    });
+
+    if (result.success) {
+      setRegisteredSuccess(true);
+      toast.success('Pendaftaran crew berhasil dikirim ke Owner!');
+    } else {
+      setRegError(result.message);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-[#FAF8F5] flex flex-col">
-      {/* Header */}
-      <header className="shrink-0 border-b border-slate-100 bg-white px-4 py-3 flex items-center justify-between">
-        <Link href="/"><OrvaxiaLogo size={32} /></Link>
-        <Link href="/" className="text-xs text-slate-400 hover:text-brand-navy transition-colors">
-          ← Beranda
-        </Link>
+    <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy flex flex-col justify-between">
+      {/* Top Header */}
+      <header className="border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
+          <Link href="/">
+            <OrvaxiaLogo size={36} />
+          </Link>
+          <Link
+            href="/"
+            className="text-xs font-semibold text-brand-slate hover:text-brand-navy transition-colors"
+          >
+            ← Kembali ke Beranda
+          </Link>
+        </div>
       </header>
 
-      {/* Tab Bar */}
-      <div className="shrink-0 bg-white border-b border-slate-100 px-4 pt-4 pb-0 flex gap-0">
-        {(['customer', 'login', 'register_crew'] as Tab[]).map((t) => {
-          const labels: Record<Tab, string> = {
-            customer: 'Pemesan PO',
-            login: 'Login Crew',
-            register_crew: 'Daftar Crew',
-          };
-          const active = tab === t;
-          return (
+      {/* Main Container */}
+      <div className="mx-auto w-full max-w-md px-4 py-8">
+        <div className="rounded-3xl border border-brand-lavender/40 bg-white p-6 sm:p-8 shadow-sm">
+          {/* Main Auth Tabs Pill */}
+          <div className="flex rounded-2xl bg-slate-100 p-1 mb-6 text-xs font-semibold">
             <button
-              key={t}
-              onClick={() => switchTab(t)}
-              className={`flex-1 pb-3 text-xs font-semibold border-b-2 transition-all ${
-                active
-                  ? 'border-brand-navy text-brand-navy'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+              onClick={() => {
+                setAuthTab('customer');
+                setRegisteredSuccess(false);
+                setRegError(null);
+              }}
+              className={`flex-1 py-2.5 rounded-xl transition-all ${
+                authTab === 'customer'
+                  ? 'bg-white text-brand-navy shadow-sm font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              {labels[t]}
+              Pemesan PO
             </button>
-          );
-        })}
-      </div>
-
-      {/* Content — takes remaining height */}
-      <div className="flex-1 flex flex-col px-4 py-8 max-w-sm w-full mx-auto">
-
-        {/* ── PEMESAN PO ── */}
-        {tab === 'customer' && (
-          <form onSubmit={handleCustomer} className="flex flex-col gap-5">
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-brand-navy">Pesan Rovella</h1>
-              <p className="text-sm text-slate-400 mt-1">Tas tumbler rajut custom ORVAXIA</p>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className={LABEL}>Nama</label>
-                <input
-                  type="text" required placeholder="Nama lengkap"
-                  value={custName} onChange={e => setCustName(e.target.value)}
-                  className={INPUT}
-                />
-              </div>
-              <div>
-                <label className={LABEL}>WhatsApp</label>
-                <input
-                  type="tel" required placeholder="08xxxxxxxxxx"
-                  value={custPhone} onChange={e => setCustPhone(e.target.value)}
-                  className={INPUT}
-                />
-              </div>
-            </div>
-
-            <button type="submit" className={BTN_PRIMARY}>
-              Lanjut ke Checkout <ArrowRight size={16} />
+            <button
+              onClick={() => {
+                setAuthTab('login');
+                setRegisteredSuccess(false);
+                setRegError(null);
+              }}
+              className={`flex-1 py-2.5 rounded-xl transition-all ${
+                authTab === 'login'
+                  ? 'bg-white text-brand-navy shadow-sm font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Login Crew
             </button>
-          </form>
-        )}
-
-        {/* ── LOGIN CREW ── */}
-        {tab === 'login' && (
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-brand-navy">Masuk</h1>
-              <p className="text-sm text-slate-400 mt-1">Portal internal ORVAXIA</p>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className={LABEL}>Email</label>
-                <input
-                  type="email" required placeholder="email@gmail.com"
-                  value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
-                  className={INPUT}
-                />
-              </div>
-              <div>
-                <label className={LABEL}>Kata Sandi</label>
-                <input
-                  type="password" required placeholder="••••••••"
-                  value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
-                  className={INPUT}
-                />
-              </div>
-            </div>
-
-            <button type="submit" disabled={isSubmitting} className={BTN_PRIMARY}>
-              Masuk <ArrowRight size={16} />
+            <button
+              onClick={() => {
+                setAuthTab('register_crew');
+                setRegisteredSuccess(false);
+                setRegError(null);
+              }}
+              className={`flex-1 py-2.5 rounded-xl transition-all ${
+                authTab === 'register_crew'
+                  ? 'bg-white text-brand-navy shadow-sm font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Daftar Crew
             </button>
+          </div>
 
-            <button type="button" onClick={() => switchTab('register_crew')} className={BTN_GHOST}>
-              Daftar sebagai crew baru
-            </button>
-          </form>
-        )}
-
-        {/* ── DAFTAR CREW ── */}
-        {tab === 'register_crew' && (
-          <>
-            {registered ? (
-              /* Success */
-              <div className="flex flex-col items-center justify-center flex-1 gap-5 text-center">
-                <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle2 size={36} className="text-green-600" />
-                </div>
-                <div>
-                  <h2 className="font-serif text-xl font-bold text-brand-navy">Pendaftaran Dikirim</h2>
-                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                    Akun kamu menunggu persetujuan.<br />Cek dashboard untuk status terbaru.
-                  </p>
-                </div>
-                <Link
-                  href="/dashboard"
-                  className="rounded-2xl bg-brand-navy px-8 py-3.5 text-sm font-bold text-white hover:bg-brand-slate transition-colors"
-                >
-                  Buka Dashboard
-                </Link>
+          {/* ================= 1. PEMESAN PO ================= */}
+          {authTab === 'customer' && (
+            <form onSubmit={handleCustomerLogin} className="space-y-4 text-xs">
+              <div className="text-center mb-4">
+                <h2 className="font-serif text-2xl font-bold text-brand-navy">
+                  Akun Pemesan PO
+                </h2>
+                <p className="text-slate-500 mt-1">
+                  Masukkan nama & WhatsApp untuk memesan tas tumbler rajut Rovella.
+                </p>
               </div>
-            ) : regStep === 1 ? (
-              /* Step 1 — Kode Undangan */
-              <form onSubmit={handleRegStep1} className="flex flex-col gap-5">
-                <div>
-                  <h1 className="font-serif text-2xl font-bold text-brand-navy">Daftar Crew</h1>
-                  <p className="text-sm text-slate-400 mt-1">Masukkan kode undangan dari koordinator</p>
-                </div>
 
-                <div className="rounded-2xl border-2 border-brand-navy/20 bg-brand-surface/40 p-5 flex flex-col gap-3">
-                  <div className="flex items-center gap-2 text-brand-navy">
-                    <KeyRound size={18} />
-                    <span className="text-sm font-bold">Kode Undangan</span>
-                  </div>
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Nama Lengkap Pemesan
+                </label>
+                <div className="relative">
+                  <User size={15} className="absolute left-3 top-3.5 text-slate-400" />
                   <input
-                    type="text" required placeholder="XXXXXXXX"
-                    value={staffCode}
-                    onChange={e => setStaffCode(e.target.value.toUpperCase())}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-center font-mono text-xl font-bold tracking-widest text-brand-navy focus:border-brand-navy focus:outline-none uppercase"
+                    type="text"
+                    required
+                    placeholder="Nama kamu"
+                    value={custName}
+                    onChange={(e) => setCustName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
                   />
                 </div>
+              </div>
 
-                <button type="submit" className={BTN_PRIMARY}>
-                  Lanjut <ArrowRight size={16} />
-                </button>
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Nomor WhatsApp
+                </label>
+                <div className="relative">
+                  <Phone size={15} className="absolute left-3 top-3.5 text-slate-400" />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="08xxxxxxxxxx"
+                    value={custPhone}
+                    onChange={(e) => setCustPhone(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
+                  />
+                </div>
+              </div>
 
-                <button type="button" onClick={() => switchTab('login')} className={BTN_GHOST}>
-                  Sudah punya akun? Masuk
+              <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-[11px] text-emerald-800 leading-relaxed">
+                ✨ <strong>Pre-Order Gratis!</strong> Produk tas rajut Rovella tidak dipungut biaya produk. Kamu hanya membayar ongkos kirim saat pesanan dikirim.
+              </div>
+
+              <button
+                type="submit"
+                className="w-full mt-2 rounded-2xl bg-brand-navy py-3.5 font-bold text-white shadow-md hover:bg-brand-slate transition-all flex items-center justify-center gap-2"
+              >
+                <span>Lanjut ke Pemesanan</span>
+                <ArrowRight size={15} />
+              </button>
+            </form>
+          )}
+
+          {/* ================= 2. LOGIN CREW / OWNER ================= */}
+          {authTab === 'login' && (
+            <form onSubmit={handleInternalLogin} className="space-y-4 text-xs">
+              <div className="text-center mb-4">
+                <div className="h-10 w-10 rounded-2xl bg-brand-surface text-brand-slate flex items-center justify-center mx-auto mb-2 border border-brand-lavender/30">
+                  <KeyRound size={18} />
+                </div>
+                <h2 className="font-serif text-2xl font-bold text-brand-navy">
+                  Masuk Portal
+                </h2>
+                <p className="text-slate-500 mt-1">
+                  Gunakan email dan kata sandi akun kamu.
+                </p>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Email Akun
+                </label>
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3 top-3.5 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="Masukkan email kamu"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Kata Sandi
+                </label>
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3 top-3.5 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="Masukkan kata sandi"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full mt-2 rounded-2xl bg-brand-navy py-3.5 font-bold text-white shadow-md hover:bg-brand-slate transition-all flex items-center justify-center gap-2"
+              >
+                <span>Masuk ke Dashboard</span>
+                <ArrowRight size={15} />
+              </button>
+
+              <div className="text-center pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAuthTab('register_crew')}
+                  className="text-brand-slate hover:text-brand-navy font-semibold hover:underline"
+                >
+                  Belum punya akun Crew? Daftar di sini →
                 </button>
-              </form>
-            ) : (
-              /* Step 2 — Data Diri */
-              <form onSubmit={handleRegSubmit} className="flex flex-col gap-5">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRegStep(1)}
-                    className="h-8 w-8 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors shrink-0"
-                  >
-                    <ArrowLeft size={15} />
-                  </button>
+              </div>
+            </form>
+          )}
+
+          {/* ================= 3. DAFTAR CREW ================= */}
+          {authTab === 'register_crew' && (
+            <div>
+              {registeredSuccess ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="h-14 w-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 size={32} />
+                  </div>
                   <div>
-                    <h1 className="font-serif text-xl font-bold text-brand-navy">Data Diri</h1>
-                    <p className="text-xs text-slate-400">Langkah 2 dari 2</p>
+                    <h3 className="font-serif text-lg font-bold text-brand-navy">
+                      Pendaftaran Berhasil Dikirim!
+                    </h3>
+                    <p className="text-xs text-slate-600 max-w-xs mx-auto mt-2 leading-relaxed">
+                      Akun kamu telah masuk ke sistem operasional internal dengan status <strong>Menunggu Persetujuan</strong>. Silakan hubungi Owner untuk penetapan peran dan divisi.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setAuthTab('login')}
+                      className="rounded-2xl bg-brand-navy px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-brand-slate transition-all"
+                    >
+                      Buka Form Login
+                    </button>
                   </div>
                 </div>
+              ) : (
+                <form onSubmit={handleStaffRegister} className="space-y-3.5 text-xs">
+                  <div className="text-center mb-3">
+                    <h2 className="font-serif text-2xl font-bold text-brand-navy">
+                      Daftar Akun Crew
+                    </h2>
+                    <p className="text-slate-500 mt-0.5">
+                      Gunakan email pribadi dan kode undangan resmi.
+                    </p>
+                  </div>
 
-                <div className="flex flex-col gap-3.5">
-                  <div>
-                    <label className={LABEL}>Nama Lengkap</label>
+                  {/* Kode Undangan */}
+                  <div className="rounded-2xl border-2 border-brand-slate/40 bg-brand-surface/40 p-3.5 space-y-1.5">
+                    <label className="font-bold text-brand-navy block text-xs flex items-center gap-1.5">
+                      <KeyRound size={14} className="text-brand-slate" />
+                      <span>Kode Undangan *</span>
+                    </label>
                     <input
-                      type="text" required placeholder="Nama kamu"
-                      value={staffName} onChange={e => setStaffName(e.target.value)}
-                      className={INPUT}
+                      type="text"
+                      required
+                      placeholder="Masukkan kode undangan resmi"
+                      value={staffCode}
+                      onChange={(e) => {
+                        setStaffCode(e.target.value.toUpperCase());
+                        setRegError(null);
+                      }}
+                      className="w-full rounded-xl border border-slate-300 p-2.5 font-mono font-bold tracking-wider uppercase text-brand-navy focus:border-brand-slate focus:outline-none bg-white"
+                    />
+                    {regError && (
+                      <p className="text-[11px] text-red-600 flex items-center gap-1 font-semibold pt-1">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{regError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Nama Lengkap *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nama lengkap kamu"
+                      value={staffName}
+                      onChange={(e) => setStaffName(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className={LABEL}>Email</label>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Email Pribadi *
+                    </label>
                     <input
-                      type="email" required placeholder="email@gmail.com"
-                      value={staffEmail} onChange={e => setStaffEmail(e.target.value)}
-                      className={INPUT}
+                      type="email"
+                      required
+                      placeholder="emailpribadi@gmail.com"
+                      value={staffEmail}
+                      onChange={(e) => setStaffEmail(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className={LABEL}>WhatsApp</label>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Nomor WhatsApp *
+                    </label>
                     <input
-                      type="tel" required placeholder="08xxxxxxxxxx"
-                      value={staffPhone} onChange={e => setStaffPhone(e.target.value)}
-                      className={INPUT}
+                      type="tel"
+                      required
+                      placeholder="08xxxxxxxxxx"
+                      value={staffPhone}
+                      onChange={(e) => setStaffPhone(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className={LABEL}>Kata Sandi</label>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Kata Sandi *
+                    </label>
                     <input
-                      type="password" required placeholder="Min. 6 karakter"
-                      value={staffPassword} onChange={e => setStaffPassword(e.target.value)}
-                      className={INPUT}
+                      type="password"
+                      required
+                      placeholder="Minimal 6 karakter"
+                      value={staffPassword}
+                      onChange={(e) => setStaffPassword(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className={LABEL}>Divisi Minat</label>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Minat Divisi
+                    </label>
                     <select
                       value={staffDivision}
-                      onChange={e => setStaffDivision(e.target.value)}
-                      className={INPUT}
+                      onChange={(e) => setStaffDivision(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none bg-white"
                     >
-                      <option value="Produksi">Produksi</option>
-                      <option value="Sales">Sales</option>
-                      <option value="Finance">Finance</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="HRD">HRD</option>
-                      <option value="Public Relations">Public Relations</option>
+                      <option value="Produksi">Divisi Produksi</option>
+                      <option value="Sales">Divisi Sales</option>
+                      <option value="Finance">Divisi Finance</option>
+                      <option value="Marketing">Divisi Marketing</option>
+                      <option value="HRD">Divisi HRD</option>
+                      <option value="Public Relations">Divisi Public Relations</option>
                       <option value="Kesekretariatan">Kesekretariatan</option>
                     </select>
                   </div>
+
                   <div>
-                    <label className={LABEL}>Catatan <span className="normal-case font-normal">(opsional)</span></label>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Catatan Tambahan (Opsional)
+                    </label>
                     <input
-                      type="text" placeholder="Pengalaman atau keahlian"
-                      value={staffNotes} onChange={e => setStaffNotes(e.target.value)}
-                      className={INPUT}
+                      type="text"
+                      placeholder="Pengalaman atau keahlian"
+                      value={staffNotes}
+                      onChange={(e) => setStaffNotes(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                     />
                   </div>
-                </div>
 
-                <button type="submit" className={BTN_PRIMARY}>
-                  Kirim Pendaftaran <ArrowRight size={16} />
-                </button>
-              </form>
-            )}
-          </>
-        )}
+                  <button
+                    type="submit"
+                    className="w-full mt-2 rounded-2xl bg-brand-navy py-3.5 font-bold text-white shadow-md hover:bg-brand-slate transition-all"
+                  >
+                    Daftar Akun Crew
+                  </button>
+
+                  <div className="text-center pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setAuthTab('login')}
+                      className="text-brand-slate hover:text-brand-navy font-semibold hover:underline"
+                    >
+                      Sudah punya akun? Masuk di sini →
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <MagicNavigation />
