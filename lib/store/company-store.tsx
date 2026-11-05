@@ -220,7 +220,7 @@ interface CompanyContextType {
   updatePOPeriod: (po: Partial<POPeriod>) => void;
   products: Product[];
   addProduct: (prod: Product) => void;
-  updateProduct: (id: string, prod: Partial<Product>) => void;
+  updateProduct: (id: string, prod: Partial<Product>) => Promise<boolean>;
   deleteProduct: (id: string) => void;
   teamMembers: TeamMember[];
   updateTeamMember: (id: string, member: Partial<TeamMember>) => Promise<void>;
@@ -350,6 +350,38 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       setIsHydrated(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    let active = true;
+
+    const loadSharedVariants = async () => {
+      try {
+        const response = await fetch('/api/catalog/variants', { cache: 'no-store' });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Katalog bersama gagal dimuat.');
+        }
+        if (!active || !Array.isArray(result.variants)) return;
+        setProducts((currentProducts) =>
+          currentProducts.map((product) =>
+            product.id === INITIAL_PRODUCTS[0].id
+              ? { ...product, variants: result.variants as Product['variants'] }
+              : product
+          )
+        );
+      } catch (error) {
+        if (!active) return;
+        console.error('Shared product catalog load failed', error);
+        toast.error(error instanceof Error ? error.message : 'Katalog bersama gagal dimuat.');
+      }
+    };
+
+    void loadSharedVariants();
+    return () => {
+      active = false;
+    };
+  }, [isHydrated]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -783,11 +815,49 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     toast.success(`Produk "${prod.name}" berhasil ditambahkan`);
   };
 
-  const updateProduct = (id: string, prod: Partial<Product>) => {
+  const updateProduct = async (id: string, prod: Partial<Product>): Promise<boolean> => {
+    if (prod.variants) {
+      if (!supabase) {
+        toast.error('Supabase belum dikonfigurasi untuk menyimpan katalog bersama.');
+        return false;
+      }
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          toast.error('Sesi crew gagal diperiksa.');
+          return false;
+        }
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+          toast.error('Silakan masuk ke akun crew terlebih dahulu.');
+          return false;
+        }
+
+        const response = await fetch('/api/catalog/variants', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ productId: id, variants: prod.variants }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          toast.error(result.error || 'Perubahan katalog gagal disimpan.');
+          return false;
+        }
+      } catch (error) {
+        console.error('Shared product catalog update failed', error);
+        toast.error('Katalog bersama gagal disimpan. Periksa koneksi lalu coba lagi.');
+        return false;
+      }
+    }
+
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...prod } : p))
     );
     toast.success('Produk berhasil diperbarui');
+    return true;
   };
 
   const deleteProduct = (id: string) => {

@@ -84,7 +84,8 @@ Security (RLS), not just by dashboard navigation.
    so password recovery can return to the reset-password page.
 3. Apply the migrations in `supabase/migrations` to the Supabase project,
    including `20261105090000_dashboard_inbox_order_tracking.sql` for the
-   cross-device inbox, order persistence, and customer tracking page.
+   cross-device inbox, order persistence, and customer tracking page, and
+   `20261105110000_create_orvaxia_image_storage.sql` for shared gallery uploads.
 4. Create the initial Owner and CEO identities through Supabase Auth. Then promote
    them from the Supabase SQL editor using their verified email addresses:
 

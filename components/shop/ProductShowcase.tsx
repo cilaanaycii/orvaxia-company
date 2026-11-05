@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { ProductVariant } from '@/lib/types';
@@ -29,6 +29,13 @@ export function ProductShowcase() {
   );
   const [customNotes, setCustomNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    if (!rovella?.variants.length) return;
+    setSelectedVariant((current) =>
+      rovella.variants.find((variant) => variant.id === current.id) || rovella.variants[0]
+    );
+  }, [rovella?.variants]);
 
   if (!rovella) return null;
 

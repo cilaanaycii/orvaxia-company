@@ -106,6 +106,7 @@ export interface CustomizationOption {
   customCharm?: string;
   customNotes?: string;
   customImageRefName?: string;
+  customImageRefUrl?: string;
   customImageRefData?: string;
 }
 

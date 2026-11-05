@@ -9,6 +9,24 @@ type OrderRequest = Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedA
 const isText = (value: unknown, maxLength: number): value is string =>
   typeof value === 'string' && value.trim().length > 0 && value.trim().length <= maxLength;
 
+function getCustomerImageUrl(value: unknown, supabaseUrl: string) {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value !== 'string' || value.length > 2048) return null;
+  try {
+    const url = new URL(value);
+    const expectedOrigin = new URL(supabaseUrl).origin;
+    if (
+      url.origin === expectedOrigin &&
+      url.pathname.startsWith('/storage/v1/object/public/orvaxia-images/customer/')
+    ) {
+      return url.toString();
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -54,6 +72,10 @@ export async function POST(request: Request) {
     if (!product || !variant || !size || !Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
       return NextResponse.json({ error: `Item pesanan nomor ${index + 1} tidak valid.` }, { status: 400 });
     }
+    const customImageRefUrl = getCustomerImageUrl(item.customization?.customImageRefUrl, supabaseUrl);
+    if (customImageRefUrl === null) {
+      return NextResponse.json({ error: `Tautan gambar referensi item nomor ${index + 1} tidak valid.` }, { status: 400 });
+    }
 
     const unitPrice = product.basePrice + size.priceAdjustment;
     validatedItems.push({
@@ -76,6 +98,7 @@ export async function POST(request: Request) {
         customImageRefName: typeof item.customization?.customImageRefName === 'string'
           ? item.customization.customImageRefName.slice(0, 120)
           : undefined,
+        customImageRefUrl,
       },
     });
   }

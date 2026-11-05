@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { OrderStatus } from '@/lib/types';
 import {
@@ -251,6 +252,25 @@ export default function ProductionDashboard() {
                           <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 font-medium">
                             Catatan Pemesan: &quot;{item.customization.customNotes}&quot;
                           </p>
+                        )}
+                        {item?.customization?.customImageRefUrl && (
+                          <a
+                            href={item.customization.customImageRefUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 text-brand-slate hover:bg-slate-50"
+                          >
+                            <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md">
+                              <Image
+                                src={item.customization.customImageRefUrl}
+                                alt={`Referensi custom ${item.productName}`}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                            </span>
+                            <span className="font-semibold">Lihat foto referensi pelanggan</span>
+                          </a>
                         )}
                       </div>
                     </div>

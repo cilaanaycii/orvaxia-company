@@ -17,6 +17,7 @@ import {
   Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadImage } from '@/lib/images/upload-image';
 
 export default function MarketingDashboard() {
   const { products, updateProduct } = useCompanyStore();
@@ -31,6 +32,36 @@ export default function MarketingDashboard() {
   const [newVarImage, setNewVarImage] = useState('');
   const [newVarDesc, setNewVarDesc] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    target: 'edit' | 'new'
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Format gambar harus JPG, PNG, atau WEBP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran gambar maksimal 5MB.');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const imageUrl = await uploadImage(file);
+      if (target === 'edit') setVariantImage(imageUrl);
+      else setNewVarImage(imageUrl);
+      toast.success('Foto berhasil diunggah dari galeri.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Foto gagal diunggah.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const handleStartEditVariant = (v: ProductVariant) => {
     setEditingVariant(v);
@@ -39,9 +70,13 @@ export default function MarketingDashboard() {
     setVariantDesc(v.description);
   };
 
-  const handleSaveVariant = (e: React.FormEvent) => {
+  const handleSaveVariant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rovella || !editingVariant) return;
+    if (!variantImage) {
+      toast.error('Pilih foto model dari galeri terlebih dahulu.');
+      return;
+    }
 
     const updatedVariants = rovella.variants.map((v) =>
       v.id === editingVariant.id
@@ -54,24 +89,30 @@ export default function MarketingDashboard() {
         : v
     );
 
-    updateProduct(rovella.id, { variants: updatedVariants });
+    const saved = await updateProduct(rovella.id, { variants: updatedVariants });
+    if (!saved) return;
     setEditingVariant(null);
     toast.success(`Model varian "${variantName}" berhasil diperbarui!`);
   };
 
-  const handleAddVariant = (e: React.FormEvent) => {
+  const handleAddVariant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rovella || !newVarName) return;
+    if (!newVarImage) {
+      toast.error('Pilih foto model dari galeri terlebih dahulu.');
+      return;
+    }
 
     const newV: ProductVariant = {
       id: `var-${Date.now()}`,
       name: newVarName,
       colorHex: '#606C8D',
-      image: newVarImage || 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=600&q=80',
+      image: newVarImage,
       description: newVarDesc || 'Model rajutan tas tumbler custom',
     };
 
-    updateProduct(rovella.id, { variants: [...rovella.variants, newV] });
+    const saved = await updateProduct(rovella.id, { variants: [...rovella.variants, newV] });
+    if (!saved) return;
     setNewVarName('');
     setNewVarImage('');
     setNewVarDesc('');
@@ -79,7 +120,7 @@ export default function MarketingDashboard() {
     toast.success(`Model varian "${newVarName}" berhasil ditambahkan ke katalog!`);
   };
 
-  const handleDeleteVariant = (variantId: string) => {
+  const handleDeleteVariant = async (variantId: string) => {
     if (!rovella) return;
     if (rovella.variants.length <= 1) {
       toast.error('Minimal harus ada 1 varian model rajutan aktif');
@@ -87,7 +128,8 @@ export default function MarketingDashboard() {
     }
 
     const updatedVariants = rovella.variants.filter((v) => v.id !== variantId);
-    updateProduct(rovella.id, { variants: updatedVariants });
+    const saved = await updateProduct(rovella.id, { variants: updatedVariants });
+    if (!saved) return;
     toast.success('Model varian berhasil dihapus');
   };
 
@@ -151,15 +193,21 @@ export default function MarketingDashboard() {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">URL Foto Model Rajutan *</label>
+              <label className="font-semibold text-slate-800 block mb-1">Foto Model dari Galeri *</label>
               <input
-                type="url"
-                required
-                placeholder="https://images.unsplash.com/..."
-                value={variantImage}
-                onChange={(e) => setVariantImage(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => void handleImageSelect(event, 'edit')}
+                className="w-full rounded-xl border border-slate-200 p-2.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-surface file:px-3 file:py-2 file:font-semibold file:text-brand-slate"
               />
+              <p className="mt-1 text-[10px] text-slate-500">
+                {isUploadingImage ? 'Mengunggah foto...' : 'Pilih foto dari galeri perangkat (JPG, PNG, WEBP, maks. 5MB).'}
+              </p>
+              {variantImage && (
+                <div className="relative mt-2 h-28 overflow-hidden rounded-xl border border-slate-200">
+                  <Image src={variantImage} alt="Pratinjau foto model" fill unoptimized className="object-cover" />
+                </div>
+              )}
             </div>
 
             <div className="sm:col-span-2">
@@ -183,7 +231,8 @@ export default function MarketingDashboard() {
             </button>
             <button
               type="submit"
-              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-slate"
+              disabled={isUploadingImage}
+              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-slate disabled:opacity-50"
             >
               Simpan Perubahan
             </button>
@@ -225,15 +274,21 @@ export default function MarketingDashboard() {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">URL Foto Model Rajutan *</label>
+              <label className="font-semibold text-slate-800 block mb-1">Foto Model dari Galeri *</label>
               <input
-                type="url"
-                required
-                placeholder="https://..."
-                value={newVarImage}
-                onChange={(e) => setNewVarImage(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none bg-white"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => void handleImageSelect(event, 'new')}
+                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-surface file:px-3 file:py-2 file:font-semibold file:text-brand-slate"
               />
+              <p className="mt-1 text-[10px] text-slate-500">
+                {isUploadingImage ? 'Mengunggah foto...' : 'Pilih foto dari galeri perangkat (JPG, PNG, WEBP, maks. 5MB).'}
+              </p>
+              {newVarImage && (
+                <div className="relative mt-2 h-28 overflow-hidden rounded-xl border border-slate-200">
+                  <Image src={newVarImage} alt="Pratinjau foto model baru" fill unoptimized className="object-cover" />
+                </div>
+              )}
             </div>
 
             <div className="sm:col-span-2">
@@ -258,7 +313,8 @@ export default function MarketingDashboard() {
             </button>
             <button
               type="submit"
-              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-slate"
+              disabled={isUploadingImage}
+              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-slate disabled:opacity-50"
             >
               Tambahkan ke Etalase
             </button>

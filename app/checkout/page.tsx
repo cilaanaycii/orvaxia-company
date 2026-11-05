@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
@@ -14,7 +13,6 @@ import {
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
-  Upload,
   MessageCircle,
   ShieldCheck,
   MapPin,
@@ -52,8 +50,6 @@ export default function CheckoutPage() {
   const [orderNotes, setOrderNotes] = useState('');
 
   // STEP 3: Customization
-  const [customFile, setCustomFile] = useState<File | null>(null);
-  const [customFilePreview, setCustomFilePreview] = useState<string>('');
   const [customRequirementNotes, setCustomRequirementNotes] = useState('');
 
   // STEP 5: Payment Method
@@ -73,29 +69,6 @@ export default function CheckoutPage() {
 
   const shippingCost = calculateShipping(distanceKm, deliveryType);
   const grandTotal = subtotal + shippingCost;
-
-  // Handle custom image upload validation (Max 5MB, JPG/PNG only)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      toast.error('Format file harus JPG, PNG, atau WEBP');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Ukuran file maksimal 5MB');
-      return;
-    }
-
-    setCustomFile(file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setCustomFilePreview(reader.result as string);
-      toast.success('Referensi gambar berhasil diunggah');
-    };
-    reader.readAsDataURL(file);
-  };
 
   // Submit Order
   const handleCompleteOrder = async () => {
@@ -147,7 +120,6 @@ export default function CheckoutPage() {
             variantColor: it.variantName,
             customCharm: it.customCharm,
             customNotes: `${it.customizationNotes || ''} ${customRequirementNotes}`.trim(),
-            customImageRefName: customFile ? customFile.name : undefined,
           },
         })),
         notes: orderNotes,
@@ -595,53 +567,6 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
                     />
                   </div>
 
-                  {/* Custom Image Upload */}
-                  <div>
-                    <label className="font-semibold text-slate-800 block mb-1">
-                      Unggah Gambar Referensi Custom (Opsional - Maks 5MB)
-                    </label>
-                    <div className="rounded-2xl border-2 border-dashed border-slate-200 p-5 text-center hover:border-brand-slate transition-colors">
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        id="custom-file-input"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="custom-file-input"
-                        className="cursor-pointer flex flex-col items-center justify-center gap-2"
-                      >
-                        <Upload size={24} className="text-brand-slate" />
-                        <span className="font-semibold text-brand-slate">
-                          {customFile ? customFile.name : 'Klik untuk mengunggah gambar referensi rajutan'}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          Format: PNG, JPG, WEBP (Maksimal 5MB)
-                        </span>
-                      </label>
-                    </div>
-
-                    {customFilePreview && (
-                      <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 p-2 bg-slate-50">
-                        <div className="relative h-16 w-16 shrink-0">
-                          <Image
-                            src={customFilePreview}
-                            alt="Preview"
-                            fill
-                            unoptimized
-                            className="rounded-lg border object-cover"
-                          />
-                        </div>
-                        <div className="text-[11px]">
-                          <p className="font-semibold text-slate-800">{customFile?.name}</p>
-                          <p className="text-slate-500">
-                            {((customFile?.size || 0) / 1024).toFixed(1)} KB · Siap diproses tim Produksi
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
