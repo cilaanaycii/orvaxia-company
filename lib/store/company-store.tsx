@@ -201,6 +201,7 @@ interface CompanyContextType {
   login: (email: string, password?: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
   registerStaff: (data: { fullName: string; email: string; phone: string; password?: string; invitationCode?: string; division?: string; position?: string }) => Promise<{ success: boolean; message: string; userId?: string }>;
   approveStaff: (userId: string, role: UserRole, division: string, position: string) => Promise<void>;
+  confirmCrewAccount: (userId: string) => Promise<void>;
   resendApprovalEmail: (userId: string) => Promise<void>;
   changeUserRole: (userId: string, role: UserRole, division: string, position: string) => Promise<void>;
   rejectStaff: (userId: string) => Promise<void>;
@@ -1211,10 +1212,42 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       if (result.emailSent) {
         toast.success(`Crew disetujui dan email dikirim ke ${result.profile.email}.`);
       } else {
-        toast.warning('Crew disetujui dan dapat masuk ke dashboard. Email belum dikonfigurasi; atur Resend untuk mengirim notifikasi.');
+        toast.success('Crew disetujui dan email akun dikonfirmasi. Crew sekarang dapat masuk tanpa email notifikasi.');
       }
     } catch {
       toast.error('Tidak dapat menghubungi server persetujuan. Periksa koneksi lalu coba lagi.');
+    }
+  };
+
+  const confirmCrewAccount = async (userId: string) => {
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return;
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      toast.error('Sesi Owner/CEO tidak ditemukan. Silakan masuk kembali.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/approve', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'confirm', userId }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error || 'Konfirmasi akun crew gagal.');
+        return;
+      }
+      toast.success(`Akun ${result.profile.full_name} dikonfirmasi. Crew sekarang dapat masuk.`);
+    } catch {
+      toast.error('Tidak dapat menghubungi server konfirmasi. Periksa koneksi lalu coba lagi.');
     }
   };
 
@@ -1392,6 +1425,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         login,
         registerStaff,
         approveStaff,
+        confirmCrewAccount,
         resendApprovalEmail,
         changeUserRole,
         deleteUser,

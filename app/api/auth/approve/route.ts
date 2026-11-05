@@ -33,6 +33,7 @@ function escapeHtml(value: string) {
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const resendApiKey = process.env.RESEND_API_KEY;
   const emailFrom = process.env.EMAIL_FROM;
 
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
   const action = body.action || 'approve';
   if (
     !body.userId ||
-    (action !== 'approve' && action !== 'resend') ||
+    (action !== 'approve' && action !== 'confirm' && action !== 'resend') ||
     (action === 'approve' &&
       (!body.role ||
         !allowedRoles.has(body.role) ||
@@ -118,13 +119,48 @@ export async function POST(request: Request) {
   }
 
   if (
-    (action === 'approve' && target.status !== 'pending_approval') ||
+    ((action === 'approve' && target.status !== 'pending_approval') ||
+      (action === 'confirm' && target.status !== 'active')) ||
     (action === 'resend' && target.status !== 'active')
   ) {
     return NextResponse.json(
-      { error: action === 'approve' ? 'Akun ini bukan lagi menunggu persetujuan.' : 'Email hanya dapat dikirim ulang untuk akun aktif.' },
+      {
+        error:
+          action === 'approve'
+            ? 'Akun ini bukan lagi menunggu persetujuan.'
+            : 'Aksi konfirmasi hanya dapat dilakukan untuk akun aktif.',
+      },
       { status: 409 }
     );
+  }
+
+  if (action !== 'resend') {
+    if (!serviceRoleKey?.trim()) {
+      return NextResponse.json(
+        { error: 'Konfirmasi akun belum dikonfigurasi. Administrator perlu menambahkan SUPABASE_SERVICE_ROLE_KEY di server.' },
+        { status: 503 }
+      );
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey.trim(), {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { error: confirmationError } = await adminClient.auth.admin.updateUserById(
+      target.id,
+      { email_confirm: true }
+    );
+
+    if (confirmationError) {
+      console.error('Owner account confirmation failed', confirmationError);
+      return NextResponse.json(
+        { error: 'Supabase gagal mengonfirmasi akun. Akun belum diaktifkan; coba lagi atau hubungi administrator.' },
+        { status: 502 }
+      );
+    }
+
+    if (action === 'confirm') {
+      return NextResponse.json({ success: true, confirmed: true, profile: target });
+    }
   }
 
   if (!resendApiKey?.trim() || !emailFrom?.trim()) {
@@ -159,6 +195,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       approved: true,
+      confirmed: true,
       emailSent: false,
       profile: approvedProfile,
     });
@@ -235,6 +272,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     approved: action === 'approve',
+    confirmed: action !== 'resend',
     emailSent: true,
     profile: approvedProfile,
   });

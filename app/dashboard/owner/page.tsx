@@ -30,6 +30,7 @@ export default function OwnerDashboard() {
   const {
     users,
     approveStaff,
+    confirmCrewAccount,
     resendApprovalEmail,
     changeUserRole,
     rejectStaff,
@@ -637,14 +638,24 @@ export default function OwnerDashboard() {
                           {!isUserOwner ? (
                             <>
                               {usr.status === 'active' && (
-                                <button
-                                  onClick={() => resendApprovalEmail(usr.id)}
-                                  className="rounded-lg border border-sky-200 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-50 transition-colors inline-flex items-center gap-1"
-                                  title="Kirim ulang email persetujuan"
-                                >
-                                  <Mail size={11} />
-                                  <span>Kirim Email</span>
-                                </button>
+                                <>
+                                  <button
+                                    onClick={() => confirmCrewAccount(usr.id)}
+                                    className="rounded-lg border border-emerald-200 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors inline-flex items-center gap-1"
+                                    title="Konfirmasi akun agar crew dapat masuk tanpa verifikasi email"
+                                  >
+                                    <ShieldCheck size={11} />
+                                    <span>Konfirmasi Akun</span>
+                                  </button>
+                                  <button
+                                    onClick={() => resendApprovalEmail(usr.id)}
+                                    className="rounded-lg border border-sky-200 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-50 transition-colors inline-flex items-center gap-1"
+                                    title="Kirim ulang email persetujuan"
+                                  >
+                                    <Mail size={11} />
+                                    <span>Kirim Email</span>
+                                  </button>
+                                </>
                               )}
                               <button
                                 onClick={() => startEditUser(usr)}
