@@ -27,6 +27,7 @@ import {
   Bell,
   Check,
   UserRound,
+  MoreHorizontal,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -61,6 +62,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   } = useCompanyStore();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [inboxOpen, setInboxOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('inbox') === '1') {
+      setInboxOpen(true);
+    }
+  }, [pathname]);
 
   // 1. Not Authenticated State
   if (!currentUser) {
@@ -187,17 +195,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/">
               <OrvaxiaLogo size={32} />
             </Link>
-            <Link
-              href="/"
-              className="text-[11px] font-semibold text-slate-400 hover:text-brand-slate"
-              title="Kembali ke Website Utama"
-            >
-              <ArrowLeft size={16} />
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/"
+                className="text-[11px] font-semibold text-slate-400 hover:text-brand-slate"
+                title="Kembali ke Website Utama"
+              >
+                <ArrowLeft size={16} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((open) => !open)}
+                aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="dashboard-mobile-account dashboard-mobile-navigation dashboard-mobile-footer"
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden"
+              >
+                <MoreHorizontal size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Account */}
-          <div className="mb-5">
+          <div id="dashboard-mobile-account" className={`mb-5 ${mobileMenuOpen ? 'block' : 'hidden'} md:block`}>
             <h2 className="mb-2 flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               <UserRound size={13} />
               Akun
@@ -270,7 +290,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Navigation Links for Internal Dashboards */}
-          <nav className="space-y-1">
+          <nav id="dashboard-mobile-navigation" className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2.5 block mb-1">
               {isExecutive ? 'Semua Divisi & Kontrol' : 'Menu Navigasi'}
             </span>
@@ -355,7 +375,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={route.path}
                   href={route.path}
-                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                  className={`${mobileMenuOpen ? 'flex' : 'hidden'} md:flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-brand-slate text-white shadow-sm'
                       : isUserAssignedRole
@@ -379,7 +399,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-slate-100 space-y-2">
+        <div id="dashboard-mobile-footer" className={`${mobileMenuOpen ? 'block' : 'hidden'} md:block pt-4 border-t border-slate-100 space-y-2`}>
           <Link
             href="/"
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-100"

@@ -24,10 +24,11 @@ import {
   Layers,
   Leaf,
   ChevronDown,
+  UserRound,
 } from 'lucide-react';
 
 export default function HomePage() {
-  const { siteSettings, gallery, faqs, cart } = useCompanyStore();
+  const { siteSettings, gallery, faqs, cart, currentUser } = useCompanyStore();
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   return (
@@ -51,11 +52,12 @@ export default function HomePage() {
                 <span>Keranjang ({cart.length})</span>
               </Link>
               <Link
-                href="/dashboard"
-                className="flex items-center gap-1.5 rounded-full bg-brand-slate px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-navy transition-all"
+                href={currentUser && currentUser.role !== 'customer' ? `/dashboard/${currentUser.role}` : '/auth'}
+                aria-label="Akun"
+                title="Akun"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-lavender/40 bg-white text-brand-slate shadow-sm transition-all hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy"
               >
-                <span>Portal Internal</span>
-                <ArrowRight size={14} />
+                <UserRound size={19} strokeWidth={1.8} aria-hidden="true" />
               </Link>
             </div>
           </div>

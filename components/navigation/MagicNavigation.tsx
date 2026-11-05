@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Building2, ShoppingBag, Users, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { Home, Building2, ShoppingBag, Users, Bell, type LucideIcon } from 'lucide-react';
 import { useCompanyStore } from '@/lib/store/company-store';
 
 interface NavItem {
@@ -18,19 +18,20 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'profile', label: 'Profile', icon: Building2, href: '/#about', isSection: true },
   { id: 'shop', label: 'Shop', icon: ShoppingBag, href: '/#shop', isSection: true },
   { id: 'team', label: 'Team', icon: Users, href: '/team' },
-  { id: 'portal', label: 'Portal', icon: ShieldCheck, href: '/dashboard' },
+  { id: 'inbox', label: 'Inbox', icon: Bell, href: '/dashboard' },
 ];
 
 export function MagicNavigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { cart, currentUser } = useCompanyStore();
+  const { cart, currentUser, notifications } = useCompanyStore();
   const [activeId, setActiveId] = useState('home');
+  const unreadCount = notifications.filter((notification) => !notification.readAt).length;
 
   // ScrollSpy to detect which section is currently in view when on the home page
   useEffect(() => {
     if (pathname !== '/') {
-      if (pathname.startsWith('/dashboard')) setActiveId('portal');
+      if (pathname.startsWith('/dashboard')) setActiveId('inbox');
       else if (pathname.startsWith('/shop') || pathname.startsWith('/checkout') || pathname.startsWith('/cart')) setActiveId('shop');
       else if (pathname.startsWith('/team')) setActiveId('team');
       else setActiveId('');
@@ -64,12 +65,12 @@ export function MagicNavigation() {
   const handleNavClick = (item: NavItem, e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (item.id === 'portal') {
-      setActiveId('portal');
+    if (item.id === 'inbox') {
+      setActiveId('inbox');
       if (currentUser && currentUser.role !== 'customer') {
-        router.push(`/dashboard/${currentUser.role}`);
+        router.push(`/dashboard/${currentUser.role}?inbox=1`);
       } else {
-        router.push('/dashboard');
+        router.push('/auth');
       }
       return;
     }
@@ -140,9 +141,10 @@ export function MagicNavigation() {
                 </span>
               )}
 
-              {/* Portal Role Indicator */}
-              {item.id === 'portal' && currentUser && (
-                <span className="absolute -top-1 -right-1 z-20 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 shadow-sm ring-2 ring-white" title={`Role: ${currentUser.role}`} />
+              {item.id === 'inbox' && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </button>
           );
