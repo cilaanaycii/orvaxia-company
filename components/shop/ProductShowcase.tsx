@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { ProductVariant } from '@/lib/types';
-import { ShoppingBag, ArrowRight, ShieldCheck, Clock, Sparkles } from 'lucide-react';
+import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export function ProductShowcase() {
@@ -39,10 +39,6 @@ export function ProductShowcase() {
 
   if (!rovella) return null;
 
-  // Semua gratis! Yang berbayar hanya ongkir saat pengiriman.
-  const unitPrice = 0;
-  const totalPrice = 0;
-
   const handleAddToCart = () => {
     addToCart({
       id: `cart-${Date.now()}`,
@@ -64,12 +60,10 @@ export function ProductShowcase() {
   };
 
   return (
-    <div className="w-full rounded-3xl border border-brand-lavender/30 bg-white/95 p-6 md:p-10 shadow-sm backdrop-blur-md">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-        {/* Visual Showcase: Gambar Model Rajutan yang Dipilih */}
+    <div className="w-full rounded-2xl border border-brand-lavender/30 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6 lg:p-8">
+      <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-12 lg:gap-8">
         <div className="lg:col-span-5 flex flex-col items-center justify-center">
-          <div className="relative w-full aspect-square max-w-md rounded-3xl overflow-hidden border border-brand-lavender/40 shadow-sm flex flex-col items-center justify-center p-4 bg-gradient-to-br from-brand-surface via-white to-brand-cream/80">
-            {/* Foto Varian Gambar Nyata dari Marketing */}
+          <div className="relative flex aspect-square w-full max-w-md flex-col items-center justify-center overflow-hidden rounded-2xl border border-brand-lavender/30 bg-brand-surface sm:rounded-3xl">
             {selectedVariant?.image ? (
               <Image
                 src={selectedVariant.image}
@@ -81,78 +75,42 @@ export function ProductShowcase() {
               />
             ) : (
               <div
-                className="w-36 h-48 rounded-[2rem] border-4 border-white shadow-xl flex flex-col items-center justify-between p-4"
-                style={{
-                  backgroundColor: selectedVariant?.colorHex || '#A99AB3',
-                  boxShadow: `0 16px 32px -8px ${selectedVariant?.colorHex}88`,
-                }}
+                className="flex h-36 w-36 items-center justify-center rounded-full border border-white/70 text-5xl font-serif text-white sm:h-44 sm:w-44"
+                style={{ backgroundColor: selectedVariant?.colorHex || '#A99AB3' }}
+                aria-label={`Warna ${selectedVariant?.name}`}
               >
-                <div className="w-full h-full border border-white/40 rounded-2xl p-2 flex flex-col justify-between text-white/90">
-                  <span className="text-[10px] font-semibold tracking-widest uppercase">ORVAXIA</span>
-                  <div className="text-center">
-                    <span className="text-xs font-serif font-bold text-white drop-shadow">Rovella</span>
-                    <span className="text-[9px] text-white/80 font-medium block">3-in-1 Knit</span>
-                  </div>
-                  <span className="text-[8px] bg-white/20 backdrop-blur-sm rounded px-1.5 py-0.5 text-center">
-                    Handmade
-                  </span>
-                </div>
+                R
               </div>
             )}
 
-            {/* Badges */}
-            <div className="absolute top-4 left-4 rounded-full bg-brand-navy text-white px-3 py-1 text-[10px] font-bold tracking-wider uppercase shadow">
-              Pre-Order 5–7 Hari
-            </div>
-
-            <div className="absolute bottom-4 right-4 text-[10px] font-bold text-brand-navy bg-white/90 px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-              Model: {selectedVariant?.name}
+            <div className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 text-xs font-semibold text-brand-navy sm:bottom-4 sm:left-4">
+              {selectedVariant?.name}
             </div>
           </div>
-
-          <p className="mt-2 text-center text-xs text-slate-500">
-            Estimasi pengerjaan rajut: <strong>5–7 hari kerja</strong>
-          </p>
         </div>
 
-        {/* Product Details & Form */}
-        <div className="lg:col-span-7 flex flex-col justify-between space-y-5">
+        <div className="flex flex-col justify-between space-y-5 lg:col-span-7">
           <div>
-            <span className="badge-brand">Produk Unggulan Resmi</span>
-
-            <h3 className="font-serif text-3xl font-bold text-brand-navy tracking-tight mt-2">
+            <h3 className="mt-1 font-serif text-2xl font-bold tracking-tight text-brand-navy sm:text-3xl">
               {rovella.name}
             </h3>
-            <p className="text-xs font-medium text-brand-slate mt-0.5">
-              {rovella.tagline}
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Tas tumbler rajut yang bisa dilipat menjadi pouch kecil.
             </p>
 
-            <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-              {rovella.description}
-            </p>
-
-            {/* Price Display Clean */}
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy">
-                Gratis
-              </span>
-              <span className="text-xs text-slate-500">
-                (Hanya bayar ongkir)
-              </span>
+              <span className="font-serif text-2xl font-bold text-brand-navy">Rp0</span>
+              <span className="text-xs text-slate-500">ongkir dibayar pembeli</span>
             </div>
           </div>
 
-          {/* Interactive Customization Options */}
-          <div className="space-y-4 border-t border-slate-100 pt-3 text-xs">
-            {/* 1. Pilih Gambar / Model Varian (Kelolaan Divisi Marketing) */}
+          <div className="space-y-4 border-t border-slate-100 pt-4 text-sm">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block">
-                  Pilih Model / Desain Rajutan
+                <label className="block text-sm font-semibold text-slate-800">
+                  Pilih desain
                 </label>
-                <span className="text-[10px] text-slate-400">
-                  {rovella.variants.length} pilihan model
-                </span>
+                <span className="text-xs text-slate-500">{rovella.variants.length} pilihan</span>
               </div>
               <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
                 {(rovella.variants || []).map((variant) => (
@@ -184,21 +142,15 @@ export function ProductShowcase() {
                         ✓
                       </span>
                     )}
-                    <div className="pr-2">
-                      <p className="text-xs font-semibold leading-tight">{variant.name}</p>
-                      <p className="text-[10px] text-slate-400 font-normal mt-0.5 line-clamp-1 max-w-[120px]">
-                        {variant.description}
-                      </p>
-                    </div>
+                    <p className="pr-2 text-xs font-semibold leading-tight">{variant.name}</p>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* 2. Ukuran Botol Custom (Tinggi & Lebar) - BUKAN BERBAYAR */}
             <div>
-              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block mb-1">
-                Ukuran Botol Kamu (Tinggi & Diameter/Lebar)
+              <label className="mb-1 block text-sm font-semibold text-slate-800">
+                Ukuran botol
               </label>
               <input
                 type="text"
@@ -208,15 +160,14 @@ export function ProductShowcase() {
                 onChange={(e) => setCustomBottleDimensions(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3.5 text-xs text-brand-navy focus:border-brand-slate focus:bg-white focus:outline-none"
               />
-              <p className="text-[10px] text-slate-400 mt-1">
-                💡 Tim rajut kami akan menyesuaikan rajutan persis dengan dimensi botol minum kamu tanpa biaya tambahan.
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Rajutan disesuaikan dengan ukuran botolmu.
               </p>
             </div>
 
-            {/* 3. Aksesoris Charm (Gratis) */}
             <div>
-              <label className="font-semibold text-slate-800 uppercase tracking-wider text-[11px] block mb-1.5">
-                Tambahan Aksesoris Charm (Gratis)
+              <label className="mb-1.5 block text-sm font-semibold text-slate-800">
+                Charm
               </label>
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-wrap">
                 {(rovella.customCharms || []).map((charm) => (
@@ -236,11 +187,10 @@ export function ProductShowcase() {
               </div>
             </div>
 
-            {/* Quantity & Catatan Tambahan */}
-            <div className="grid grid-cols-12 gap-3 pt-1">
-              <div className="col-span-4">
-                <label className="font-semibold text-slate-800 text-[10px] uppercase block mb-1">
-                  Jumlah (pcs)
+            <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-12">
+              <div className="sm:col-span-4">
+                <label className="mb-1 block text-xs font-semibold text-slate-800">
+                  Jumlah
                 </label>
                 <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1">
                   <button
@@ -261,9 +211,9 @@ export function ProductShowcase() {
                 </div>
               </div>
 
-              <div className="col-span-8">
-                <label className="font-semibold text-slate-800 text-[10px] uppercase block mb-1">
-                  Catatan Khusus (Warna tali / request inisial)
+              <div className="sm:col-span-8">
+                <label className="mb-1 block text-xs font-semibold text-slate-800">
+                  Catatan
                 </label>
                 <input
                   type="text"
@@ -276,21 +226,20 @@ export function ProductShowcase() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-100">
+          <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
             <button
               onClick={handleDirectCheckout}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-brand-navy py-4 text-sm font-bold text-white shadow-lg hover:bg-brand-slate active:scale-[0.99] transition-all"
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-navy py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-slate"
             >
-              <ShoppingBag size={18} />
-              <span>Pesan Pre-Order Sekarang (Gratis, Hanya Ongkir)</span>
+              <ShoppingBag size={17} />
+              <span>Lanjutkan pemesanan</span>
               <ArrowRight size={16} />
             </button>
             <button
               onClick={handleAddToCart}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-brand-slate py-2.5 text-xs font-bold text-brand-slate hover:bg-brand-surface active:scale-[0.99] transition-all"
+              className="min-h-10 w-full rounded-xl border border-brand-slate py-2.5 text-sm font-semibold text-brand-slate transition-colors hover:bg-brand-surface"
             >
-              <span>+ Masukkan ke Keranjang</span>
+              <span>Tambah ke keranjang</span>
             </button>
           </div>
         </div>
