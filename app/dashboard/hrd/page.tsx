@@ -94,12 +94,15 @@ export default function HRDDashboard() {
     m.division.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (currentUser?.role !== 'owner' && currentUser?.role !== 'ceo') {
+  if (
+    currentUser?.status !== 'active' ||
+    (currentUser.role !== 'owner' && currentUser.role !== 'ceo' && currentUser.role !== 'hrd')
+  ) {
     return (
       <div className="rounded-3xl border border-amber-200 bg-white p-8 text-center shadow-sm">
         <h2 className="font-serif text-2xl font-bold text-brand-navy">Akses evaluasi crew dibatasi</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Data dan evaluasi crew hanya dapat dikelola oleh CEO dan Owner.
+          Evaluasi kinerja hanya dapat dikelola oleh anggota HRD aktif, CEO, dan Owner.
         </p>
       </div>
     );
@@ -145,7 +148,7 @@ export default function HRDDashboard() {
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
-            Database 31 Anggota
+            Database Anggota ({teamMembers.length}/31)
           </button>
           <button
             onClick={() => setActiveTab('evaluate')}

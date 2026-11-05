@@ -312,6 +312,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const hasExecutiveAccess =
     currentUser?.status === 'active' &&
     (currentUser.role === 'owner' || currentUser.role === 'ceo');
+  const canManagePerformanceReviews =
+    currentUser?.status === 'active' &&
+    (currentUser.role === 'owner' || currentUser.role === 'ceo' || currentUser.role === 'hrd');
 
   // Load from LocalStorage
   useEffect(() => {
@@ -500,26 +503,33 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const isExecutive =
         currentProfile.status === 'active' &&
         (currentProfile.role === 'owner' || currentProfile.role === 'ceo');
+      const canManageReviews =
+        currentProfile.status === 'active' &&
+        (currentProfile.role === 'owner' || currentProfile.role === 'ceo' || currentProfile.role === 'hrd');
       await loadTeamMembers(isExecutive);
       if (!active) return;
-      if (!isExecutive) {
-        setPerformanceReviews([]);
-      }
-      const { data: profiles, error: profilesError } = await authClient
-        .from('profiles')
-        .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
-        .order('full_name');
+      if (isExecutive) {
+        const { data: profiles, error: profilesError } = await authClient
+          .from('profiles')
+          .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
+          .order('full_name');
 
-      if (!active) return;
-      if (profilesError) {
+        if (!active) return;
+        if (profilesError) {
+          setUsers([currentProfile]);
+          toast.error('Data crew tidak dapat dimuat sesuai hak akses akun.');
+          return;
+        }
+
+        setUsers((profiles || []).map((profile) => mapSupabaseProfile(profile as SupabaseProfileRow)));
+      } else {
         setUsers([currentProfile]);
-        toast.error('Data crew tidak dapat dimuat sesuai hak akses akun.');
+      }
+
+      if (!canManageReviews) {
+        setPerformanceReviews([]);
         return;
       }
-
-      setUsers((profiles || []).map((profile) => mapSupabaseProfile(profile as SupabaseProfileRow)));
-
-      if (!isExecutive) return;
       const { data: reviews, error: reviewsError } = await authClient
         .from('performance_reviews')
         .select('*')
@@ -1199,8 +1209,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addPerformanceReview = async (review: Omit<PerformanceReview, 'id'>): Promise<boolean> => {
-    if (!hasExecutiveAccess) {
-      toast.error('Hanya CEO dan Owner yang dapat mengelola evaluasi crew.');
+    if (!canManagePerformanceReviews) {
+      toast.error('Hanya HRD, CEO, dan Owner aktif yang dapat mengelola evaluasi crew.');
       return false;
     }
     if (!supabase || !currentUser) {
