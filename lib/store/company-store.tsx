@@ -201,6 +201,7 @@ interface CompanyContextType {
   login: (email: string, password?: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
   registerStaff: (data: { fullName: string; email: string; phone: string; password?: string; invitationCode?: string; division?: string; position?: string }) => Promise<{ success: boolean; message: string; userId?: string }>;
   approveStaff: (userId: string, role: UserRole, division: string, position: string) => Promise<void>;
+  resendApprovalEmail: (userId: string) => Promise<void>;
   changeUserRole: (userId: string, role: UserRole, division: string, position: string) => Promise<void>;
   rejectStaff: (userId: string) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
@@ -1175,7 +1176,78 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     division: string,
     position: string
   ) => {
-    await changeUserRole(userId, role, division, position);
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return;
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      toast.error('Sesi Owner/CEO tidak ditemukan. Silakan masuk kembali.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/approve', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'approve', userId, role, division, position }),
+      });
+      const result = await response.json();
+
+      if (result.profile && result.approved) {
+        const updatedUser = mapSupabaseProfile(result.profile as SupabaseProfileRow);
+        setUsers((prev) => prev.map((user) => (user.id === userId ? updatedUser : user)));
+      }
+
+      if (!response.ok) {
+        toast.error(result.error || 'Persetujuan atau pengiriman email gagal.');
+        return;
+      }
+
+      if (result.emailSent) {
+        toast.success(`Crew disetujui dan email dikirim ke ${result.profile.email}.`);
+      } else {
+        toast.warning('Crew disetujui dan dapat masuk ke dashboard. Email belum dikonfigurasi; atur Resend untuk mengirim notifikasi.');
+      }
+    } catch {
+      toast.error('Tidak dapat menghubungi server persetujuan. Periksa koneksi lalu coba lagi.');
+    }
+  };
+
+  const resendApprovalEmail = async (userId: string) => {
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return;
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      toast.error('Sesi Owner/CEO tidak ditemukan. Silakan masuk kembali.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/approve', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'resend', userId }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error || 'Email persetujuan gagal dikirim ulang.');
+        return;
+      }
+      toast.success(`Email persetujuan dikirim ulang ke ${result.profile.email}.`);
+    } catch {
+      toast.error('Tidak dapat menghubungi server email. Periksa koneksi lalu coba lagi.');
+    }
   };
 
   const deleteUser = async (userId: string) => {
@@ -1320,6 +1392,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         login,
         registerStaff,
         approveStaff,
+        resendApprovalEmail,
         changeUserRole,
         deleteUser,
         resetAllDataToZero,

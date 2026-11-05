@@ -74,7 +74,10 @@ can read or manage other profiles; these rules are enforced by Supabase Row Leve
 Security (RLS), not just by dashboard navigation.
 
 1. Copy `.env.example` to `.env.local` and set your Supabase project URL, anon key,
-   and a long, private `CREW_INVITATION_CODE`. Never use the anon key as a secret.
+   a long, private `CREW_INVITATION_CODE`, and the Resend `RESEND_API_KEY` plus
+   `EMAIL_FROM` sender address. Verify the sender domain/address in Resend before
+   sending approval emails. Never expose the Resend API key in a `NEXT_PUBLIC_*`
+   variable or commit real credentials.
 2. In Supabase Authentication → URL Configuration, add the production URL
    `https://<your-production-domain>/auth/reset-password` to the Redirect URLs list
    so password recovery can return to the reset-password page.
@@ -95,7 +98,9 @@ Security (RLS), not just by dashboard navigation.
    ```
 
 5. Restart the Next.js server after changing environment variables. Set the same
-   server-only invitation code in the production hosting environment.
+   server-only invitation code and Resend email settings in the production hosting
+   environment. Owner/CEO approval activates the crew profile and emails the
+   assigned division and position; active crew rows have a resend-email action.
 
 Legacy local/cloud crew accounts are not automatically trusted or imported.
 Recreate identities in Supabase Auth and assign privileged roles only through the

@@ -22,6 +22,7 @@ import {
   Check,
   X,
   KeyRound,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,6 +30,7 @@ export default function OwnerDashboard() {
   const {
     users,
     approveStaff,
+    resendApprovalEmail,
     changeUserRole,
     rejectStaff,
     deleteUser,
@@ -634,6 +636,16 @@ export default function OwnerDashboard() {
                         <td className="py-3 text-right space-x-1.5">
                           {!isUserOwner ? (
                             <>
+                              {usr.status === 'active' && (
+                                <button
+                                  onClick={() => resendApprovalEmail(usr.id)}
+                                  className="rounded-lg border border-sky-200 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-50 transition-colors inline-flex items-center gap-1"
+                                  title="Kirim ulang email persetujuan"
+                                >
+                                  <Mail size={11} />
+                                  <span>Kirim Email</span>
+                                </button>
+                              )}
                               <button
                                 onClick={() => startEditUser(usr)}
                                 className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center gap-1"
