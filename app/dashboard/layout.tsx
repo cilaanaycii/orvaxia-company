@@ -262,6 +262,74 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
 
+          <div className="relative mb-5">
+            <button
+              type="button"
+              onClick={() => setInboxOpen((open) => !open)}
+              aria-label={`Inbox notifikasi, ${notifications.filter((item) => !item.readAt).length} belum dibaca`}
+              aria-expanded={inboxOpen}
+              className="relative flex w-full items-center justify-between rounded-xl border border-brand-lavender/30 bg-white px-3 py-2.5 text-xs font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-surface"
+            >
+              <span className="flex items-center gap-2">
+                <Bell size={16} className="text-brand-slate" />
+                Inbox Notifikasi
+              </span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] ${
+                notifications.some((item) => !item.readAt)
+                  ? 'bg-rose-100 text-rose-700'
+                  : 'bg-slate-100 text-slate-500'
+              }`}>
+                {notifications.filter((item) => !item.readAt).length} baru
+              </span>
+            </button>
+            {inboxOpen && (
+              <div className="absolute left-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <h2 className="text-sm font-bold text-slate-800">Inbox Notifikasi</h2>
+                  <button
+                    type="button"
+                    onClick={() => void markAllNotificationsRead()}
+                    className="text-[11px] font-semibold text-brand-slate hover:underline"
+                  >
+                    Tandai semua dibaca
+                  </button>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-8 text-center text-xs text-slate-500">
+                      Belum ada notifikasi.
+                    </p>
+                  ) : notifications.slice(0, 20).map((notification) => (
+                    <button
+                      type="button"
+                      key={notification.id}
+                      onClick={() => {
+                        if (!notification.readAt) void markNotificationRead(notification.id);
+                        setInboxOpen(false);
+                        router.push(notification.href);
+                      }}
+                      className={`w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${
+                        notification.readAt ? 'bg-white' : 'bg-sky-50/70'
+                      }`}
+                    >
+                      <span className="flex items-start gap-2">
+                        {!notification.readAt && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-600" />}
+                        {notification.readAt && <Check size={12} className="mt-1 shrink-0 text-emerald-600" />}
+                        <span className="min-w-0">
+                          <span className="block text-xs font-bold text-slate-800">{notification.title}</span>
+                          <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-600">{notification.message}</span>
+                          <span className="mt-1 block text-[10px] text-slate-400">
+                            {new Date(notification.createdAt).toLocaleString('id-ID')}
+                          </span>
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Navigation Links for Internal Dashboards */}
           <nav className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2.5 block mb-1">
@@ -322,71 +390,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Dashboard Workspace */}
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        <div className="mb-4 flex justify-end">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setInboxOpen((open) => !open)}
-              aria-label={`Inbox notifikasi, ${notifications.filter((item) => !item.readAt).length} belum dibaca`}
-              aria-expanded={inboxOpen}
-              className="relative inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-            >
-              <Bell size={15} />
-              Inbox
-              {notifications.some((item) => !item.readAt) && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white">
-                  {notifications.filter((item) => !item.readAt).length}
-                </span>
-              )}
-            </button>
-            {inboxOpen && (
-              <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                  <h2 className="text-sm font-bold text-slate-800">Notifikasi</h2>
-                  <button
-                    type="button"
-                    onClick={() => void markAllNotificationsRead()}
-                    className="text-[11px] font-semibold text-brand-slate hover:underline"
-                  >
-                    Tandai semua dibaca
-                  </button>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-xs text-slate-500">
-                      Belum ada notifikasi.
-                    </p>
-                  ) : notifications.slice(0, 20).map((notification) => (
-                    <button
-                      type="button"
-                      key={notification.id}
-                      onClick={() => {
-                        if (!notification.readAt) void markNotificationRead(notification.id);
-                        setInboxOpen(false);
-                        router.push(notification.href);
-                      }}
-                      className={`w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${
-                        notification.readAt ? 'bg-white' : 'bg-sky-50/70'
-                      }`}
-                    >
-                      <span className="flex items-start gap-2">
-                        {!notification.readAt && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-600" />}
-                        {notification.readAt && <Check size={12} className="mt-1 shrink-0 text-emerald-600" />}
-                        <span className="min-w-0">
-                          <span className="block text-xs font-bold text-slate-800">{notification.title}</span>
-                          <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-600">{notification.message}</span>
-                          <span className="mt-1 block text-[10px] text-slate-400">
-                            {new Date(notification.createdAt).toLocaleString('id-ID')}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
         {children}
       </main>
     </div>
