@@ -273,6 +273,16 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 const STORAGE_KEY = 'orvaxia_company_db_v3';
 const CART_STORAGE_KEY = 'orvaxia_cart_v3';
 
+const isMissingTableError = (error: { code?: string; message?: string } | null | undefined) => {
+  if (!error) return false;
+  const message = error.message?.toLowerCase() ?? '';
+  return (
+    error.code === '42P01' ||
+    message.includes('does not exist') ||
+    (message.includes('relation') && message.includes('does not exist'))
+  );
+};
+
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -533,6 +543,11 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       if (!active) return;
       if (error) {
         console.error('Dashboard notification load failed', error);
+        if (isMissingTableError(error)) {
+          setNotifications([]);
+          hasShownLoadError = false;
+          return;
+        }
         if (!hasShownLoadError) {
           toast.error('Inbox notifikasi gagal dimuat. Terapkan migrasi inbox di Supabase.');
           hasShownLoadError = true;
@@ -576,6 +591,11 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       if (!active) return;
       if (error) {
         console.error('Company orders load failed', error);
+        if (isMissingTableError(error)) {
+          setOrders([]);
+          hasShownLoadError = false;
+          return;
+        }
         if (!hasShownLoadError) {
           toast.error('Pesanan lintas perangkat gagal dimuat. Terapkan migrasi inbox/pesanan di Supabase.');
           hasShownLoadError = true;
@@ -858,6 +878,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       .update({ read_at: readAt })
       .eq('id', notificationId);
     if (error) {
+      if (isMissingTableError(error)) {
+        setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId));
+        return;
+      }
       console.error('Notification read update failed', error);
       toast.error('Notifikasi gagal ditandai sudah dibaca.');
       return;
@@ -878,6 +902,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       .eq('recipient_id', currentUser.id)
       .is('read_at', null);
     if (error) {
+      if (isMissingTableError(error)) {
+        setNotifications([]);
+        return;
+      }
       console.error('Bulk notification read update failed', error);
       toast.error('Notifikasi gagal ditandai sudah dibaca.');
       return;
