@@ -49,15 +49,34 @@ function getClients() {
   };
 }
 
+function isMissingStorageObject(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const storageError = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    originalError?: unknown;
+  };
+  if (storageError.status === 404 || storageError.statusCode === '404') return true;
+
+  const response = storageError.originalError;
+  return response instanceof Response && [400, 404].includes(response.status);
+}
+
 export async function GET() {
   const clients = getClients();
   if (!clients) {
     return NextResponse.json({ error: 'Penyimpanan katalog belum dikonfigurasi.' }, { status: 503 });
   }
 
+  const { error: bucketError } = await clients.admin.storage.getBucket(BUCKET);
+  if (bucketError) {
+    console.error('Shared product catalog bucket unavailable', bucketError);
+    return NextResponse.json({ error: 'Penyimpanan katalog tidak tersedia.' }, { status: 503 });
+  }
+
   const { data: file, error } = await clients.admin.storage.from(BUCKET).download(CATALOG_PATH);
   if (error) {
-    if (error.message === 'Object not found') return NextResponse.json({ variants: null });
+    if (isMissingStorageObject(error)) return NextResponse.json({ variants: null });
     console.error('Shared product variants download failed', error);
     return NextResponse.json({ error: 'Katalog bersama gagal dimuat.' }, { status: 500 });
   }

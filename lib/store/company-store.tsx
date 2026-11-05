@@ -377,7 +377,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         if (!active) return;
         console.error('Shared product catalog load failed', error);
-        toast.error(error instanceof Error ? error.message : 'Katalog bersama gagal dimuat.');
       }
     };
 
