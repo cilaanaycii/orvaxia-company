@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Bell,
   Check,
+  UserRound,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -195,31 +196,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
 
-          {/* Current User Card */}
-          <div className="mb-6 rounded-2xl bg-brand-surface/70 border border-brand-lavender/30 p-3.5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-slate text-white font-bold text-xs shadow-inner">
-                {currentUser.fullName.slice(0, 2).toUpperCase() || 'OV'}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-xs text-brand-navy truncate">
-                  {currentUser.fullName}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span
-                    className={`rounded-full px-2 py-0.2 text-[9px] font-bold uppercase ${
-                      isOwner ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-800'
-                    }`}
-                  >
-                    {isOwner ? '👑 Owner' : currentUser.role}
-                  </span>
-                  <span className="text-[10px] text-slate-400 truncate">
-                    {currentUser.division || 'Internal'}
-                  </span>
+          {/* Account */}
+          <div className="mb-5">
+            <h2 className="mb-2 flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <UserRound size={13} />
+              Akun
+            </h2>
+            <div className="rounded-2xl bg-brand-surface/70 border border-brand-lavender/30 p-3.5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-slate text-white shadow-inner">
+                  <UserRound size={19} aria-hidden="true" />
                 </div>
-                <p className="text-[9.5px] text-slate-400 truncate mt-0.5" title={currentUser.email}>
-                  {currentUser.email}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-xs text-brand-navy truncate">
+                    {currentUser.fullName}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span
+                      className={`rounded-full px-2 py-0.2 text-[9px] font-bold uppercase ${
+                        isOwner ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {isOwner ? '👑 Owner' : currentUser.role}
+                    </span>
+                    <span className="text-[10px] text-slate-400 truncate">
+                      {currentUser.division || 'Internal'}
+                    </span>
+                  </div>
+                  <p className="text-[9.5px] text-slate-400 truncate mt-0.5" title={currentUser.email}>
+                    {currentUser.email}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -262,30 +269,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
 
-          <div className="relative mb-5">
+          {/* Navigation Links for Internal Dashboards */}
+          <nav className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2.5 block mb-1">
+              {isExecutive ? 'Semua Divisi & Kontrol' : 'Menu Navigasi'}
+            </span>
+            <div className="relative">
             <button
               type="button"
               onClick={() => setInboxOpen((open) => !open)}
               aria-label={`Inbox notifikasi, ${notifications.filter((item) => !item.readAt).length} belum dibaca`}
               aria-expanded={inboxOpen}
-              className="relative flex w-full items-center justify-between rounded-xl border border-brand-lavender/30 bg-white px-3 py-2.5 text-xs font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-surface"
+              className={`relative flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                inboxOpen
+                  ? 'bg-brand-slate text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
             >
               <span className="flex items-center gap-2">
-                <Bell size={16} className="text-brand-slate" />
-                Inbox Notifikasi
+                <Bell size={16} />
+                Inbox
               </span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] ${
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                 notifications.some((item) => !item.readAt)
-                  ? 'bg-rose-100 text-rose-700'
-                  : 'bg-slate-100 text-slate-500'
+                  ? inboxOpen ? 'bg-white text-rose-700' : 'bg-rose-100 text-rose-700'
+                  : inboxOpen ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
               }`}>
                 {notifications.filter((item) => !item.readAt).length} baru
               </span>
             </button>
             {inboxOpen && (
-              <div className="absolute left-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+              <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                  <h2 className="text-sm font-bold text-slate-800">Inbox Notifikasi</h2>
+                  <h2 className="text-sm font-bold text-slate-800">Notifikasi</h2>
                   <button
                     type="button"
                     onClick={() => void markAllNotificationsRead()}
@@ -328,13 +344,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Navigation Links for Internal Dashboards */}
-          <nav className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2.5 block mb-1">
-              {isExecutive ? 'Semua Divisi & Kontrol' : 'Menu Navigasi'}
-            </span>
+            </div>
             {visibleRoutes.map((route) => {
               const Icon = route.icon;
               const isActive = pathname === route.path;
