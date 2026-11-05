@@ -212,6 +212,7 @@ export interface CartItem {
 
 interface CompanyContextType {
   currentUser: UserProfile | null;
+  isAuthReady: boolean;
   users: UserProfile[];
   siteSettings: SiteSettings;
   updateSiteSettings: (settings: Partial<SiteSettings>) => void;
@@ -285,6 +286,7 @@ const isMissingTableError = (error: { code?: string; message?: string } | null |
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
@@ -356,6 +358,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       setUsers([]);
       setPerformanceReviews([]);
       setTasks([]);
+      setIsAuthReady(true);
       return;
     }
 
@@ -501,9 +504,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     authClient.auth.getSession().then(({ data, error }) => {
       if (error) {
         toast.error('Sesi Supabase gagal diperiksa.');
+        setIsAuthReady(true);
         return;
       }
-      void loadProfile(data.session?.user.id || null);
+      void loadProfile(data.session?.user.id || null).then(
+        () => {
+          if (active) setIsAuthReady(true);
+        },
+        (loadError: unknown) => {
+          console.error('Initial account profile load failed', loadError);
+          if (active) {
+            setCurrentUser(null);
+            setIsAuthReady(true);
+            toast.error('Profil akun gagal dimuat dari Supabase.');
+          }
+        }
+      );
     });
 
     const { data: authListener } = authClient.auth.onAuthStateChange((_event, session) => {
@@ -1580,6 +1596,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     <CompanyContext.Provider
       value={{
         currentUser,
+        isAuthReady,
         users,
         siteSettings,
         updateSiteSettings,

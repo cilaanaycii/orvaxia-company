@@ -6,15 +6,18 @@ import { useCompanyStore } from '@/lib/store/company-store';
 
 export default function DashboardRootPage() {
   const router = useRouter();
-  const { currentUser } = useCompanyStore();
+  const { currentUser, isAuthReady } = useCompanyStore();
 
   useEffect(() => {
+    if (!isAuthReady) return;
+
+    const query = window.location.search;
     if (currentUser?.role && currentUser.role !== 'customer') {
-      router.replace(`/dashboard/${currentUser.role}`);
+      router.replace(`/dashboard/${currentUser.role}${query}`);
     } else {
-      router.replace('/dashboard/owner');
+      router.replace('/auth');
     }
-  }, [currentUser, router]);
+  }, [currentUser, isAuthReady, router]);
 
   return (
     <div className="flex h-64 items-center justify-center">

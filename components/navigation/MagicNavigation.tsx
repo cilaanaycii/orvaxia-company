@@ -24,7 +24,7 @@ const NAV_ITEMS: NavItem[] = [
 export function MagicNavigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { cart, currentUser, notifications } = useCompanyStore();
+  const { cart, notifications } = useCompanyStore();
   const [activeId, setActiveId] = useState('home');
   const unreadCount = notifications.filter((notification) => !notification.readAt).length;
 
@@ -67,11 +67,7 @@ export function MagicNavigation() {
 
     if (item.id === 'inbox') {
       setActiveId('inbox');
-      if (currentUser && currentUser.role !== 'customer') {
-        router.push(`/dashboard/${currentUser.role}?inbox=1`);
-      } else {
-        router.push('/auth');
-      }
+      router.push('/dashboard?inbox=1');
       return;
     }
 
