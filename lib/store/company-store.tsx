@@ -1322,7 +1322,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       });
       const result = await response.json();
       if (!response.ok) {
-        toast.error(result.error || 'Pendaftaran crew gagal diproses.');
         return { success: false, message: result.error || 'Pendaftaran crew gagal diproses.' };
       }
 
@@ -1333,7 +1332,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       );
       return { success: true, message: 'Pendaftaran berhasil', userId: result.userId };
     } catch {
-      toast.error('Tidak dapat terhubung ke server pendaftaran.');
       return { success: false, message: 'Tidak dapat terhubung ke server pendaftaran.' };
     }
   };

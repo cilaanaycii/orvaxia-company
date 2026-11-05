@@ -2,6 +2,28 @@ import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
+function getSignupErrorMessage(code: string | undefined) {
+  switch (code) {
+    case 'user_already_exists':
+    case 'email_exists':
+      return 'Email ini sudah terdaftar. Silakan masuk atau gunakan fitur lupa kata sandi.';
+    case 'email_address_invalid':
+      return 'Format email tidak valid. Periksa kembali alamat email yang dimasukkan.';
+    case 'weak_password':
+    case 'password_too_short':
+      return 'Kata sandi terlalu lemah. Gunakan kata sandi yang lebih kuat.';
+    case 'over_email_send_rate_limit':
+    case 'email_send_rate_limit_exceeded':
+      return 'Terlalu banyak permintaan konfirmasi email. Tunggu beberapa saat sebelum mencoba lagi.';
+    case 'signup_disabled':
+      return 'Pendaftaran akun sedang dinonaktifkan. Hubungi administrator.';
+    case 'email_provider_disabled':
+      return 'Pendaftaran melalui email belum tersedia. Hubungi administrator.';
+    default:
+      return 'Sistem autentikasi gagal memproses pendaftaran. Coba lagi nanti atau hubungi administrator.';
+  }
+}
+
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -83,8 +105,9 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    console.error('Crew sign-up failed:', { code: error.code, status: error.status });
     return NextResponse.json(
-      { error: 'Pendaftaran tidak berhasil. Periksa email atau coba lagi nanti.' },
+      { error: getSignupErrorMessage(error.code) },
       { status: 400 }
     );
   }
