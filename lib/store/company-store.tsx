@@ -17,8 +17,8 @@ import {
   GalleryItem,
   SiteSettings,
   OrderStatus,
-  PaymentStatus,
   UserRole,
+  DashboardNotification,
 } from '@/lib/types';
 import { supabase } from '@/lib/supabase/client';
 import { mapSupabaseProfile, SupabaseProfileRow } from '@/lib/supabase/profile';
@@ -56,6 +56,58 @@ interface PerformanceReviewRow {
   average_score: number;
   notes: string;
   recommendations: string;
+}
+
+interface CompanyOrderRow {
+  id: string;
+  reference_code: string;
+  details: Order;
+  order_status: Order['orderStatus'];
+  payment_status: Order['paymentStatus'];
+  assigned_staff_id: string | null;
+  assigned_staff_name: string | null;
+  tracking_number: string | null;
+  shipping_proof_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DashboardNotificationRow {
+  id: string;
+  kind: DashboardNotification['kind'];
+  title: string;
+  message: string;
+  href: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+function mapCompanyOrder(row: CompanyOrderRow): Order {
+  return {
+    ...row.details,
+    id: row.id,
+    referenceCode: row.reference_code,
+    orderStatus: row.order_status,
+    paymentStatus: row.payment_status,
+    assignedStaffId: row.assigned_staff_id || undefined,
+    assignedStaffName: row.assigned_staff_name || undefined,
+    trackingNumber: row.tracking_number || undefined,
+    shippingProofUrl: row.shipping_proof_url || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapDashboardNotification(row: DashboardNotificationRow): DashboardNotification {
+  return {
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    message: row.message,
+    href: row.href,
+    createdAt: row.created_at,
+    readAt: row.read_at,
+  };
 }
 
 interface CrewTaskRow {
@@ -172,6 +224,9 @@ interface CompanyContextType {
   teamMembers: TeamMember[];
   updateTeamMember: (id: string, member: Partial<TeamMember>) => Promise<void>;
   orders: Order[];
+  notifications: DashboardNotification[];
+  markNotificationRead: (notificationId: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
   createOrder: (orderData: Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'>) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus, changedBy: string, notes?: string) => void;
   verifyPayment: (orderId: string, verifiedBy: string) => void;
@@ -222,6 +277,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     ...INITIAL_SITE_SETTINGS,
     crewInvitationCode: '',
@@ -238,6 +294,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [faqs] = useState<FAQItem[]>(INITIAL_FAQS);
   const [gallery] = useState<GalleryItem[]>(INITIAL_GALLERY);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const currentUserId = currentUser?.id;
+  const currentUserStatus = currentUser?.status;
+  const currentUserRole = currentUser?.role;
   const hasExecutiveAccess =
     currentUser?.status === 'active' &&
     (currentUser.role === 'owner' || currentUser.role === 'ceo');
@@ -448,6 +507,99 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       authListener.subscription.unsubscribe();
     };
   }, [isHydrated]);
+
+  useEffect(() => {
+    if (!supabase || !currentUserId || currentUserStatus !== 'active') {
+      setNotifications([]);
+      return;
+    }
+
+    const authClient = supabase;
+    let active = true;
+    let hasShownLoadError = false;
+    const generateOverdueTaskReminders = async () => {
+      const { error: reminderError } = await authClient.rpc('create_overdue_task_reminders');
+      if (reminderError && active && !hasShownLoadError) {
+        console.error('Overdue task reminder generation failed', reminderError);
+      }
+    };
+
+    const loadNotifications = async () => {
+      const { data, error } = await authClient
+        .from('dashboard_notifications')
+        .select('id,kind,title,message,href,created_at,read_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (!active) return;
+      if (error) {
+        console.error('Dashboard notification load failed', error);
+        if (!hasShownLoadError) {
+          toast.error('Inbox notifikasi gagal dimuat. Terapkan migrasi inbox di Supabase.');
+          hasShownLoadError = true;
+        }
+        return;
+      }
+      setNotifications((data || []).map((row) => mapDashboardNotification(row as DashboardNotificationRow)));
+      hasShownLoadError = false;
+    };
+
+    void generateOverdueTaskReminders();
+    void loadNotifications();
+    const interval = setInterval(() => void loadNotifications(), 30_000);
+    const reminderInterval = setInterval(() => void generateOverdueTaskReminders(), 15 * 60_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      clearInterval(reminderInterval);
+    };
+  }, [currentUserId, currentUserStatus]);
+
+  useEffect(() => {
+    if (
+      !supabase ||
+      !currentUserId ||
+      currentUserStatus !== 'active' ||
+      !currentUserRole ||
+      !['owner', 'ceo', 'sales', 'production', 'finance'].includes(currentUserRole)
+    ) {
+      return;
+    }
+
+    const authClient = supabase;
+    let active = true;
+    let hasShownLoadError = false;
+    const loadCompanyOrders = async () => {
+      const { data, error } = await authClient
+        .from('company_orders')
+        .select('id,reference_code,details,order_status,payment_status,assigned_staff_id,assigned_staff_name,tracking_number,shipping_proof_url,created_at,updated_at')
+        .order('created_at', { ascending: false });
+      if (!active) return;
+      if (error) {
+        console.error('Company orders load failed', error);
+        if (!hasShownLoadError) {
+          toast.error('Pesanan lintas perangkat gagal dimuat. Terapkan migrasi inbox/pesanan di Supabase.');
+          hasShownLoadError = true;
+        }
+        return;
+      }
+
+      const cloudOrders = (data || []).map((row) => mapCompanyOrder(row as CompanyOrderRow));
+      setOrders((previous) => {
+        const legacyOrders = previous.filter((order) => order.id.startsWith('ord-'));
+        return [...cloudOrders, ...legacyOrders.filter(
+          (legacy) => !cloudOrders.some((cloud) => cloud.referenceCode === legacy.referenceCode)
+        )];
+      });
+      hasShownLoadError = false;
+    };
+
+    void loadCompanyOrders();
+    const interval = setInterval(() => void loadCompanyOrders(), 15_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [currentUserId, currentUserStatus, currentUserRole]);
 
   // Save to LocalStorage
   useEffect(() => {
@@ -698,28 +850,70 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => setCart([]);
 
+  const markNotificationRead = async (notificationId: string) => {
+    if (!supabase) return;
+    const readAt = new Date().toISOString();
+    const { error } = await supabase
+      .from('dashboard_notifications')
+      .update({ read_at: readAt })
+      .eq('id', notificationId);
+    if (error) {
+      console.error('Notification read update failed', error);
+      toast.error('Notifikasi gagal ditandai sudah dibaca.');
+      return;
+    }
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === notificationId ? { ...notification, readAt } : notification
+      )
+    );
+  };
+
+  const markAllNotificationsRead = async () => {
+    if (!supabase || !currentUser) return;
+    const readAt = new Date().toISOString();
+    const { error } = await supabase
+      .from('dashboard_notifications')
+      .update({ read_at: readAt })
+      .eq('recipient_id', currentUser.id)
+      .is('read_at', null);
+    if (error) {
+      console.error('Bulk notification read update failed', error);
+      toast.error('Notifikasi gagal ditandai sudah dibaca.');
+      return;
+    }
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, readAt })));
+  };
+
+  const persistOrderWorkflow = async (
+    orderId: string,
+    patch: Record<string, string | null>
+  ) => {
+    if (!supabase || orderId.startsWith('ord-')) return;
+    const { error } = await supabase
+      .from('company_orders')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', orderId);
+    if (error) {
+      console.error('Order workflow update failed', error);
+      toast.error('Perubahan pesanan gagal disimpan ke cloud.');
+    }
+  };
+
   const createOrder = async (
     orderData: Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'>
   ): Promise<Order> => {
-    const timestamp = new Date().toISOString();
-    const dateCode = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const referenceCode = `ORV-${dateCode}-${randomSuffix}`;
+    const response = await fetch('/api/orders/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Pesanan gagal disimpan.');
+    }
 
-    const newOrder: Order = {
-      ...orderData,
-      id: `ord-${Date.now()}`,
-      referenceCode,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      auditTrail: [
-        {
-          timestamp,
-          changedBy: `${orderData.customerName} (Customer)`,
-          action: 'Pemesanan berhasil disimpan di sistem',
-        },
-      ],
-    };
+    const newOrder = result as Order;
 
     setOrders((prev) => [newOrder, ...prev]);
 
@@ -728,21 +922,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       orderedCount: prev.orderedCount + orderData.items.reduce((acc, it) => acc + it.quantity, 0),
     }));
-
-    // If external online payment and auto-verified (e.g. simulation), record transaction
-    if (orderData.paymentStatus === 'verified') {
-      addTransaction({
-        date: timestamp.slice(0, 10),
-        type: 'income',
-        category: 'Penjualan Produk',
-        amount: orderData.totalAmount,
-        paymentMethod: orderData.paymentMethod,
-        status: 'verified',
-        description: `Pembayaran pesanan ${referenceCode} a.n ${orderData.customerName}`,
-        orderReference: referenceCode,
-        recordedBy: 'Payment Gateway Auto Settlement',
-      });
-    }
 
     clearCart();
     return newOrder;
@@ -755,27 +934,21 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     notes?: string
   ) => {
     const now = new Date().toISOString();
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return;
+    const updatedOrder: Order = {
+      ...order,
+      orderStatus: status,
+      updatedAt: now,
+      auditTrail: [
+        ...order.auditTrail,
+        { timestamp: now, changedBy, action: `Status pesanan diubah menjadi: ${status}`, notes },
+      ],
+    };
     setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          return {
-            ...ord,
-            orderStatus: status,
-            updatedAt: now,
-            auditTrail: [
-              ...ord.auditTrail,
-              {
-                timestamp: now,
-                changedBy,
-                action: `Status pesanan diubah menjadi: ${status}`,
-                notes,
-              },
-            ],
-          };
-        }
-        return ord;
-      })
+      prev.map((item) => (item.id === orderId ? updatedOrder : item))
     );
+    void persistOrderWorkflow(orderId, { order_status: status });
     toast.success(`Status pesanan diperbarui menjadi: ${status}`);
   };
 
@@ -783,37 +956,29 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     const now = new Date().toISOString();
     let orderRef = '';
     let total = 0;
-    let customer = '';
     let method = '';
 
-    setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          orderRef = ord.referenceCode;
-          total = ord.totalAmount;
-          customer = ord.customerName;
-          method = ord.paymentMethod;
-          return {
-            ...ord,
-            paymentStatus: 'verified' as PaymentStatus,
-            orderStatus:
-              ord.orderStatus === 'pending_confirmation'
-                ? ('payment_verified' as OrderStatus)
-                : ord.orderStatus,
-            updatedAt: now,
-            auditTrail: [
-              ...ord.auditTrail,
-              {
-                timestamp: now,
-                changedBy: verifiedBy,
-                action: 'Pembayaran telah diverifikasi lunas oleh Finance',
-              },
-            ],
-          };
-        }
-        return ord;
-      })
-    );
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return;
+    orderRef = order.referenceCode;
+    total = order.totalAmount;
+    method = order.paymentMethod;
+    const nextStatus =
+      order.orderStatus === 'pending_confirmation' ? 'payment_verified' : order.orderStatus;
+    setOrders((prev) => prev.map((item) => item.id === orderId ? {
+      ...item,
+      paymentStatus: 'verified',
+      orderStatus: nextStatus,
+      updatedAt: now,
+      auditTrail: [
+        ...item.auditTrail,
+        { timestamp: now, changedBy: verifiedBy, action: 'Pembayaran telah diverifikasi lunas oleh Finance' },
+      ],
+    } : item));
+    void persistOrderWorkflow(orderId, {
+      payment_status: 'verified',
+      order_status: nextStatus,
+    });
 
     if (orderRef) {
       addTransaction({
@@ -833,27 +998,28 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
   const assignDeliveryStaff = (orderId: string, staffId: string, staffName: string) => {
     const now = new Date().toISOString();
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return;
     setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          return {
-            ...ord,
-            assignedStaffId: staffId,
-            assignedStaffName: staffName,
-            updatedAt: now,
-            auditTrail: [
-              ...ord.auditTrail,
-              {
-                timestamp: now,
-                changedBy: currentUser?.fullName || 'Sales Staff',
-                action: `Petugas pengantaran ditugaskan: ${staffName}`,
-              },
-            ],
-          };
-        }
-        return ord;
-      })
+      prev.map((item) => item.id === orderId ? {
+        ...item,
+        assignedStaffId: staffId,
+        assignedStaffName: staffName,
+        updatedAt: now,
+        auditTrail: [
+          ...item.auditTrail,
+          {
+            timestamp: now,
+            changedBy: currentUser?.fullName || 'Sales Staff',
+            action: `Petugas pengantaran ditugaskan: ${staffName}`,
+          },
+        ],
+      } : item)
     );
+    void persistOrderWorkflow(orderId, {
+      assigned_staff_id: staffId,
+      assigned_staff_name: staffName,
+    });
     toast.success(`Petugas pengantaran ditugaskan: ${staffName}`);
   };
 
@@ -864,28 +1030,30 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     proofUrl?: string
   ) => {
     const now = new Date().toISOString();
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return;
     setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          return {
-            ...ord,
-            orderStatus: status,
-            trackingNumber: trackingNumber ?? ord.trackingNumber,
-            shippingProofUrl: proofUrl ?? ord.shippingProofUrl,
-            updatedAt: now,
-            auditTrail: [
-              ...ord.auditTrail,
-              {
-                timestamp: now,
-                changedBy: currentUser?.fullName || 'Sales Department',
-                action: `Pengiriman diperbarui menjadi ${status}${trackingNumber ? ` (Resi: ${trackingNumber})` : ''}`,
-              },
-            ],
-          };
-        }
-        return ord;
-      })
+      prev.map((item) => item.id === orderId ? {
+        ...item,
+        orderStatus: status,
+        trackingNumber: trackingNumber ?? item.trackingNumber,
+        shippingProofUrl: proofUrl ?? item.shippingProofUrl,
+        updatedAt: now,
+        auditTrail: [
+          ...item.auditTrail,
+          {
+            timestamp: now,
+            changedBy: currentUser?.fullName || 'Sales Department',
+            action: `Pengiriman diperbarui menjadi ${status}${trackingNumber ? ` (Resi: ${trackingNumber})` : ''}`,
+          },
+        ],
+      } : item)
     );
+    void persistOrderWorkflow(orderId, {
+      order_status: status,
+      tracking_number: trackingNumber ?? order.trackingNumber ?? null,
+      shipping_proof_url: proofUrl ?? order.shippingProofUrl ?? null,
+    });
     toast.success(`Pengiriman diperbarui menjadi: ${status}`);
   };
 
@@ -1398,6 +1566,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         teamMembers,
         updateTeamMember,
         orders,
+        notifications,
+        markNotificationRead,
+        markAllNotificationsRead,
         createOrder,
         updateOrderStatus,
         verifyPayment,

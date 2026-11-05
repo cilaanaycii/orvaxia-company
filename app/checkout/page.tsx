@@ -156,8 +156,8 @@ export default function CheckoutPage() {
       setCompletedOrder(order);
       setStep(6);
       toast.success(`Pesanan ${order.referenceCode} berhasil disimpan!`);
-    } catch {
-      toast.error('Gagal memproses pesanan');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal memproses pesanan');
     } finally {
       setIsSubmitting(false);
     }
@@ -949,6 +949,12 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
 
                 {/* WhatsApp Gateway CTA */}
                 <div className="pt-2 max-w-md mx-auto space-y-2.5">
+                  <Link
+                    href="/order-tracking"
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-brand-slate px-8 py-3.5 text-xs font-bold text-brand-slate hover:bg-brand-surface"
+                  >
+                    <Truck size={16} /> Cek Status Pesanan Kapan Saja
+                  </Link>
                   <a
                     href={generateWhatsAppLink()}
                     target="_blank"

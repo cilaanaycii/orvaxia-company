@@ -217,6 +217,16 @@ export interface TaskItem {
   createdAt: string;
 }
 
+export interface DashboardNotification {
+  id: string;
+  kind: 'order' | 'shipment' | 'task' | 'task_reminder' | string;
+  title: string;
+  message: string;
+  href: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
 export interface Announcement {
   id: string;
   title: string;

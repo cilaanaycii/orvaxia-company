@@ -82,7 +82,9 @@ Security (RLS), not just by dashboard navigation.
 2. In Supabase Authentication → URL Configuration, add the production URL
    `https://<your-production-domain>/auth/reset-password` to the Redirect URLs list
    so password recovery can return to the reset-password page.
-3. Apply the migrations in `supabase/migrations` to the Supabase project.
+3. Apply the migrations in `supabase/migrations` to the Supabase project,
+   including `20261105090000_dashboard_inbox_order_tracking.sql` for the
+   cross-device inbox, order persistence, and customer tracking page.
 4. Create the initial Owner and CEO identities through Supabase Auth. Then promote
    them from the Supabase SQL editor using their verified email addresses:
 
@@ -106,6 +108,12 @@ Security (RLS), not just by dashboard navigation.
    has been verified through a trusted channel. Optional Resend settings send an
    approval notification; active crew rows also have actions to reconfirm login
    access or resend that notification.
+
+The dashboard inbox stores notifications in Supabase and refreshes while crew
+are signed in. Overdue-task reminders are generated once per day while the
+assigned crew member has the dashboard open. Customers can check persisted order
+status at `/order-tracking` using their order reference and checkout WhatsApp
+number; email or WhatsApp automation is not required for this tracking page.
 
 Legacy local/cloud crew accounts are not automatically trusted or imported.
 Recreate identities in Supabase Auth and assign privileged roles only through the
