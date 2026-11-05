@@ -400,6 +400,29 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     const authClient = supabase;
     const loadTeamMembers = async (isExecutive: boolean) => {
+      if (isExecutive) {
+        const { error: syncError } = await authClient.rpc('sync_orvaxia_team_roster', {
+          p_roster: INITIAL_TEAM_MEMBERS.map((member) => ({
+            name: member.name,
+            position: member.position,
+            division: member.division,
+            bio: member.bio,
+            responsibilities: member.responsibilities,
+            status: member.status,
+            avatar_url: member.avatarUrl,
+            phone: member.phone || null,
+            email: member.email || null,
+            sort_order: member.sortOrder,
+          })),
+        });
+
+        if (!active) return;
+        if (syncError) {
+          console.error('Official team roster sync failed', syncError);
+          toast.error('Roster resmi 31 anggota gagal disinkronkan. Periksa migrasi database.');
+        }
+      }
+
       const { data: rows, error } = await authClient
         .from('team_members')
         .select('id,name,position,division,bio,responsibilities,status,avatar_url,phone,email,sort_order')
@@ -421,32 +444,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         setTeamMembers(INITIAL_TEAM_MEMBERS);
         return;
       }
-
-      const { data: seededRows, error: seedError } = await authClient
-        .from('team_members')
-        .insert(
-          INITIAL_TEAM_MEMBERS.map((member) => ({
-            name: member.name,
-            position: member.position,
-            division: member.division,
-            bio: member.bio,
-            responsibilities: member.responsibilities,
-            status: member.status,
-            avatar_url: member.avatarUrl,
-            phone: member.phone || null,
-            email: member.email || null,
-            sort_order: member.sortOrder,
-          }))
-        )
-        .select('id,name,position,division,bio,responsibilities,status,avatar_url,phone,email,sort_order');
-
-      if (!active) return;
-      if (seedError) {
-        console.error('Initial team roster seed failed', seedError);
-        toast.error('Data awal anggota crew gagal disimpan ke database.');
-        return;
-      }
-      setTeamMembers((seededRows || []).map((row) => mapTeamMember(row as TeamMemberRow)));
+      setTeamMembers([]);
+      toast.error('Roster anggota belum tersedia di database.');
     };
 
     const loadProfile = async (userId: string | null) => {

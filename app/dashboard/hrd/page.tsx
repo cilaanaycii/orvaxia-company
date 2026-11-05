@@ -21,11 +21,16 @@ export default function HRDDashboard() {
   const [activeTab, setActiveTab] = useState<'roster' | 'evaluate' | 'history'>('roster');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [period, setPeriod] = useState(() =>
+    new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date())
+  );
+  const hrdMembers = teamMembers.filter(
+    (member) => !/^nama anggota(?:\s+\d+)?$/i.test(member.name.trim())
+  );
   const selectedMember =
-    teamMembers.find((member) => member.id === selectedMemberId) || teamMembers[0] || null;
+    hrdMembers.find((member) => member.id === selectedMemberId) || hrdMembers[0] || null;
 
   // Form states for the 7 evaluation metrics
-  const [period, setPeriod] = useState('November 2026');
   const [responsibilityScore, setResponsibilityScore] = useState(90);
   const [punctualityScore, setPunctualityScore] = useState(90);
   const [qualityScore, setQualityScore] = useState(90);
@@ -48,6 +53,27 @@ export default function HRDDashboard() {
       7
     ).toFixed(1)
   );
+  const monthlyReviews = performanceReviews.filter(
+    (review) => review.period.trim().toLowerCase() === period.trim().toLowerCase()
+  );
+  const monthlyAverageScore =
+    monthlyReviews.length > 0
+      ? Number(
+          (
+            monthlyReviews.reduce((total, review) => total + review.averageScore, 0) /
+            monthlyReviews.length
+          ).toFixed(1)
+        )
+      : null;
+  const monthlyMemberScores = new Map<string, { total: number; count: number }>();
+  monthlyReviews.forEach((review) => {
+    const current = monthlyMemberScores.get(review.memberId) || { total: 0, count: 0 };
+    monthlyMemberScores.set(review.memberId, {
+      total: current.total + review.averageScore,
+      count: current.count + 1,
+    });
+  });
+  const evaluatedMemberCount = monthlyMemberScores.size;
 
   const handleSubmitEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +114,7 @@ export default function HRDDashboard() {
     setActiveTab('history');
   };
 
-  const filteredMembers = teamMembers.filter((m) =>
+  const filteredMembers = hrdMembers.filter((m) =>
     m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.division.toLowerCase().includes(searchQuery.toLowerCase())
@@ -148,7 +174,7 @@ export default function HRDDashboard() {
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
-            Database Anggota ({teamMembers.length}/31)
+            Database Anggota ({hrdMembers.length}/31)
           </button>
           <button
             onClick={() => setActiveTab('evaluate')}
@@ -173,6 +199,32 @@ export default function HRDDashboard() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-[11px] font-semibold text-slate-500">Rata-rata Nilai · {period}</p>
+          <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
+            {monthlyAverageScore === null ? '—' : `${monthlyAverageScore} / 100`}
+          </p>
+          <p className="mt-1 text-[11px] text-slate-400">
+            {monthlyReviews.length} evaluasi tersimpan pada periode ini
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-[11px] font-semibold text-slate-500">Anggota Sudah Dinilai</p>
+          <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
+            {evaluatedMemberCount} / 31
+          </p>
+          <p className="mt-1 text-[11px] text-slate-400">Anggota unik pada periode {period}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-[11px] font-semibold text-slate-500">Belum Dinilai</p>
+          <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
+            {Math.max(31 - evaluatedMemberCount, 0)}
+          </p>
+          <p className="mt-1 text-[11px] text-slate-400">Dari total 31 anggota Orvaxia</p>
+        </div>
+      </div>
+
       {/* ================= TAB 1: 31 MEMBERS ROSTER ================= */}
       {activeTab === 'roster' && (
         <div className="space-y-4">
@@ -188,7 +240,7 @@ export default function HRDDashboard() {
               />
             </div>
             <span className="text-xs text-slate-500 font-medium">
-              Total Kuota: 31 Anggota Resmi
+              {hrdMembers.length} dari 31 anggota resmi
             </span>
           </div>
 
@@ -223,6 +275,14 @@ export default function HRDDashboard() {
                 <div className="border-t border-slate-100 pt-2 flex items-center justify-between text-xs">
                   <span className="text-emerald-700 font-semibold text-[11px]">
                     Status: {member.status}
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-600">
+                    Nilai: {monthlyMemberScores.has(member.id)
+                      ? (
+                          monthlyMemberScores.get(member.id)!.total /
+                          monthlyMemberScores.get(member.id)!.count
+                        ).toFixed(1)
+                      : 'Belum dinilai'}
                   </span>
                   <button
                     onClick={() => {
@@ -276,7 +336,7 @@ export default function HRDDashboard() {
                 onChange={(e) => setSelectedMemberId(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
               >
-                {teamMembers.map((tm) => (
+                {hrdMembers.map((tm) => (
                   <option key={tm.id} value={tm.id}>
                     {tm.name} — {tm.position} ({tm.division})
                   </option>
