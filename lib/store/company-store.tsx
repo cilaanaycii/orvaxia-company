@@ -223,7 +223,8 @@ interface CompanyContextType {
   updateProduct: (id: string, prod: Partial<Product>) => Promise<boolean>;
   deleteProduct: (id: string) => void;
   teamMembers: TeamMember[];
-  updateTeamMember: (id: string, member: Partial<TeamMember>) => Promise<void>;
+  updateTeamMember: (id: string, member: Partial<TeamMember>) => Promise<boolean>;
+  deleteTeamMember: (id: string) => Promise<boolean>;
   orders: Order[];
   notifications: DashboardNotification[];
   markNotificationRead: (notificationId: string) => Promise<void>;
@@ -874,20 +875,20 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     toast.success('Produk dihapus');
   };
 
-  const updateTeamMember = async (id: string, member: Partial<TeamMember>) => {
+  const updateTeamMember = async (id: string, member: Partial<TeamMember>): Promise<boolean> => {
     if (!hasExecutiveAccess) {
       toast.error('Hanya CEO dan Owner yang dapat mengubah data anggota crew.');
-      return;
+      return false;
     }
     if (!supabase) {
       toast.error('Supabase belum dikonfigurasi.');
-      return;
+      return false;
     }
 
     const currentMember = teamMembers.find((item) => item.id === id);
     if (!currentMember) {
       toast.error('Anggota crew tidak ditemukan.');
-      return;
+      return false;
     }
     const updatedMember = { ...currentMember, ...member };
     const { data, error } = await supabase
@@ -911,12 +912,35 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     if (error || !data) {
       console.error('Team member update failed', error);
       toast.error('Data anggota crew gagal diperbarui di database.');
-      return;
+      return false;
     }
 
     const savedMember = mapTeamMember(data as TeamMemberRow);
     setTeamMembers((prev) => prev.map((item) => (item.id === id ? savedMember : item)));
     toast.success('Data anggota berhasil diperbarui');
+    return true;
+  };
+
+  const deleteTeamMember = async (id: string): Promise<boolean> => {
+    if (!hasExecutiveAccess) {
+      toast.error('Hanya CEO dan Owner yang dapat menghapus data anggota crew.');
+      return false;
+    }
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return false;
+    }
+
+    const { error } = await supabase.from('team_members').delete().eq('id', id);
+    if (error) {
+      console.error('Team member delete failed', error);
+      toast.error('Data anggota gagal dihapus dari database.');
+      return false;
+    }
+
+    setTeamMembers((prev) => prev.filter((item) => item.id !== id));
+    toast.success('Anggota berhasil dihapus dari roster. Riwayat evaluasinya tetap tersimpan.');
+    return true;
   };
 
   const addToCart = (item: CartItem) => {
@@ -1687,6 +1711,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         deleteProduct,
         teamMembers,
         updateTeamMember,
+        deleteTeamMember,
         orders,
         notifications,
         markNotificationRead,

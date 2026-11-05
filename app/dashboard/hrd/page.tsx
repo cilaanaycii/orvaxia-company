@@ -13,14 +13,31 @@ import {
   Search,
   CheckCircle,
   Sparkles,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TeamMember } from '@/lib/types';
+import { uploadImage } from '@/lib/images/upload-image';
 
 export default function HRDDashboard() {
-  const { teamMembers, performanceReviews, addPerformanceReview, currentUser } = useCompanyStore();
+  const {
+    teamMembers,
+    performanceReviews,
+    addPerformanceReview,
+    updateTeamMember,
+    deleteTeamMember,
+    currentUser,
+  } = useCompanyStore();
   const [activeTab, setActiveTab] = useState<'roster' | 'evaluate' | 'history'>('roster');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [memberNameDraft, setMemberNameDraft] = useState('');
+  const [memberPositionDraft, setMemberPositionDraft] = useState('');
+  const [memberDivisionDraft, setMemberDivisionDraft] = useState('');
+  const [memberAvatarDraft, setMemberAvatarDraft] = useState('');
+  const [isUploadingMemberAvatar, setIsUploadingMemberAvatar] = useState(false);
   const [period, setPeriod] = useState(() =>
     new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date())
   );
@@ -73,7 +90,65 @@ export default function HRDDashboard() {
       count: current.count + 1,
     });
   });
-  const evaluatedMemberCount = monthlyMemberScores.size;
+  const evaluatedMemberCount = hrdMembers.filter((member) =>
+    monthlyMemberScores.has(member.id)
+  ).length;
+  const canEditRoster = currentUser?.role === 'owner' || currentUser?.role === 'ceo';
+
+  const startEditingMember = (member: TeamMember) => {
+    setEditingMember(member);
+    setMemberNameDraft(member.name);
+    setMemberPositionDraft(member.position);
+    setMemberDivisionDraft(member.division);
+    setMemberAvatarDraft(member.avatarUrl);
+  };
+
+  const handleMemberPhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Format gambar harus JPG, PNG, atau WEBP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran gambar maksimal 5MB.');
+      return;
+    }
+
+    setIsUploadingMemberAvatar(true);
+    try {
+      setMemberAvatarDraft(await uploadImage(file));
+      toast.success('Foto anggota berhasil diunggah.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Foto anggota gagal diunggah.');
+    } finally {
+      setIsUploadingMemberAvatar(false);
+    }
+  };
+
+  const handleSaveMember = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingMember || !memberNameDraft.trim() || !memberPositionDraft.trim() || !memberDivisionDraft.trim()) {
+      toast.error('Nama, jabatan, dan divisi wajib diisi.');
+      return;
+    }
+    const saved = await updateTeamMember(editingMember.id, {
+      name: memberNameDraft.trim(),
+      position: memberPositionDraft.trim(),
+      division: memberDivisionDraft.trim(),
+      avatarUrl: memberAvatarDraft,
+    });
+    if (saved) setEditingMember(null);
+  };
+
+  const handleDeleteMember = async (member: TeamMember) => {
+    if (!window.confirm(`Hapus ${member.name} dari roster anggota? Riwayat evaluasinya tetap tersimpan.`)) {
+      return;
+    }
+    const deleted = await deleteTeamMember(member.id);
+    if (deleted && selectedMemberId === member.id) setSelectedMemberId('');
+  };
 
   const handleSubmitEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,6 +222,85 @@ export default function HRDDashboard() {
 
   return (
     <div className="space-y-6">
+      {editingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <form
+            onSubmit={(event) => void handleSaveMember(event)}
+            className="w-full max-w-lg space-y-4 rounded-3xl bg-white p-6 shadow-xl"
+          >
+            <div>
+              <h3 className="font-serif text-xl font-bold text-brand-navy">Ubah Data Anggota</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Perubahan nama dan foto akan digunakan di roster dan evaluasi berikutnya.
+              </p>
+            </div>
+            <label className="block text-xs font-semibold text-slate-700">
+              Nama anggota
+              <input
+                value={memberNameDraft}
+                onChange={(event) => setMemberNameDraft(event.target.value)}
+                required
+                className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-normal"
+              />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-xs font-semibold text-slate-700">
+                Jabatan
+                <input
+                  value={memberPositionDraft}
+                  onChange={(event) => setMemberPositionDraft(event.target.value)}
+                  required
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-normal"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-slate-700">
+                Divisi
+                <input
+                  value={memberDivisionDraft}
+                  onChange={(event) => setMemberDivisionDraft(event.target.value)}
+                  required
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-normal"
+                />
+              </label>
+            </div>
+            <label className="block text-xs font-semibold text-slate-700">
+              Foto anggota dari galeri (JPG, PNG, WEBP; maks. 5MB)
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => void handleMemberPhotoSelect(event)}
+                disabled={isUploadingMemberAvatar}
+                className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-surface file:px-3 file:py-2 file:font-semibold file:text-brand-slate"
+              />
+              {memberAvatarDraft && (
+                <button
+                  type="button"
+                  onClick={() => setMemberAvatarDraft('')}
+                  className="mt-2 text-xs font-semibold text-red-600 hover:text-red-700"
+                >
+                  Hapus foto anggota
+                </button>
+              )}
+            </label>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingMember(null)}
+                className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={isUploadingMemberAvatar}
+                className="rounded-full bg-brand-slate px-5 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {isUploadingMemberAvatar ? 'Mengunggah...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
@@ -157,10 +311,10 @@ export default function HRDDashboard() {
             </span>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
-            Human Resource & 31 Member Performance Management
+            Human Resource & {hrdMembers.length} Member Performance Management
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Database 31 anggota ORVAXIA COMPANY, penilaian kinerja 7 indikator, bimbingan berkala, dan laporan evaluasi.
+            Database anggota ORVAXIA COMPANY, penilaian kinerja 7 indikator, bimbingan berkala, dan laporan evaluasi.
           </p>
         </div>
 
@@ -174,7 +328,7 @@ export default function HRDDashboard() {
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
-            Database Anggota ({hrdMembers.length}/31)
+            Database Anggota ({hrdMembers.length})
           </button>
           <button
             onClick={() => setActiveTab('evaluate')}
@@ -219,9 +373,11 @@ export default function HRDDashboard() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-[11px] font-semibold text-slate-500">Belum Dinilai</p>
           <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
-            {Math.max(31 - evaluatedMemberCount, 0)}
+            {Math.max(hrdMembers.length - evaluatedMemberCount, 0)}
           </p>
-          <p className="mt-1 text-[11px] text-slate-400">Dari total 31 anggota Orvaxia</p>
+          <p className="mt-1 text-[11px] text-slate-400">
+            Dari total {hrdMembers.length} anggota Orvaxia
+          </p>
         </div>
       </div>
 
@@ -233,14 +389,14 @@ export default function HRDDashboard() {
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Cari anggota dari 31 personil..."
+                placeholder={`Cari anggota dari ${hrdMembers.length} personil...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-xs focus:border-brand-slate focus:outline-none"
               />
             </div>
             <span className="text-xs text-slate-500 font-medium">
-              {hrdMembers.length} dari 31 anggota resmi
+              {hrdMembers.length} anggota resmi
             </span>
           </div>
 
@@ -251,15 +407,19 @@ export default function HRDDashboard() {
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-brand-lavender transition-all space-y-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="relative h-12 w-12 rounded-full overflow-hidden border border-brand-lavender/50 bg-slate-100 shrink-0">
-                    <Image
-                      src={member.avatarUrl}
-                      alt={member.name}
-                      fill
-                      unoptimized
-                      sizes="48px"
-                      className="h-full w-full object-cover"
-                    />
+                  <div className="relative flex h-12 w-12 items-center justify-center rounded-full overflow-hidden border border-brand-lavender/50 bg-slate-100 shrink-0">
+                    {member.avatarUrl ? (
+                      <Image
+                        src={member.avatarUrl}
+                        alt={member.name}
+                        fill
+                        unoptimized
+                        sizes="48px"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Users2 size={20} className="text-slate-400" aria-hidden="true" />
+                    )}
                   </div>
                   <div className="min-w-0">
                     <span className="rounded-md bg-brand-surface px-2 py-0.5 text-[10px] font-bold text-brand-slate border border-brand-lavender/30">
@@ -272,7 +432,7 @@ export default function HRDDashboard() {
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 pt-2 flex items-center justify-between text-xs">
+                <div className="border-t border-slate-100 pt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="text-emerald-700 font-semibold text-[11px]">
                     Status: {member.status}
                   </span>
@@ -293,6 +453,26 @@ export default function HRDDashboard() {
                   >
                     Beri Penilaian →
                   </button>
+                  {canEditRoster && (
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => startEditingMember(member)}
+                        aria-label={`Ubah data ${member.name}`}
+                        className="rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteMember(member)}
+                        aria-label={`Hapus ${member.name}`}
+                        className="rounded-lg border border-red-100 p-1.5 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
