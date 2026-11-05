@@ -15,6 +15,8 @@ import {
   User,
   KeyRound,
   AlertCircle,
+  MoreHorizontal,
+  Bell,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -46,6 +48,7 @@ export default function AuthPage() {
   const [staffNotes, setStaffNotes] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
   const [registeredSuccess, setRegisteredSuccess] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleCustomerLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,12 +157,45 @@ export default function AuthPage() {
           <Link href="/">
             <OrvaxiaLogo size={36} />
           </Link>
-          <Link
-            href="/"
-            className="text-xs font-semibold text-brand-slate hover:text-brand-navy transition-colors"
-          >
-            ← Kembali ke Beranda
-          </Link>
+          <div className="relative flex items-center gap-3">
+            <Link
+              href="/"
+              className="text-xs font-semibold text-brand-slate hover:text-brand-navy transition-colors"
+            >
+              ← Kembali ke Beranda
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              aria-label={mobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="account-mobile-menu"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden"
+            >
+              <MoreHorizontal size={20} />
+            </button>
+            {mobileMenuOpen && (
+              <div
+                id="account-mobile-menu"
+                className="absolute right-10 top-0 z-[60] w-[min(14rem,calc(100vw-5rem))] rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl md:hidden"
+              >
+                <Link
+                  href="/inbox"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  <Bell size={15} /> Inbox
+                </Link>
+                <Link
+                  href="/order-tracking"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  <ArrowRight size={15} /> Cek Status Pesanan
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

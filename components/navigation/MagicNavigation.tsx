@@ -31,7 +31,7 @@ export function MagicNavigation() {
   // ScrollSpy to detect which section is currently in view when on the home page
   useEffect(() => {
     if (pathname !== '/') {
-      if (pathname.startsWith('/dashboard')) setActiveId('inbox');
+      if (pathname.startsWith('/dashboard') || pathname.startsWith('/inbox')) setActiveId('inbox');
       else if (pathname.startsWith('/shop') || pathname.startsWith('/checkout') || pathname.startsWith('/cart')) setActiveId('shop');
       else if (pathname.startsWith('/team')) setActiveId('team');
       else setActiveId('');
@@ -67,7 +67,7 @@ export function MagicNavigation() {
 
     if (item.id === 'inbox') {
       setActiveId('inbox');
-      router.push('/dashboard?inbox=1');
+      router.push('/inbox');
       return;
     }
 

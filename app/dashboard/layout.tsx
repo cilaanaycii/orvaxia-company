@@ -25,7 +25,6 @@ import {
   Clock,
   RefreshCw,
   Bell,
-  Check,
   UserRound,
   MoreHorizontal,
   type LucideIcon,
@@ -57,18 +56,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     currentUser,
     logout,
     notifications,
-    markNotificationRead,
-    markAllNotificationsRead,
   } = useCompanyStore();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  const [inboxOpen, setInboxOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  React.useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('inbox') === '1') {
-      setInboxOpen(true);
-    }
-  }, [pathname]);
 
   // 1. Not Authenticated State
   if (!currentUser) {
@@ -189,9 +179,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-[#F4F6F9] text-brand-navy flex flex-col md:flex-row">
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col justify-between p-4 shadow-xs">
+      <aside className="relative w-full md:w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col justify-between p-4 shadow-xs">
         <div>
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+          <div className="relative flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
             <Link href="/">
               <OrvaxiaLogo size={32} />
             </Link>
@@ -208,16 +198,68 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setMobileMenuOpen((open) => !open)}
                 aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
                 aria-expanded={mobileMenuOpen}
-                aria-controls="dashboard-mobile-account dashboard-mobile-navigation dashboard-mobile-footer"
+                aria-controls="dashboard-mobile-menu"
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden"
               >
                 <MoreHorizontal size={20} />
               </button>
+              {mobileMenuOpen && (
+                <div
+                  id="dashboard-mobile-menu"
+                  className="absolute right-10 top-0 z-[60] max-h-[calc(100vh-2rem)] w-[min(17rem,calc(100vw-5rem))] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl md:hidden"
+                >
+                  <div className="rounded-xl bg-brand-surface/70 p-3">
+                    <p className="truncate text-xs font-bold text-brand-navy">{currentUser.fullName}</p>
+                    <p className="mt-1 truncate text-[10px] text-slate-500">{currentUser.email}</p>
+                  </div>
+                  <Link
+                    href="/inbox"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="mt-2 flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    <span className="flex items-center gap-2"><Bell size={15} /> Inbox</span>
+                    {notifications.some((item) => !item.readAt) && (
+                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                        {notifications.filter((item) => !item.readAt).length} baru
+                      </span>
+                    )}
+                  </Link>
+                  <div className="mt-1 border-t border-slate-100 pt-1">
+                    {visibleRoutes.map((route) => {
+                      const Icon = route.icon;
+                      return (
+                        <Link
+                          key={route.path}
+                          href={route.path}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs ${
+                            pathname === route.path ? 'bg-brand-slate font-bold text-white' : 'text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Icon size={14} />
+                          <span className="truncate">{route.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                      router.push('/auth');
+                    }}
+                    className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                  >
+                    <LogOut size={14} /> Keluar Akun
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Account */}
-          <div id="dashboard-mobile-account" className={`mb-5 ${mobileMenuOpen ? 'block' : 'hidden'} md:block`}>
+          <div id="dashboard-mobile-account" className="mb-5 hidden md:block">
             <h2 className="mb-2 flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               <UserRound size={13} />
               Akun
@@ -290,81 +332,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Navigation Links for Internal Dashboards */}
-          <nav id="dashboard-mobile-navigation" className="space-y-1">
+          <nav id="dashboard-mobile-navigation" className="hidden space-y-1 md:block">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2.5 block mb-1">
               {isExecutive ? 'Semua Divisi & Kontrol' : 'Menu Navigasi'}
             </span>
-            <div className="relative">
-            <button
-              type="button"
-              onClick={() => setInboxOpen((open) => !open)}
-              aria-label={`Inbox notifikasi, ${notifications.filter((item) => !item.readAt).length} belum dibaca`}
-              aria-expanded={inboxOpen}
-              className={`relative flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
-                inboxOpen
-                  ? 'bg-brand-slate text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+            <Link
+              href="/inbox"
+              className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2.5">
                 <Bell size={16} />
                 Inbox
               </span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                notifications.some((item) => !item.readAt)
-                  ? inboxOpen ? 'bg-white text-rose-700' : 'bg-rose-100 text-rose-700'
-                  : inboxOpen ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
-                {notifications.filter((item) => !item.readAt).length} baru
-              </span>
-            </button>
-            {inboxOpen && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                  <h2 className="text-sm font-bold text-slate-800">Notifikasi</h2>
-                  <button
-                    type="button"
-                    onClick={() => void markAllNotificationsRead()}
-                    className="text-[11px] font-semibold text-brand-slate hover:underline"
-                  >
-                    Tandai semua dibaca
-                  </button>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-xs text-slate-500">
-                      Belum ada notifikasi.
-                    </p>
-                  ) : notifications.slice(0, 20).map((notification) => (
-                    <button
-                      type="button"
-                      key={notification.id}
-                      onClick={() => {
-                        if (!notification.readAt) void markNotificationRead(notification.id);
-                        setInboxOpen(false);
-                        router.push(notification.href);
-                      }}
-                      className={`w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${
-                        notification.readAt ? 'bg-white' : 'bg-sky-50/70'
-                      }`}
-                    >
-                      <span className="flex items-start gap-2">
-                        {!notification.readAt && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-600" />}
-                        {notification.readAt && <Check size={12} className="mt-1 shrink-0 text-emerald-600" />}
-                        <span className="min-w-0">
-                          <span className="block text-xs font-bold text-slate-800">{notification.title}</span>
-                          <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-600">{notification.message}</span>
-                          <span className="mt-1 block text-[10px] text-slate-400">
-                            {new Date(notification.createdAt).toLocaleString('id-ID')}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            </div>
+              {notifications.some((item) => !item.readAt) && (
+                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                  {notifications.filter((item) => !item.readAt).length} baru
+                </span>
+              )}
+            </Link>
             {visibleRoutes.map((route) => {
               const Icon = route.icon;
               const isActive = pathname === route.path;
@@ -375,7 +360,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={route.path}
                   href={route.path}
-                  className={`${mobileMenuOpen ? 'flex' : 'hidden'} md:flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-brand-slate text-white shadow-sm'
                       : isUserAssignedRole
@@ -399,7 +384,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Footer Actions */}
-        <div id="dashboard-mobile-footer" className={`${mobileMenuOpen ? 'block' : 'hidden'} md:block pt-4 border-t border-slate-100 space-y-2`}>
+        <div id="dashboard-mobile-footer" className="hidden pt-4 border-t border-slate-100 space-y-2 md:block">
           <Link
             href="/"
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-100"
