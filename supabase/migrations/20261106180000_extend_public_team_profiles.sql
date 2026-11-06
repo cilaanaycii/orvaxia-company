@@ -16,6 +16,7 @@ CREATE POLICY team_members_public_read_active
   ON public.team_members FOR SELECT TO anon, authenticated
   USING (status = 'Aktif' AND profile_visible = true);
 
+DROP POLICY IF EXISTS team_members_executive_read_all ON public.team_members;
 CREATE POLICY team_members_executive_read_all
   ON public.team_members FOR SELECT TO authenticated
   USING (
