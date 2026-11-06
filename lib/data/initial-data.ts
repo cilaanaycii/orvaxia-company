@@ -34,7 +34,7 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
     range6To7Km: 4000,
     rangeAbove7Km: 5000,
   },
-  crewInvitationCode: '',
+  crewInvitationCode: 'ORVAXIA2026',
 };
 
 export const INITIAL_PO_PERIOD: POPeriod = {

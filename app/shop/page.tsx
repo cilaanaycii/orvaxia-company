@@ -42,6 +42,7 @@ export default function ShopPage() {
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {publishedProducts.map((product) => {
+            const isBonusCharm = product.slug === 'rovella-pocket-charm' || product.id === 'prod-rovella-charm-only';
             const price = product.basePrice + (product.sizes[0]?.priceAdjustment || 0);
             const canPurchase = Number.isFinite(price) && price > 0;
             const imageUrl = [...product.images, ...product.variants.map((variant) => variant.image || '')]
@@ -70,13 +71,22 @@ export default function ShopPage() {
                   <p className="mt-2 text-sm leading-6 text-slate-600">{product.description}</p>
                 </div>
 
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold text-brand-navy">
-                    {canPurchase ? `Rp${price.toLocaleString('id-ID')}` : 'Harga belum tersedia'}
-                  </span>
-                  {product.isPO && <span className="text-xs text-slate-500">Pre-order</span>}
-                </div>
-                {product.isPO && (
+                {isBonusCharm ? (
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-brand-surface px-3 py-1 text-xs font-bold text-brand-navy border border-brand-lavender/40">
+                      Bonus Pre-Order (Gratis)
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-bold text-brand-navy">
+                      {canPurchase ? `Rp${price.toLocaleString('id-ID')}` : 'Harga belum tersedia'}
+                    </span>
+                    {product.isPO && <span className="text-xs text-slate-500">Pre-order</span>}
+                  </div>
+                )}
+
+                {product.isPO && !isBonusCharm && (
                   <p className="text-xs text-slate-500">
                     Estimasi {poPeriod.productionEstimateDays} hari kerja
                     {poPeriod.quota > 0 ? ` · Sisa kuota ${Math.max(0, poPeriod.quota - poPeriod.orderedCount)}` : ''}
@@ -94,28 +104,37 @@ export default function ShopPage() {
 
                 <div className="grid gap-2">
                   <Link href={`/shop/${product.slug}`} className="inline-flex w-full items-center justify-center rounded-xl border border-brand-slate px-4 py-3 text-sm font-semibold text-brand-slate transition hover:bg-brand-surface">
-                    Detail Produk
+                    Detail {isBonusCharm ? 'Bonus' : 'Produk'}
                   </Link>
-                  <button
-                    type="button"
-                    disabled={!canPurchase}
-                    title={!canPurchase ? 'Harga produk belum ditetapkan' : undefined}
-                    onClick={() =>
-                    addToCart({
-                      id: `${product.id}-${Date.now()}`,
-                      productId: product.id,
-                      productName: product.name,
-                      variantName: product.variants[0]?.name ?? 'Default',
-                      sizeName: product.sizes[0]?.name ?? 'Standard',
-                      quantity: 1,
-                      unitPrice: price,
-                      subtotal: price,
-                    })
-                  }
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-slate disabled:cursor-not-allowed disabled:bg-slate-300"
-                  >
-                    <ShoppingBag size={16} /> {canPurchase ? 'Tambah ke Keranjang' : 'Belum dapat dipesan'}
-                  </button>
+                  {isBonusCharm ? (
+                    <Link
+                      href="/"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-slate"
+                    >
+                      Bonus Bundling Pemesanan PO
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!canPurchase}
+                      title={!canPurchase ? 'Harga produk belum ditetapkan' : undefined}
+                      onClick={() =>
+                      addToCart({
+                        id: `${product.id}-${Date.now()}`,
+                        productId: product.id,
+                        productName: product.name,
+                        variantName: product.variants[0]?.name ?? 'Default',
+                        sizeName: product.sizes[0]?.name ?? 'Standard',
+                        quantity: 1,
+                        unitPrice: price,
+                        subtotal: price,
+                      })
+                    }
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-slate disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      <ShoppingBag size={16} /> {canPurchase ? 'Tambah ke Keranjang' : 'Belum dapat dipesan'}
+                    </button>
+                  )}
                 </div>
               </div>
             </article>

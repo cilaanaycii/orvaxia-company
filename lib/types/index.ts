@@ -22,6 +22,7 @@ export interface UserProfile {
   division?: string;
   position?: string;
   avatarUrl?: string;
+  password?: string;
   createdAt: string;
   updatedAt: string;
 }

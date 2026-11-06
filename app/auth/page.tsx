@@ -390,7 +390,7 @@ export default function AuthPage() {
             <div>
               {registeredSuccess ? (
                 <div className="text-center py-6 space-y-4">
-                  <div className="h-14 w-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                  <div className="h-14 w-14 bg-brand-surface text-brand-slate border border-brand-lavender/40 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 size={32} />
                   </div>
                   <div>

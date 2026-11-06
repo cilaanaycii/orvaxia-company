@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Search, Truck } from 'lucide-react';
+import { useCompanyStore } from '@/lib/store/company-store';
 
 interface TrackingResult {
   referenceCode: string;
@@ -17,6 +18,7 @@ const formatStatus = (status: string) =>
   status.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function OrderTrackingPage() {
+  const { orders } = useCompanyStore();
   const [referenceCode, setReferenceCode] = useState('');
   const [phone, setPhone] = useState('');
   const [result, setResult] = useState<TrackingResult | null>(null);
@@ -45,17 +47,72 @@ export default function OrderTrackingPage() {
     setLoading(true);
     setError('');
     setResult(null);
+
+    const cleanRef = referenceCode.trim().toUpperCase();
+    const cleanPhone = phone.replace(/\D/g, '');
+
     try {
-      const query = new URLSearchParams({ referenceCode, phone });
+      const query = new URLSearchParams({ referenceCode: cleanRef, phone });
       const response = await fetch(`/api/orders/track?${query}`, { cache: 'no-store' });
       const data = await response.json();
-      if (!response.ok) {
-        setError(data.error || 'Pesanan tidak dapat ditemukan.');
+
+      if (response.ok) {
+        setResult(data as TrackingResult);
         return;
       }
-      setResult(data as TrackingResult);
+
+      // Fallback ke data store lokal
+      const matchedOrder = orders.find((o) => {
+        const oRef = o.referenceCode?.trim().toUpperCase();
+        const oPhone = o.customerPhone?.replace(/\D/g, '');
+        return oRef === cleanRef && oPhone === cleanPhone;
+      });
+
+      if (matchedOrder) {
+        setResult({
+          referenceCode: matchedOrder.referenceCode || cleanRef,
+          status: matchedOrder.orderStatus,
+          trackingNumber: matchedOrder.trackingNumber || null,
+          createdAt: matchedOrder.createdAt,
+          updatedAt: matchedOrder.updatedAt || matchedOrder.createdAt,
+          events: [
+            {
+              order_status: matchedOrder.orderStatus,
+              tracking_number: matchedOrder.trackingNumber || null,
+              created_at: matchedOrder.updatedAt || matchedOrder.createdAt,
+            },
+          ],
+        });
+        return;
+      }
+
+      setError(data.error || 'Pesanan tidak dapat ditemukan. Periksa kembali kode pesanan dan nomor WhatsApp.');
     } catch {
-      setError('Tidak dapat terhubung. Periksa koneksi lalu coba lagi.');
+      // Fallback jika jaringan/server bermasalah
+      const matchedOrder = orders.find((o) => {
+        const oRef = o.referenceCode?.trim().toUpperCase();
+        const oPhone = o.customerPhone?.replace(/\D/g, '');
+        return oRef === cleanRef && oPhone === cleanPhone;
+      });
+
+      if (matchedOrder) {
+        setResult({
+          referenceCode: matchedOrder.referenceCode || cleanRef,
+          status: matchedOrder.orderStatus,
+          trackingNumber: matchedOrder.trackingNumber || null,
+          createdAt: matchedOrder.createdAt,
+          updatedAt: matchedOrder.updatedAt || matchedOrder.createdAt,
+          events: [
+            {
+              order_status: matchedOrder.orderStatus,
+              tracking_number: matchedOrder.trackingNumber || null,
+              created_at: matchedOrder.updatedAt || matchedOrder.createdAt,
+            },
+          ],
+        });
+      } else {
+        setError('Pesanan tidak ditemukan atau koneksi bermasalah.');
+      }
     } finally {
       setLoading(false);
     }
@@ -83,7 +140,7 @@ export default function OrderTrackingPage() {
                 value={referenceCode}
                 onChange={(event) => setReferenceCode(event.target.value)}
                 placeholder="ORV-..."
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-mono"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-mono uppercase"
               />
             </label>
             <label className="block text-sm font-medium">
@@ -99,7 +156,7 @@ export default function OrderTrackingPage() {
             </label>
             <button
               disabled={loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-slate px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-navy px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-slate disabled:opacity-60"
             >
               <Search size={16} /> {loading ? 'Mencari...' : 'Cek Status'}
             </button>
@@ -108,13 +165,13 @@ export default function OrderTrackingPage() {
         </section>
 
         {result && (
-          <section className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-brand-lavender/40 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Kode pesanan</p>
-                <p className="font-mono font-bold">{result.referenceCode}</p>
+                <p className="font-mono font-bold text-brand-navy text-lg">{result.referenceCode}</p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+              <span className="rounded-full bg-brand-surface border border-brand-lavender/40 px-3 py-1 text-xs font-bold text-brand-navy">
                 {formatStatus(result.status)}
               </span>
             </div>
@@ -124,8 +181,8 @@ export default function OrderTrackingPage() {
             <h2 className="mt-6 border-b border-slate-100 pb-2 font-semibold">Riwayat status</h2>
             <ol className="mt-3 space-y-3">
               {result.events.map((item, index) => (
-                <li key={`${item.created_at}-${index}`} className="border-l-2 border-brand-lavender pl-3 text-sm">
-                  <p className="font-medium">{formatStatus(item.order_status)}</p>
+                <li key={`${item.created_at}-${index}`} className="border-l-2 border-brand-slate pl-3 text-sm">
+                  <p className="font-medium text-brand-navy">{formatStatus(item.order_status)}</p>
                   <p className="text-xs text-slate-500">
                     {new Date(item.created_at).toLocaleString('id-ID')}
                     {item.tracking_number ? ` · Resi ${item.tracking_number}` : ''}
