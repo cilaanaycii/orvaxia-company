@@ -442,29 +442,26 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     const authClient = supabase;
     const loadTeamMembers = async (isExecutive: boolean) => {
-      if (isExecutive) {
-        const { error: syncError } = await authClient.rpc('sync_orvaxia_team_roster', {
-          p_roster: INITIAL_TEAM_MEMBERS.map((member) => ({
-            name: member.name,
-            position: member.position,
-            division: member.division,
-            bio: member.bio,
-            responsibilities: member.responsibilities,
-            status: member.status,
-            avatar_url: member.avatarUrl,
-            phone: member.phone || null,
-            email: member.email || null,
-            sort_order: member.sortOrder,
-          })),
-        });
+      // Coba query minimal terlebih dahulu untuk memverifikasi RLS dan kolom dasar
+      const { data: minimalRows, error: minimalError } = await authClient
+        .from('team_members')
+        .select('id, name')
+        .limit(1);
 
-        if (!active) return;
-        if (syncError) {
-          console.error('Official team roster sync failed', syncError);
-          toast.error('Roster resmi 31 anggota gagal disinkronkan. Periksa migrasi database.');
+      if (!active) return;
+
+      if (minimalError) {
+        console.error('Team roster minimal query failed', minimalError);
+        if (!isExecutive) {
+          setTeamMembers(INITIAL_TEAM_MEMBERS);
+          toast.warning('Database anggota crew belum tersedia sepenuhnya. Menampilkan data awal sebagai fallback.');
+        } else {
+          toast.error(`Gagal memuat data crew: ${minimalError.message}. Periksa RLS dan migrasi Supabase.`);
         }
+        return;
       }
 
+      // Jika query minimal berhasil, jalankan query lengkap
       const { data: rows, error } = await authClient
         .from('team_members')
         .select('id,name,position,division,bio,responsibilities,status,avatar_url,class_name,instagram_url,profile_visible,phone,email,sort_order')
@@ -472,14 +469,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       if (!active) return;
       if (error) {
-        console.error('Team roster load failed', error);
-        // Hanya fallback ke data awal untuk non-executive agar halaman tetap dapat dilihat.
-        // Executive akan melihat pesan error agar data asli tidak disembunyikan.
+        console.error('Team roster full query failed', error);
         if (!isExecutive) {
           setTeamMembers(INITIAL_TEAM_MEMBERS);
           toast.warning('Database anggota crew belum tersedia sepenuhnya. Menampilkan data awal sebagai fallback.');
         } else {
-          toast.error('Gagal memuat data crew dari database. Periksa migrasi Supabase.');
+          toast.error(`Gagal memuat detail crew: ${error.message}. Pastikan migrasi kolom telah diterapkan.`);
         }
         return;
       }
@@ -489,8 +484,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Jika query berhasil tapi tabel kosong, jangan sembunyikan dengan fallback data awal.
-      // Tampilkan array kosong sehingga terlihat jelas bahwa database belum memiliki data.
+      // Jika query berhasil tapi tabel kosong
       setTeamMembers([]);
       if (isExecutive) {
         toast.info('Database anggota crew masih kosong. Silakan sinkronkan roster melalui halaman Owner.');
