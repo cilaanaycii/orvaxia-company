@@ -150,7 +150,7 @@ function mapTeamMember(row: TeamMemberRow): TeamMember {
     responsibilities: Array.isArray(row.responsibilities)
       ? row.responsibilities.filter((item): item is string => typeof item === 'string')
       : [],
-    status: row.status === 'Tidak Aktif' ? 'Non-aktif' : row.status,
+    status: row.status || 'Aktif',
     avatarUrl: row.avatar_url,
     className: row.class_name || undefined,
     instagramUrl: row.instagram_url || undefined,
@@ -473,10 +473,14 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       if (!active) return;
       if (error) {
         console.error('Team roster load failed', error);
-        // Fallback ke data awal jika database belum tersedia kolom yang diperlukan.
-        // Ini tidak menghapus data crew yang sudah ada di database.
-        setTeamMembers(INITIAL_TEAM_MEMBERS);
-        toast.warning('Database anggota crew belum tersedia sepenuhnya. Menampilkan data awal sebagai fallback.');
+        // Hanya fallback ke data awal untuk non-executive agar halaman tetap dapat dilihat.
+        // Executive akan melihat pesan error agar data asli tidak disembunyikan.
+        if (!isExecutive) {
+          setTeamMembers(INITIAL_TEAM_MEMBERS);
+          toast.warning('Database anggota crew belum tersedia sepenuhnya. Menampilkan data awal sebagai fallback.');
+        } else {
+          toast.error('Gagal memuat data crew dari database. Periksa migrasi Supabase.');
+        }
         return;
       }
 
@@ -485,7 +489,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setTeamMembers(INITIAL_TEAM_MEMBERS);
+      // Jika query berhasil tapi tabel kosong, jangan sembunyikan dengan fallback data awal.
+      // Tampilkan array kosong sehingga terlihat jelas bahwa database belum memiliki data.
+      setTeamMembers([]);
+      if (isExecutive) {
+        toast.info('Database anggota crew masih kosong. Silakan sinkronkan roster melalui halaman Owner.');
+      }
       return;
     };
 

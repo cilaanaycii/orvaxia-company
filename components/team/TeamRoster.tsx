@@ -71,7 +71,7 @@ export function TeamRoster() {
   const dialogRef = useRef<HTMLElement>(null);
 
   const visibleMembers = useMemo(
-    () => teamMembers.filter((member) => member.status === 'Aktif' && member.profileVisible !== false),
+    () => teamMembers.filter((member) => member.profileVisible !== false),
     [teamMembers],
   );
   const filteredMembers = useMemo(() => {
