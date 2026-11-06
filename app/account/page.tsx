@@ -9,13 +9,15 @@ import { useCompanyStore } from '@/lib/store/company-store';
 
 export default function AccountPage() {
   const router = useRouter();
-  const { currentUser } = useCompanyStore();
+  const { currentUser, isAuthReady } = useCompanyStore();
 
   useEffect(() => {
-    if (!currentUser) router.replace('/login');
-  }, [currentUser, router]);
+    if (isAuthReady && (!currentUser || currentUser.role !== 'customer')) {
+      router.replace('/auth?next=%2Faccount');
+    }
+  }, [currentUser, isAuthReady, router]);
 
-  if (!currentUser) {
+  if (!isAuthReady || !currentUser || currentUser.role !== 'customer') {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF8F5] p-6 text-brand-navy">
         <p className="text-sm font-semibold text-slate-600">Memeriksa sesi akun...</p>
@@ -50,8 +52,8 @@ export default function AccountPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-[#FAF8F5] p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-slate">Email</div>
-              <div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-700"><Mail size={15} /> {currentUser.email}</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-slate">Nomor telepon terverifikasi</div>
+              <div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-700"><Mail size={15} /> {currentUser.phone}</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-[#FAF8F5] p-4">
               <div className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-slate">Role</div>
@@ -59,7 +61,8 @@ export default function AccountPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+            <Link href="/account/profile" className="rounded-2xl border border-brand-lavender/30 bg-brand-surface p-4 text-center text-sm font-semibold text-brand-navy transition hover:border-brand-slate">Edit Profil</Link>
             <Link href="/account/orders" className="rounded-2xl border border-brand-lavender/30 bg-brand-surface p-4 text-center text-sm font-semibold text-brand-navy transition hover:border-brand-slate">Purchase History</Link>
             <Link href="/account/inbox" className="rounded-2xl border border-brand-lavender/30 bg-brand-surface p-4 text-center text-sm font-semibold text-brand-navy transition hover:border-brand-slate">Inbox</Link>
             <Link href="/shop" className="rounded-2xl border border-brand-lavender/30 bg-brand-surface p-4 text-center text-sm font-semibold text-brand-navy transition hover:border-brand-slate">Shop</Link>

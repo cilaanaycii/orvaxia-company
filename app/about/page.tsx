@@ -1,39 +1,28 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowLeft, Compass, Eye, Lightbulb, ShieldCheck, Sparkles } from 'lucide-react';
-import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
-import { MagicNavigation } from '@/components/navigation/MagicNavigation';
+import { Compass, Eye, Lightbulb, ShieldCheck, Sparkles } from 'lucide-react';
+import { TopNav } from '@/components/navigation/TopNav';
 import { OrgStructureTree } from '@/components/team/OrgStructureTree';
 import { useCompanyStore } from '@/lib/store/company-store';
+import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
+import { usePublicContent } from '@/lib/content/use-public-content';
 
 export default function AboutPage() {
   const { gallery } = useCompanyStore();
+  const { bySlug } = usePublicContent('about');
+  const introduction = bySlug['about-introduction'];
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy">
-      <header className="sticky top-0 z-40 border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-10">
-          <Link href="/" aria-label="Kembali ke beranda">
-            <OrvaxiaLogo size={34} />
-          </Link>
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate transition hover:text-brand-navy">
-            <ArrowLeft size={14} /> Beranda
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#FAF8F5] text-brand-navy">
+      <TopNav />
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-10">
         <section className="rounded-[2rem] border border-brand-lavender/30 bg-white p-6 shadow-sm sm:p-8">
           <span className="badge-brand">Company Introduction</span>
-          <h1 className="mt-4 font-serif text-3xl font-bold leading-tight text-brand-navy sm:text-5xl">ORVAXIA COMPANY</h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
-            Orvaxia adalah perusahaan yang berkomitmen untuk menghadirkan produk kerajinan rajutan berupa tempat botol minum yang praktis,
-            fungsional, dan memiliki tampilan menarik. Dengan mengutamakan desain kreatif, kualitas produk, serta kegunaan sehari-hari,
-            Orvaxia berupaya menghadirkan produk yang tidak hanya memudahkan konsumen membawa botol minum, tetapi juga memberikan sentuhan
-            unik melalui desain rajutan. Produk dirancang secara fleksibel sehingga dapat dilipat menjadi gantungan kunci, menjadikannya
-            praktis dan multifungsi.
+          <h1 className="mt-4 font-serif text-3xl font-bold leading-tight text-brand-navy sm:text-5xl">{introduction?.title || 'ORVAXIA COMPANY'}</h1>
+          <p className="mt-4 max-w-3xl whitespace-pre-line text-base leading-7 text-slate-600">
+            {introduction?.body || 'Orvaxia adalah perusahaan yang berkomitmen untuk menghadirkan produk kerajinan rajutan berupa tempat botol minum yang praktis, fungsional, dan memiliki tampilan menarik. Dengan mengutamakan desain kreatif, kualitas produk, serta kegunaan sehari-hari, Orvaxia berupaya menghadirkan produk yang tidak hanya memudahkan konsumen membawa botol minum, tetapi juga memberikan sentuhan unik melalui desain rajutan. Produk dirancang secara fleksibel sehingga dapat dilipat menjadi gantungan kunci, menjadikannya praktis dan multifungsi.'}
           </p>
         </section>
 
@@ -76,7 +65,7 @@ export default function AboutPage() {
           <div className="rounded-3xl border border-brand-lavender/30 bg-white p-6">
             <Eye className="mb-3 text-brand-slate" size={22} />
             <h3 className="font-serif text-2xl font-bold text-brand-navy">Vision</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600">“Menjadi perusahaan rajutan yang kreatif, berkualitas tinggi, dan inovatif yang memprioritaskan kepedulian dan kolaborasi.”</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">"Menjadi perusahaan rajutan yang kreatif, berkualitas tinggi, dan inovatif yang memprioritaskan kepedulian dan kolaborasi."</p>
           </div>
           <div className="rounded-3xl border border-brand-lavender/30 bg-white p-6 md:col-span-2">
             <Lightbulb className="mb-3 text-brand-slate" size={22} />
@@ -163,8 +152,6 @@ export default function AboutPage() {
           )}
         </section>
       </div>
-
-      <MagicNavigation />
     </main>
   );
 }

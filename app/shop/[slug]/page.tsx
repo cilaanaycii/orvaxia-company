@@ -4,9 +4,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, ShoppingBag } from 'lucide-react';
-import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
-import { MagicNavigation } from '@/components/navigation/MagicNavigation';
+import { ShoppingBag } from 'lucide-react';
+import { TopNav } from '@/components/navigation/TopNav';
 import { useCompanyStore } from '@/lib/store/company-store';
 
 export default function ProductDetailPage() {
@@ -38,12 +37,7 @@ export default function ProductDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy">
-      <header className="sticky top-0 z-40 border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-10">
-          <Link href="/" aria-label="ORVAXIA Home"><OrvaxiaLogo size={34} /></Link>
-          <Link href="/shop" className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate"><ArrowLeft size={14} /> Kembali ke Shop</Link>
-        </div>
-      </header>
+      <TopNav />
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-10">
         <section>
@@ -138,7 +132,6 @@ export default function ProductDetailPage() {
           )}
         </section>
       </div>
-      <MagicNavigation />
     </main>
   );
 }

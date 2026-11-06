@@ -1,60 +1,21 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Instagram, Mail, MapPin, MessageCircle, Music2, Palette, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
+import { ArrowRight, Instagram, Mail, MapPin, MessageCircle, Music2, Palette, ShieldCheck, Sparkles } from 'lucide-react';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
-import { MagicNavigation } from '@/components/navigation/MagicNavigation';
+import { TopNav } from '@/components/navigation/TopNav';
 import { POStatusBanner } from '@/components/shop/POStatusBanner';
-import { ProductShowcase } from '@/components/shop/ProductShowcase';
 import { useCompanyStore } from '@/lib/store/company-store';
+import { usePublicContent } from '@/lib/content/use-public-content';
 
 export default function HomePage() {
-  const { siteSettings, currentUser, products } = useCompanyStore();
-  const [heroImageFailed, setHeroImageFailed] = useState(false);
-  const featuredProduct = products.find((product) => product.isFeatured && product.status === 'published');
-  const heroImage = featuredProduct?.images.find(
-    (image) => image && image.includes('/storage/v1/object/public/orvaxia-images/'),
-  );
-  const accountHref = !currentUser
-    ? '/login'
-    : currentUser.role === 'customer'
-      ? '/account'
-      : `/dashboard/${currentUser.role}`;
+  const { siteSettings } = useCompanyStore();
+  const { bySlug } = usePublicContent('home');
+  const introduction = bySlug['home-introduction'];
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] pb-28 text-brand-navy selection:bg-brand-lavender/30 sm:pb-32">
-      <header className="sticky top-0 z-40 border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-10">
-          <Link href="/" aria-label="ORVAXIA Home">
-            <OrvaxiaLogo size={34} />
-          </Link>
-
-          <nav className="hidden items-center gap-6 text-sm font-semibold text-brand-slate md:flex">
-            <Link href="/" className="transition hover:text-brand-navy">Home</Link>
-            <Link href="/about" className="transition hover:text-brand-navy">About Company</Link>
-            <Link href="/shop" className="transition hover:text-brand-navy">Shop</Link>
-            <Link href="/team" className="transition hover:text-brand-navy">Our Team</Link>
-            <Link href="/contact" className="transition hover:text-brand-navy">Contact Company</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/shop"
-              className="hidden items-center gap-2 rounded-full border border-brand-lavender/40 bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-navy transition hover:border-brand-slate sm:inline-flex"
-            >
-              <ShoppingBag size={15} /> Shop
-            </Link>
-            <Link
-              href={accountHref}
-              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-slate transition hover:border-brand-slate hover:text-brand-navy"
-            >
-              {currentUser ? 'Akun' : 'Login'}
-            </Link>
-          </div>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#FAF8F5] text-brand-navy selection:bg-brand-lavender/30">
+      <TopNav />
 
       <section id="home" className="relative overflow-hidden border-b border-brand-lavender/20 bg-white pb-14 pt-10 sm:pt-16">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-slate via-brand-lavender to-brand-peach" />
@@ -65,11 +26,10 @@ export default function HomePage() {
             </span>
             <div className="space-y-4">
               <h1 className="max-w-xl font-serif text-4xl font-bold leading-tight tracking-tight text-brand-navy sm:text-5xl lg:text-6xl">
-                Kreasi rajutan yang praktis, elegan, dan siap menemani hari Anda.
+                {introduction?.title || 'Kreasi rajutan yang praktis, elegan, dan siap menemani hari Anda.'}
               </h1>
               <p className="max-w-xl text-base leading-7 text-slate-600">
-                ORVAXIA menghadirkan karya rajutan multifungsi untuk aktifitas harian, dengan desain yang fleksibel,
-                nyaman digunakan, dan tetap mencerminkan identitas brand yang hangat serta modern.
+                {introduction?.body || 'ORVAXIA menghadirkan karya rajutan multifungsi untuk aktifitas harian, dengan desain yang fleksibel, nyaman digunakan, dan tetap mencerminkan identitas brand yang hangat serta modern.'}
               </p>
             </div>
 
@@ -78,13 +38,13 @@ export default function HomePage() {
                 href="/shop"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-navy px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-slate"
               >
-                <ShoppingBag size={17} /> Lihat Shop
+                {bySlug['home-shop-cta']?.title || 'Lihat Shop'}
               </Link>
               <Link
                 href="/about"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand-slate transition hover:border-brand-slate hover:text-brand-navy"
               >
-                Tentang ORVAXIA <ArrowRight size={16} />
+                {bySlug['home-about-cta']?.title || 'Tentang ORVAXIA'} <ArrowRight size={16} />
               </Link>
             </div>
 
@@ -95,53 +55,14 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
-            <div className="w-full max-w-lg rounded-[2rem] border border-brand-lavender/30 bg-[#F7F3FF] p-4 shadow-[0_22px_50px_rgba(96,108,141,0.12)]">
-              <div className="rounded-[1.5rem] bg-white p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-slate">
-                      Featured product
-                    </p>
-                    <h2 className="mt-1 font-serif text-2xl font-bold text-brand-navy">Rovella</h2>
-                  </div>
-                  <span className="rounded-full bg-brand-surface px-2.5 py-1 text-[10px] font-bold text-brand-navy">
-                    Rovella
-                  </span>
-                </div>
-                <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-brand-lavender/30 bg-[#EEEAF2]">
-                  {heroImage && !heroImageFailed ? (
-                    <Image
-                      src={heroImage}
-                      alt={featuredProduct?.name || 'Produk unggulan ORVAXIA'}
-                      fill
-                      priority
-                      sizes="(max-width: 1024px) 100vw, 42vw"
-                      unoptimized
-                      className="object-cover"
-                      onError={() => setHeroImageFailed(true)}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center text-brand-slate">
-                      <span className="font-serif text-8xl font-semibold">R</span>
-                      <span className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em]">Rovella by ORVAXIA</span>
-                      <span className="mt-1 text-[10px]">Foto produk belum tersedia</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="flex min-h-[18rem] items-center justify-center border-y border-brand-lavender/30 px-6 py-10 text-center sm:min-h-[24rem]">
+            <div className="max-w-sm">
+              <OrvaxiaLogo size={86} vertical />
+              <p className="mt-7 font-serif text-xl font-semibold leading-8 text-brand-slate">
+                Berangkat dari prinsip, tumbuh melalui kebersamaan.
+              </p>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="border-b border-brand-lavender/20 bg-[#FAF8F5] py-12 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10">
-          <div className="mb-8 text-center">
-            <span className="badge-brand">Our Product</span>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-brand-navy sm:text-4xl">Preview produk unggulan</h2>
-          </div>
-          <ProductShowcase />
         </div>
       </section>
 
@@ -162,7 +83,7 @@ export default function HomePage() {
               <Palette className="mb-3 text-brand-slate" size={22} />
               <h3 className="font-serif text-xl font-bold text-brand-navy">Desain multifungsi</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Produk dirancang untuk praktis dibawa, mudah dilipat, dan tetap berfungsi sebagai aksesori harian yang estetik.
+                Produk dirancang untuk praktis dibawa, mudah dilipat, dan tetap berfungsi sebagai aksesori harian.
               </p>
             </div>
             <div className="rounded-3xl border border-brand-lavender/30 bg-[#FAF8F5] p-5">
@@ -176,7 +97,7 @@ export default function HomePage() {
               <Sparkles className="mb-3 text-brand-slate" size={22} />
               <h3 className="font-serif text-xl font-bold text-brand-navy">Inspirasi berkelanjutan</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                ORVAXIA terus berinovasi dengan tren yang relevan sambil menjaga nilai kerja sama, kreativitas, dan kepedulian.
+                ORVAXIA terus berinovasi dengan tren yang relevan sambil menjaga nilai kerja sama dan kepedulian.
               </p>
             </div>
           </div>
@@ -207,7 +128,7 @@ export default function HomePage() {
           <div>
             <OrvaxiaLogo size={30} />
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-600">
-              ORVAXIA COMPANY menghadirkan solusi kreatif untuk kebutuhan barang harian yang lebih praktis, estetik, dan bernilai.
+              ORVAXIA COMPANY menghadirkan karya rajutan handmade yang praktis, multifungsi, dan bernilai untuk kebutuhan harian.
             </p>
           </div>
           <div>
@@ -231,8 +152,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      <MagicNavigation />
     </main>
   );
 }

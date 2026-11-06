@@ -1,31 +1,70 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, PackageCheck, Search } from 'lucide-react';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { useCompanyStore } from '@/lib/store/company-store';
+import { supabase } from '@/lib/supabase/client';
+import { Order } from '@/lib/types';
 
 export default function AccountOrdersPage() {
   const router = useRouter();
-  const { currentUser, orders } = useCompanyStore();
+  const { currentUser, isAuthReady } = useCompanyStore();
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    if (!currentUser) router.replace('/login');
-  }, [currentUser, router]);
+    if (!isAuthReady) return;
+    if (!currentUser || currentUser.role !== 'customer') {
+      router.replace('/auth?next=%2Faccount%2Forders');
+      setIsLoading(false);
+      return;
+    }
+    if (!supabase) {
+      setLoadError('Supabase belum dikonfigurasi.');
+      setIsLoading(false);
+      return;
+    }
 
-  if (!currentUser) {
+    let active = true;
+    void supabase
+      .from('company_orders')
+      .select('id,details,order_status,payment_status,created_at,updated_at')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error('Customer order history load failed', error);
+          setLoadError('Riwayat pesanan gagal dimuat.');
+          setUserOrders([]);
+        } else {
+          setUserOrders((data || []).map((row) => ({
+            ...(row.details as Order),
+            id: row.id,
+            orderStatus: row.order_status,
+            paymentStatus: row.payment_status,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          })));
+        }
+        setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser, isAuthReady, router]);
+
+  if (!isAuthReady || !currentUser || currentUser.role !== 'customer') {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF8F5] p-6 text-brand-navy">
         <p className="text-sm font-semibold text-slate-600">Memeriksa akses histori pesanan...</p>
       </main>
     );
   }
-
-  const userOrders = orders.filter(
-    (order) => order.customerEmail === currentUser.email || order.customerPhone === currentUser.phone,
-  );
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy">
@@ -52,7 +91,11 @@ export default function AccountOrdersPage() {
         </div>
 
         <div className="space-y-4">
-          {userOrders.length === 0 ? (
+          {isLoading ? (
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center text-sm text-slate-600">Memuat riwayat pesanan...</div>
+          ) : loadError ? (
+            <div role="alert" className="rounded-[2rem] border border-rose-200 bg-white p-8 text-center text-sm text-rose-700">{loadError}</div>
+          ) : userOrders.length === 0 ? (
             <div className="rounded-[2rem] border border-dashed border-brand-lavender/40 bg-white p-8 text-center text-sm text-slate-600">
               <PackageCheck className="mx-auto mb-3 text-brand-slate" size={28} />
               Belum ada riwayat pembelian. Mulai dengan produk favorit Anda.

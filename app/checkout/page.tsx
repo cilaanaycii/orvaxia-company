@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCompanyStore } from '@/lib/store/company-store';
-import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
-import { MagicNavigation } from '@/components/navigation/MagicNavigation';
+import { TopNav } from '@/components/navigation/TopNav';
 import {
   ShoppingBag,
   User,
@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const {
     cart,
     updateCartQuantity,
@@ -32,15 +33,32 @@ export default function CheckoutPage() {
     siteSettings,
     poPeriod,
     currentUser,
+    isAuthReady,
   } = useCompanyStore();
 
   const [step, setStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthReady && (!currentUser || currentUser.role !== 'customer')) {
+      router.replace('/auth?next=%2Fcheckout');
+    }
+  }, [currentUser, isAuthReady, router]);
+
+  useEffect(() => {
+    if (currentUser?.role !== 'customer') return;
+    setCustomerName(currentUser.fullName);
+    setCustomerPhone(currentUser.phone);
+    setCustomerEmail(currentUser.email.includes('@') ? currentUser.email : '');
+  }, [currentUser]);
 
   // STEP 2: Customer & Delivery Info
   const [customerName, setCustomerName] = useState(currentUser?.fullName || '');
-  const [customerEmail, setCustomerEmail] = useState(currentUser?.email || '');
+  const [customerEmail, setCustomerEmail] = useState(
+    currentUser?.email.includes('@') ? currentUser.email : '',
+  );
   const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '');
   const [schoolName, setSchoolName] = useState('SMKN 2 Buduran Sidoarjo');
   const [className, setClassName] = useState('XII DKV 1');
@@ -76,6 +94,10 @@ export default function CheckoutPage() {
       toast.error('Keranjang belanja kosong');
       return;
     }
+    if (!currentUser || currentUser.role !== 'customer') {
+      router.replace('/auth?next=%2Fcheckout');
+      return;
+    }
     if (!customerName || !customerPhone) {
       toast.error('Mohon lengkapi nama dan nomor WhatsApp');
       setStep(2);
@@ -84,7 +106,9 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
     try {
+      idempotencyKeyRef.current ||= crypto.randomUUID();
       const order = await createOrder({
+        idempotencyKey: idempotencyKeyRef.current,
         customerName,
         customerEmail: customerEmail || 'customer@orvaxia.com',
         customerPhone,
@@ -126,6 +150,7 @@ export default function CheckoutPage() {
       });
 
       setCompletedOrder(order);
+      idempotencyKeyRef.current = null;
       setStep(6);
       toast.success(`Pesanan ${order.referenceCode} berhasil disimpan!`);
     } catch (error) {
@@ -178,24 +203,18 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
     { num: 6, label: 'Selesai', icon: CheckCircle2 },
   ];
 
+  if (!isAuthReady || !currentUser || currentUser.role !== 'customer') {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAF8F5] p-6 text-brand-navy">
+        <p className="text-sm font-semibold text-slate-600">Memeriksa akun customer...</p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-28 text-brand-navy">
       {/* Top Header */}
-      <header className="border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md sticky top-0 z-40">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
-          <Link href="/">
-            <OrvaxiaLogo size={36} />
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="text-xs font-semibold text-brand-slate hover:text-brand-navy"
-            >
-              Kembali ke Beranda
-            </Link>
-          </div>
-        </div>
-      </header>
+      <TopNav />
 
       <div className="mx-auto max-w-5xl px-4 pt-8">
         {/* Step Indicator Progress Bar */}
@@ -363,7 +382,7 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
                       required
                       placeholder="Masukkan nama lengkap"
                       value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
+                      readOnly
                       className="w-full rounded-xl border border-slate-200 bg-white p-2.5 focus:border-brand-slate focus:outline-none"
                     />
                   </div>
@@ -377,7 +396,7 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
                       required
                       placeholder="Contoh: 08123456789"
                       value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      readOnly
                       className="w-full rounded-xl border border-slate-200 bg-white p-2.5 focus:border-brand-slate focus:outline-none"
                     />
                   </div>
@@ -800,7 +819,7 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
                     Pre-Order Berhasil Didaftarkan!
                   </h3>
                   <p className="text-xs text-slate-600 max-w-md mx-auto mt-1 leading-relaxed">
-                    Produk tas rajut Rovella <strong>Gratis (Rp0)</strong>, tagihan Anda hanya biaya ongkos kirim sebesar <strong>Rp{shippingCost.toLocaleString('id-ID')}</strong>.
+                    Pesanan tersimpan dengan total <strong>Rp{completedOrder.totalAmount.toLocaleString('id-ID')}</strong>. Tim ORVAXIA akan menghubungi Anda untuk konfirmasi.
                   </p>
                 </div>
 
@@ -948,7 +967,6 @@ Mohon konfirmasi pesanan saya. Terima kasih!`;
         </div>
       </div>
 
-      <MagicNavigation />
     </main>
   );
 }

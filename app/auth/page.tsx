@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCompanyStore } from '@/lib/store/company-store';
@@ -31,6 +31,9 @@ export default function AuthPage() {
   // Customer Form
   const [custName, setCustName] = useState('');
   const [custPhone, setCustPhone] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
 
   // Login Form
   const [loginEmail, setLoginEmail] = useState('');
@@ -50,9 +53,128 @@ export default function AuthPage() {
   const [registeredSuccess, setRegisteredSuccess] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleCustomerLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = window.setTimeout(() => setResendCountdown((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCountdown]);
+
+  const normalizePhone = (value: string) => {
+    const compact = value.trim().replace(/[\s().-]/g, '');
+    const international = compact.startsWith('+')
+      ? compact
+      : compact.startsWith('0')
+        ? `+62${compact.slice(1)}`
+        : compact.startsWith('62')
+          ? `+${compact}`
+          : `+${compact}`;
+    return /^\+[1-9]\d{7,14}$/.test(international) ? international : null;
+  };
+
+  const handleCustomerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/checkout');
+    if (!supabase) {
+      toast.error('Login OTP belum dikonfigurasi. Hubungi administrator.');
+      return;
+    }
+
+    if (!otpRequested) {
+      const phone = normalizePhone(custPhone);
+      if (!custName.trim() || custName.trim().length > 120 || !phone) {
+        toast.error('Masukkan nama lengkap dan nomor telepon internasional yang valid.');
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const { error } = await supabase.auth.signInWithOtp({
+          phone,
+          options: {
+            shouldCreateUser: true,
+            data: { full_name: custName.trim(), account_type: 'customer' },
+          },
+        });
+        if (error) {
+          toast.error(`OTP gagal dikirim: ${error.message}`);
+          return;
+        }
+        setCustPhone(phone);
+        setOtpRequested(true);
+        setResendCountdown(30);
+        toast.success('Kode verifikasi dikirim melalui SMS.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    const phone = normalizePhone(custPhone);
+    if (!phone || !/^\d{4,8}$/.test(otpCode.trim())) {
+      toast.error('Masukkan kode OTP yang valid.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone,
+        token: otpCode.trim(),
+        type: 'sms',
+      });
+      if (error || !data.user) {
+        toast.error(`Verifikasi gagal: ${error?.message || 'akun tidak ditemukan.'}`);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role,status')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
+        toast.error('Profil customer belum tersedia. Pastikan migrasi akun telah diterapkan.');
+        return;
+      }
+      if (profile.role !== 'customer' || profile.status !== 'active') {
+        await supabase.auth.signOut();
+        toast.error('Nomor ini terhubung ke akun Crew, bukan akun customer.');
+        return;
+      }
+
+      const next = new URLSearchParams(window.location.search).get('next');
+      router.replace(next?.startsWith('/') && !next.startsWith('//') ? next : '/account');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendCustomerOtp = async () => {
+    if (!supabase || resendCountdown > 0) return;
+    const phone = normalizePhone(custPhone);
+    if (!phone) {
+      toast.error('Nomor telepon tidak valid.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone,
+        options: {
+          shouldCreateUser: true,
+          data: { full_name: custName.trim(), account_type: 'customer' },
+        },
+      });
+      if (error) {
+        toast.error(`OTP gagal dikirim ulang: ${error.message}`);
+        return;
+      }
+      setResendCountdown(30);
+      toast.success('Kode OTP baru telah dikirim.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInternalLogin = async (e: React.FormEvent) => {
@@ -253,52 +375,97 @@ export default function AuthPage() {
             <form onSubmit={handleCustomerLogin} className="space-y-4 text-xs">
               <div className="text-center mb-4">
                 <h2 className="font-serif text-2xl font-bold text-brand-navy">
-                  Akun Pemesan PO
+                  {otpRequested ? 'Verifikasi Nomor Telepon' : 'Akun Customer ORVAXIA'}
                 </h2>
                 <p className="text-slate-500 mt-1">
-                  Masukkan nama & WhatsApp untuk memesan tas tumbler rajut Rovella.
+                  {otpRequested
+                    ? `Masukkan kode OTP yang dikirim ke ${custPhone}.`
+                    : 'Daftar atau masuk menggunakan nomor telepon dan kode OTP.'}
                 </p>
               </div>
 
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Nama Lengkap Pemesan
-                </label>
-                <div className="relative">
-                  <User size={15} className="absolute left-3 top-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nama kamu"
-                    value={custName}
-                    onChange={(e) => setCustName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
-                  />
-                </div>
-              </div>
+              {!otpRequested ? (
+                <>
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Nama Lengkap</label>
+                    <div className="relative">
+                      <User size={15} className="absolute left-3 top-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        required
+                        maxLength={120}
+                        autoComplete="name"
+                        placeholder="Nama lengkap"
+                        value={custName}
+                        onChange={(e) => setCustName(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Nomor WhatsApp
-                </label>
-                <div className="relative">
-                  <Phone size={15} className="absolute left-3 top-3.5 text-slate-400" />
-                  <input
-                    type="tel"
-                    required
-                    placeholder="08xxxxxxxxxx"
-                    value={custPhone}
-                    onChange={(e) => setCustPhone(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
-                  />
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Nomor Telepon</label>
+                    <div className="relative">
+                      <Phone size={15} className="absolute left-3 top-3.5 text-slate-400" />
+                      <input
+                        type="tel"
+                        required
+                        autoComplete="tel"
+                        placeholder="+628xxxxxxxxxx atau 08xxxxxxxxxx"
+                        value={custPhone}
+                        onChange={(e) => setCustPhone(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 focus:border-brand-slate focus:outline-none"
+                      />
+                    </div>
+                    <p className="mt-1 text-[10px] text-slate-500">Nomor akan dinormalisasi ke format internasional +62.</p>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Kode OTP</label>
+                  <div className="relative">
+                    <KeyRound size={15} className="absolute left-3 top-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      required
+                      maxLength={8}
+                      placeholder="Masukkan kode OTP"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 tracking-[0.3em] focus:border-brand-slate focus:outline-none"
+                    />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <button
+                      type="button"
+                      disabled={isSubmitting || resendCountdown > 0}
+                      onClick={() => void handleResendCustomerOtp()}
+                      className="font-semibold text-brand-slate underline disabled:text-slate-400"
+                    >
+                      {resendCountdown > 0 ? `Kirim ulang (${resendCountdown} dtk)` : 'Kirim ulang OTP'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpRequested(false);
+                        setOtpCode('');
+                      }}
+                      className="text-slate-500 underline"
+                    >
+                      Ganti nomor
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full mt-2 rounded-2xl bg-brand-navy py-3.5 font-bold text-white shadow-md hover:bg-brand-slate transition-all flex items-center justify-center gap-2"
               >
-                <span>Lanjut ke Pemesanan</span>
+                <span>{isSubmitting ? 'Memproses...' : otpRequested ? 'Verifikasi & Masuk' : 'Kirim Kode OTP'}</span>
                 <ArrowRight size={15} />
               </button>
             </form>

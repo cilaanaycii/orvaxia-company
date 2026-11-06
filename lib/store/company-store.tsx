@@ -235,7 +235,7 @@ interface CompanyContextType {
   notifications: DashboardNotification[];
   markNotificationRead: (notificationId: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
-  createOrder: (orderData: Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'>) => Promise<Order>;
+  createOrder: (orderData: Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'> & { idempotencyKey?: string }) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus, changedBy: string, notes?: string) => void;
   verifyPayment: (orderId: string, verifiedBy: string) => void;
   assignDeliveryStaff: (orderId: string, staffId: string, staffName: string) => void;
@@ -518,6 +518,14 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       }
 
       const currentProfile = mapSupabaseProfile(profileData as SupabaseProfileRow);
+      if (currentProfile.role === 'customer') {
+        setCurrentUser(currentProfile);
+        setUsers([]);
+        setTasks([]);
+        setPerformanceReviews([]);
+        setTeamMembers(INITIAL_TEAM_MEMBERS);
+        return;
+      }
       if (currentProfile.status === 'suspended' || currentProfile.status === 'inactive') {
         setCurrentUser(null);
         setUsers([]);
@@ -618,7 +626,13 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   }, [isHydrated]);
 
   useEffect(() => {
-    if (!supabase || !currentUserId || currentUserStatus !== 'active') {
+    if (
+      !supabase ||
+      !currentUserId ||
+      currentUserStatus !== 'active' ||
+      !currentUserRole ||
+      !['owner', 'ceo', 'sales', 'production', 'finance', 'marketing', 'hrd', 'pr', 'member'].includes(currentUserRole)
+    ) {
       setNotifications([]);
       return;
     }
@@ -1135,12 +1149,24 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createOrder = async (
-    orderData: Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'>
+    orderData: Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'> & { idempotencyKey?: string }
   ): Promise<Order> => {
+    if (!supabase) throw new Error('Autentikasi pelanggan belum dikonfigurasi.');
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error('Silakan masuk dengan akun customer sebelum melakukan checkout.');
+    }
+
     const response = await fetch('/api/orders/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+      body: JSON.stringify({
+        ...orderData,
+        idempotencyKey: orderData.idempotencyKey || crypto.randomUUID(),
+      }),
     });
     const result = await response.json();
     if (!response.ok) {

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCompanyStore } from '@/lib/store/company-store';
 import {
   Megaphone,
@@ -167,6 +168,9 @@ export default function PRDashboard() {
 
         {/* Tab Controls */}
         <div className="flex flex-wrap gap-2">
+          <Link href="/dashboard/pr/content" className="rounded-xl bg-brand-navy px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-slate">
+            CMS Konten
+          </Link>
           <button
             onClick={() => setActiveTab('announcements')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${

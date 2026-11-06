@@ -4,7 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import { INITIAL_PRODUCTS, INITIAL_SITE_SETTINGS } from '@/lib/data/initial-data';
 import { Order, OrderItem } from '@/lib/types';
 
-type OrderRequest = Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'>;
+type OrderRequest = Omit<Order, 'id' | 'referenceCode' | 'createdAt' | 'updatedAt' | 'auditTrail'> & {
+  idempotencyKey?: string;
+};
 
 const isText = (value: unknown, maxLength: number): value is string =>
   typeof value === 'string' && value.trim().length > 0 && value.trim().length <= maxLength;
@@ -30,8 +32,13 @@ function getCustomerImageUrl(value: unknown, supabaseUrl: string) {
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const token = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!supabaseUrl || !serviceRoleKey || !anonKey) {
     return NextResponse.json({ error: 'Penyimpanan pesanan belum dikonfigurasi.' }, { status: 503 });
+  }
+  if (!token) {
+    return NextResponse.json({ error: 'Silakan masuk dengan akun customer sebelum melakukan checkout.' }, { status: 401 });
   }
 
   let requestBody: unknown;
@@ -44,6 +51,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Format pesanan tidak valid.' }, { status: 400 });
   }
   const payload = requestBody as OrderRequest;
+  if (typeof payload.idempotencyKey !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.idempotencyKey)) {
+    return NextResponse.json({ error: 'Kunci transaksi tidak valid. Muat ulang checkout dan coba lagi.' }, { status: 400 });
+  }
 
   if (
     !isText(payload.customerName, 120) ||
@@ -64,6 +74,75 @@ export async function POST(request: Request) {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  const authClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: authData, error: authError } = await authClient.auth.getUser(token);
+  if (authError || !authData.user || !authData.user.phone) {
+    return NextResponse.json({ error: 'Sesi customer tidak valid. Silakan masuk kembali.' }, { status: 401 });
+  }
+
+  const { data: customer, error: customerError } = await supabase
+    .from('profiles')
+    .select('id,role,status,full_name,phone')
+    .eq('id', authData.user.id)
+    .maybeSingle();
+  if (customerError) {
+    console.error('Order customer profile lookup failed', customerError);
+    return NextResponse.json({ error: 'Profil customer gagal diverifikasi.' }, { status: 500 });
+  }
+  if (!customer || customer.role !== 'customer' || customer.status !== 'active') {
+    return NextResponse.json({ error: 'Hanya akun customer aktif yang dapat membuat pesanan.' }, { status: 403 });
+  }
+
+  const normalizedProfilePhone = String(customer.phone || '').replace(/\D/g, '');
+  const normalizedAuthPhone = authData.user.phone.replace(/\D/g, '');
+  const normalizedRequestPhone = typeof payload.customerPhone === 'string'
+    ? payload.customerPhone.replace(/\D/g, '')
+    : '';
+  if (
+    !normalizedProfilePhone ||
+    normalizedProfilePhone !== normalizedAuthPhone ||
+    normalizedProfilePhone !== normalizedRequestPhone
+  ) {
+    return NextResponse.json({ error: 'Nomor pesanan harus sama dengan nomor terverifikasi akun.' }, { status: 403 });
+  }
+
+  const { data: priorOrder, error: priorOrderError } = await supabase
+    .from('company_orders')
+    .select('id,details')
+    .eq('customer_id', customer.id)
+    .eq('idempotency_key', payload.idempotencyKey)
+    .maybeSingle();
+  if (priorOrderError) {
+    console.error('Order idempotency lookup failed', priorOrderError);
+    return NextResponse.json({ error: 'Penerapan migrasi akun/pesanan belum lengkap.' }, { status: 503 });
+  }
+  if (priorOrder) {
+    return NextResponse.json({ ...(priorOrder.details as Order), id: priorOrder.id }, { status: 200 });
+  }
+
+  if (typeof payload.poPeriodId !== 'string') {
+    return NextResponse.json({ error: 'Periode PO belum dipilih.' }, { status: 400 });
+  }
+  const { data: poPeriod, error: poError } = await supabase
+    .from('po_periods')
+    .select('id,status,starts_at,ends_at')
+    .eq('id', payload.poPeriodId)
+    .maybeSingle();
+  if (poError) {
+    console.error('Order PO period lookup failed', poError);
+    return NextResponse.json({ error: 'Periode PO gagal diverifikasi di database.' }, { status: 500 });
+  }
+  const nowDate = new Date();
+  if (
+    !poPeriod ||
+    poPeriod.status !== 'open' ||
+    new Date(poPeriod.starts_at) > nowDate ||
+    new Date(poPeriod.ends_at) <= nowDate
+  ) {
+    return NextResponse.json({ error: 'Periode pre-order tidak tersedia atau sudah ditutup.' }, { status: 400 });
+  }
   for (const [index, item] of payload.items.entries()) {
     if (!item || typeof item !== 'object') {
       return NextResponse.json({ error: `Item pesanan nomor ${index + 1} tidak valid.` }, { status: 400 });
@@ -192,9 +271,9 @@ export async function POST(request: Request) {
   const order: Order = {
     id: randomUUID(),
     referenceCode,
-    customerName: payload.customerName.trim(),
-    customerEmail: typeof payload.customerEmail === 'string' ? payload.customerEmail.trim().slice(0, 254) : '',
-    customerPhone: payload.customerPhone.trim(),
+    customerName: customer.full_name,
+    customerEmail: typeof authData.user.email === 'string' ? authData.user.email : '',
+    customerPhone: authData.user.phone,
     schoolName: payload.schoolName.trim(),
     className: payload.className.trim(),
     deliveryType: payload.deliveryType,
@@ -217,7 +296,10 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from('company_orders')
     .insert({
+      id: order.id,
       reference_code: referenceCode,
+      customer_id: customer.id,
+      idempotency_key: payload.idempotencyKey,
       phone_hash: createHash('sha256').update(normalizedPhone).digest('hex'),
       details: order,
       order_status: order.orderStatus,

@@ -2,38 +2,28 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, ShoppingBag, Sparkles } from 'lucide-react';
-import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
-import { MagicNavigation } from '@/components/navigation/MagicNavigation';
+import { ShoppingBag, Sparkles } from 'lucide-react';
+import { TopNav } from '@/components/navigation/TopNav';
 import { useCompanyStore } from '@/lib/store/company-store';
+import { usePublicContent } from '@/lib/content/use-public-content';
 
 export default function ShopPage() {
   const { products, addToCart, cart, poPeriod } = useCompanyStore();
+  const { bySlug } = usePublicContent('shop');
   const publishedProducts = products.filter((product) => product.status === 'published');
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy">
-      <header className="sticky top-0 z-40 border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-10">
-          <Link href="/" aria-label="ORVAXIA Home">
-            <OrvaxiaLogo size={34} />
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/checkout" className="inline-flex items-center gap-2 rounded-full border border-brand-lavender/40 bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-navy transition hover:border-brand-slate">
-              <ShoppingBag size={15} /> Keranjang ({cart.length})
-            </Link>
-            <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate transition hover:text-brand-navy">
-              <ArrowLeft size={14} /> Beranda
-            </Link>
-          </div>
-        </div>
-      </header>
+      <TopNav />
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <span className="badge-brand">Shop</span>
             <h1 className="mt-3 font-serif text-3xl font-bold text-brand-navy sm:text-4xl">Browse Koleksi Produk</h1>
+            {bySlug['shop-introduction'] && (
+              <p className="mt-3 max-w-2xl whitespace-pre-line text-sm leading-6 text-slate-600">{bySlug['shop-introduction'].body}</p>
+            )}
           </div>
           <span className="rounded-full border border-brand-lavender/30 bg-white px-3 py-1.5 text-xs font-semibold text-brand-slate">
             {publishedProducts.length} item aktif
@@ -143,7 +133,6 @@ export default function ShopPage() {
         </div>
       </div>
 
-      <MagicNavigation />
     </main>
   );
 }

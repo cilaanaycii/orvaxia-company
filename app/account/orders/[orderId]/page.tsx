@@ -1,15 +1,58 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, PackageCheck } from 'lucide-react';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { useCompanyStore } from '@/lib/store/company-store';
+import { supabase } from '@/lib/supabase/client';
+import { Order } from '@/lib/types';
 
 export default function OrderDetailPage({ params }: { params: { orderId: string } }) {
-  const { orders, currentUser } = useCompanyStore();
-  const order = orders.find((item) => item.id === params.orderId || item.referenceCode === params.orderId);
+  const router = useRouter();
+  const { currentUser, isAuthReady } = useCompanyStore();
+  const [order, setOrder] = useState<Order | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!currentUser) {
+  useEffect(() => {
+    if (!isAuthReady) return;
+    if (!currentUser || currentUser.role !== 'customer') {
+      router.replace(`/auth?next=${encodeURIComponent(`/account/orders/${params.orderId}`)}`);
+      setIsLoading(false);
+      return;
+    }
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
+    let active = true;
+    const lookup = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(params.orderId)
+      ? supabase.from('company_orders').select('id,details,order_status,payment_status,created_at,updated_at').eq('id', params.orderId)
+      : supabase.from('company_orders').select('id,details,order_status,payment_status,created_at,updated_at').eq('reference_code', params.orderId);
+    void lookup
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) console.error('Customer order detail lookup failed', error);
+        setOrder(data ? {
+          ...(data.details as Order),
+          id: data.id,
+          orderStatus: data.order_status,
+          paymentStatus: data.payment_status,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        } : null);
+        setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser, isAuthReady, params.orderId, router]);
+
+  if (!isAuthReady || !currentUser || currentUser.role !== 'customer' || isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF8F5] p-6 text-brand-navy">
         <p className="text-sm font-semibold text-slate-600">Memeriksa akses detail pesanan...</p>
@@ -21,7 +64,7 @@ export default function OrderDetailPage({ params }: { params: { orderId: string 
     return (
       <main className="min-h-screen bg-[#FAF8F5] px-4 py-10 text-brand-navy">
         <div className="mx-auto max-w-3xl rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-600">
-          Pesanan tidak ditemukan.
+          {isLoading ? 'Memuat detail pesanan...' : 'Pesanan tidak ditemukan.'}
           <div className="mt-4"><Link href="/account/orders" className="text-brand-slate underline">Kembali ke riwayat pembelian</Link></div>
         </div>
       </main>

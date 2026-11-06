@@ -1,36 +1,27 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowLeft, Instagram, Mail, MapPin, MessageCircle, Music2 } from 'lucide-react';
-import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
-import { MagicNavigation } from '@/components/navigation/MagicNavigation';
+import { Instagram, Mail, MapPin, MessageCircle, Music2 } from 'lucide-react';
+import { TopNav } from '@/components/navigation/TopNav';
 import { useCompanyStore } from '@/lib/store/company-store';
+import { usePublicContent } from '@/lib/content/use-public-content';
 
 export default function ContactPage() {
   const { siteSettings } = useCompanyStore();
+  const { bySlug } = usePublicContent('contact');
   const whatsappLink = `https://wa.me/${siteSettings.whatsappNumber.replace(/^0/, '62')}`;
   const instagramLink = `https://www.instagram.com/${siteSettings.instagram.replace(/^@/, '')}`;
   const tiktokLink = `https://www.tiktok.com/@${siteSettings.tiktok.replace(/^@/, '')}`;
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy">
-      <header className="sticky top-0 z-40 border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-10">
-          <Link href="/" aria-label="ORVAXIA Home">
-            <OrvaxiaLogo size={34} />
-          </Link>
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate transition hover:text-brand-navy">
-            <ArrowLeft size={14} /> Beranda
-          </Link>
-        </div>
-      </header>
+      <TopNav />
 
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-10">
         <section className="rounded-[2rem] border border-brand-lavender/30 bg-white p-6 shadow-sm sm:p-8">
           <span className="badge-brand">Contact Company</span>
           <h1 className="mt-4 font-serif text-3xl font-bold text-brand-navy sm:text-5xl">Hubungi ORVAXIA COMPANY</h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            Kami siap membantu pertanyaan, kebutuhan custom, dan konfirmasi pesanan terkait produk ORVAXIA.
+            {bySlug['contact-introduction']?.body || 'Kami siap membantu pertanyaan, kebutuhan custom, dan konfirmasi pesanan terkait produk ORVAXIA.'}
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -80,7 +71,6 @@ export default function ContactPage() {
         </section>
       </div>
 
-      <MagicNavigation />
     </main>
   );
 }

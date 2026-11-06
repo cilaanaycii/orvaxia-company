@@ -93,6 +93,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  if (currentUser.role === 'customer') {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md rounded-3xl border border-brand-lavender/40 bg-white p-8 shadow-sm">
+          <h2 className="font-serif text-2xl font-bold text-brand-navy">Portal Crew</h2>
+          <p className="mt-2 text-sm text-slate-600">Akun customer tidak memiliki akses ke dashboard internal.</p>
+          <Link href="/account" className="mt-5 inline-flex rounded-full bg-brand-slate px-5 py-3 text-xs font-bold text-white">
+            Kembali ke akun
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // 2. Pending Approval State (Awaiting Owner Direction)
   if (currentUser.status === 'pending_approval') {
     return (
@@ -144,6 +158,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 3. Active Authenticated State
   const isOwner = currentUser.role === 'owner';
   const isExecutive = isOwner || currentUser.role === 'ceo';
+  const isContentManagementRoute = pathname.startsWith('/dashboard/pr/content');
+  if (
+    isContentManagementRoute &&
+    !isExecutive &&
+    (currentUser.role !== 'pr' || currentUser.status !== 'active')
+  ) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md rounded-3xl border border-brand-lavender/40 bg-white p-8 shadow-sm">
+          <h2 className="font-serif text-2xl font-bold text-brand-navy">Akses CMS dibatasi</h2>
+          <p className="mt-2 text-sm text-slate-600">Hanya PR aktif, CEO, dan Owner yang dapat mengelola konten publik.</p>
+        </div>
+      </div>
+    );
+  }
   const visibleRoutes = isExecutive
     ? DASHBOARD_ROUTES
     : DASHBOARD_ROUTES.filter((route) => route.role === currentUser.role);

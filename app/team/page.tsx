@@ -1,28 +1,12 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
-import { MagicNavigation } from '@/components/navigation/MagicNavigation';
 import { TeamRoster } from '@/components/team/TeamRoster';
-import { ArrowLeft } from 'lucide-react';
+import { TopNav } from '@/components/navigation/TopNav';
 
 export default function TeamPage() {
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy">
-      <header className="border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md sticky top-0 z-40">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5">
-          <Link href="/">
-            <OrvaxiaLogo size={36} />
-          </Link>
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 text-xs font-semibold text-brand-slate hover:text-brand-navy transition-colors"
-          >
-            <ArrowLeft size={14} /> Beranda
-          </Link>
-        </div>
-      </header>
+      <TopNav />
 
       <div className="mx-auto max-w-7xl space-y-10 px-4 py-10 md:px-6 lg:px-10">
         <div className="mx-auto max-w-2xl text-center">
@@ -37,7 +21,6 @@ export default function TeamPage() {
         <TeamRoster />
       </div>
 
-      <MagicNavigation />
     </main>
   );
 }
