@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { ArrowLeft, Bell, Check, CheckCheck, Inbox as InboxIcon } from 'lucide-react';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
@@ -17,6 +18,12 @@ export default function InboxPage() {
     markAllNotificationsRead,
   } = useCompanyStore();
   const unreadCount = notifications.filter((notification) => !notification.readAt).length;
+
+  useEffect(() => {
+    if (isAuthReady && !currentUser) {
+      router.replace('/login');
+    }
+  }, [currentUser, isAuthReady, router]);
 
   return (
     <main className="min-h-screen bg-[#F4F6F9] pb-32 text-brand-navy">

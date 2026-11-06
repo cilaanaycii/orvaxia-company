@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Building2, ShoppingBag, Users, Bell, type LucideIcon } from 'lucide-react';
+import { Home, Building2, ShoppingBag, Users, Phone, type LucideIcon } from 'lucide-react';
 import { useCompanyStore } from '@/lib/store/company-store';
 
 interface NavItem {
@@ -10,84 +10,35 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   href: string;
-  isSection?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'home', label: 'Home', icon: Home, href: '/#home', isSection: true },
-  { id: 'profile', label: 'Profile', icon: Building2, href: '/#about', isSection: true },
-  { id: 'shop', label: 'Shop', icon: ShoppingBag, href: '/#shop', isSection: true },
-  { id: 'team', label: 'Team', icon: Users, href: '/team' },
-  { id: 'inbox', label: 'Inbox', icon: Bell, href: '/dashboard' },
+  { id: 'home', label: 'Home', icon: Home, href: '/' },
+  { id: 'about', label: 'About Company', icon: Building2, href: '/about' },
+  { id: 'shop', label: 'Shop', icon: ShoppingBag, href: '/shop' },
+  { id: 'team', label: 'Our Team', icon: Users, href: '/team' },
+  { id: 'contact', label: 'Contact Company', icon: Phone, href: '/contact' },
 ];
 
 export function MagicNavigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { cart, notifications } = useCompanyStore();
+  const { cart } = useCompanyStore();
   const [activeId, setActiveId] = useState('home');
-  const unreadCount = notifications.filter((notification) => !notification.readAt).length;
 
-  // ScrollSpy to detect which section is currently in view when on the home page
   useEffect(() => {
-    if (pathname !== '/') {
-      if (pathname.startsWith('/dashboard') || pathname.startsWith('/inbox')) setActiveId('inbox');
-      else if (pathname.startsWith('/shop') || pathname.startsWith('/checkout') || pathname.startsWith('/cart')) setActiveId('shop');
-      else if (pathname.startsWith('/team')) setActiveId('team');
-      else setActiveId('');
-      return;
-    }
-
-    const sections = ['home', 'about', 'shop', 'team'];
-
-    const handleScroll = () => {
-      const scrollPos = window.scrollY + 260; // offset for detection
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const secId = sections[i];
-        const el = document.getElementById(secId);
-        if (el) {
-          const top = el.offsetTop;
-          if (scrollPos >= top) {
-            if (secId === 'about') setActiveId('profile');
-            else setActiveId(secId);
-            return;
-          }
-        }
-      }
-      setActiveId('home');
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    if (pathname === '/') setActiveId('home');
+    else if (pathname.startsWith('/about')) setActiveId('about');
+    else if (pathname.startsWith('/shop') || pathname.startsWith('/checkout')) setActiveId('shop');
+    else if (pathname.startsWith('/team')) setActiveId('team');
+    else if (pathname.startsWith('/contact')) setActiveId('contact');
+    else setActiveId('');
   }, [pathname]);
 
   const handleNavClick = (item: NavItem, e: React.MouseEvent) => {
     e.preventDefault();
-
-    if (item.id === 'inbox') {
-      setActiveId('inbox');
-      router.push('/inbox');
-      return;
-    }
-
-    if (pathname === '/' && item.isSection) {
-      const targetId = item.id === 'profile' ? 'about' : item.id;
-      const el = document.getElementById(targetId);
-      if (el) {
-        const headerOffset = 70;
-        const elementPosition = el.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth',
-        });
-        setActiveId(item.id);
-      }
-    } else {
-      setActiveId(item.id);
-      router.push(item.href);
-    }
+    setActiveId(item.id);
+    router.push(item.href);
   };
 
   const totalCartCount = cart.reduce((acc, it) => acc + it.quantity, 0);
@@ -109,7 +60,6 @@ export function MagicNavigation() {
               title={item.label}
               aria-label={item.label}
             >
-              {/* Raised Circle Indicator */}
               <span
                 className={`absolute inset-0 rounded-full transition-all duration-300 ${
                   isActive
@@ -118,7 +68,6 @@ export function MagicNavigation() {
                 }`}
               />
 
-              {/* Icon */}
               <span className="relative z-10 flex flex-col items-center">
                 <Icon size={20} className="transition-transform duration-200 group-hover:scale-110" />
                 <span
@@ -130,16 +79,9 @@ export function MagicNavigation() {
                 </span>
               </span>
 
-              {/* Shop Badge */}
               {item.id === 'shop' && totalCartCount > 0 && (
                 <span className="absolute -top-1 -right-1 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E57373] px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white animate-pulse">
                   {totalCartCount}
-                </span>
-              )}
-
-              {item.id === 'inbox' && unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-white">
-                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
