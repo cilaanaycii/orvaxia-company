@@ -473,7 +473,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       if (!active) return;
       if (error) {
         console.error('Team roster load failed', error);
-        toast.error('Database anggota crew gagal dimuat.');
+        // Fallback ke data awal jika database belum tersedia kolom yang diperlukan.
+        // Ini tidak menghapus data crew yang sudah ada di database.
+        setTeamMembers(INITIAL_TEAM_MEMBERS);
+        toast.warning('Database anggota crew belum tersedia sepenuhnya. Menampilkan data awal sebagai fallback.');
         return;
       }
 
@@ -482,12 +485,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (!isExecutive) {
-        setTeamMembers(INITIAL_TEAM_MEMBERS);
-        return;
-      }
-      setTeamMembers([]);
-      toast.error('Roster anggota belum tersedia di database.');
+      setTeamMembers(INITIAL_TEAM_MEMBERS);
+      return;
     };
 
     const loadProfile = async (userId: string | null) => {
