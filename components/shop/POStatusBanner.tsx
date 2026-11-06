@@ -12,6 +12,7 @@ export function POStatusBanner() {
     minutes: number;
     isEnded: boolean;
   }>({ days: 0, hours: 0, minutes: 0, isEnded: false });
+  const dateFormatter = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
   useEffect(() => {
     const calculateTime = () => {
@@ -55,6 +56,9 @@ export function POStatusBanner() {
                 {poPeriod.announcement}
               </p>
             )}
+            <p className="mt-1 text-[11px] text-slate-500">
+              {dateFormatter.format(new Date(poPeriod.startsAt))} – {dateFormatter.format(new Date(poPeriod.endsAt))}
+            </p>
           </div>
         </div>
 

@@ -17,6 +17,7 @@ import {
   Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProductPriceManager } from '@/components/shop/ProductPriceManager';
 import { uploadImage } from '@/lib/images/upload-image';
 
 export default function MarketingDashboard() {
@@ -52,7 +53,7 @@ export default function MarketingDashboard() {
 
     setIsUploadingImage(true);
     try {
-      const imageUrl = await uploadImage(file);
+      const imageUrl = await uploadImage(file, 'catalog');
       if (target === 'edit') setVariantImage(imageUrl);
       else setNewVarImage(imageUrl);
       toast.success('Foto berhasil diunggah dari galeri.');
@@ -135,6 +136,7 @@ export default function MarketingDashboard() {
 
   return (
     <div className="space-y-6">
+      <ProductPriceManager />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>

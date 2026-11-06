@@ -29,6 +29,7 @@ export function ProductShowcase() {
   );
   const [customNotes, setCustomNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [failedImageSource, setFailedImageSource] = useState<string | null>(null);
 
   useEffect(() => {
     if (!rovella?.variants.length) return;
@@ -39,7 +40,17 @@ export function ProductShowcase() {
 
   if (!rovella) return null;
 
+  const productPrice = rovella.basePrice + (rovella.sizes[0]?.priceAdjustment || 0);
+  const imageSource = [selectedVariant?.image, ...rovella.images].find(
+    (image) => image && image.includes('/storage/v1/object/public/orvaxia-images/'),
+  );
+  const imageFailed = imageSource !== undefined && failedImageSource === imageSource;
+  const canPurchase = Number.isFinite(productPrice) && productPrice > 0;
+
   const handleAddToCart = () => {
+    if (!canPurchase) {
+      return;
+    }
     addToCart({
       id: `cart-${Date.now()}`,
       productId: rovella.id,
@@ -47,9 +58,9 @@ export function ProductShowcase() {
       variantName: selectedVariant.name,
       sizeName: customBottleDimensions || 'Custom Botol Pelanggan',
       customCharm: selectedCharm,
-      unitPrice: 0,
+      unitPrice: productPrice,
       quantity,
-      subtotal: 0,
+      subtotal: productPrice * quantity,
       customizationNotes: `Ukuran Botol: ${customBottleDimensions}${customNotes ? ` | Catatan: ${customNotes}` : ''}`,
     });
   };
@@ -64,22 +75,20 @@ export function ProductShowcase() {
       <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-12 lg:gap-8">
         <div className="lg:col-span-5 flex flex-col items-center justify-center">
           <div className="relative flex aspect-square w-full max-w-md flex-col items-center justify-center overflow-hidden rounded-2xl border border-brand-lavender/30 bg-brand-surface sm:rounded-3xl">
-            {selectedVariant?.image ? (
+            {imageSource && !imageFailed ? (
               <Image
-                src={selectedVariant.image}
+                src={imageSource}
                 alt={selectedVariant.name}
                 fill
                 unoptimized
                 sizes="(max-width: 1024px) 100vw, 42vw"
                 className="w-full h-full object-cover rounded-2xl transition-all duration-300"
+                onError={() => setFailedImageSource(imageSource)}
               />
             ) : (
-              <div
-                className="flex h-36 w-36 items-center justify-center rounded-full border border-white/70 text-5xl font-serif text-white sm:h-44 sm:w-44"
-                style={{ backgroundColor: selectedVariant?.colorHex || '#A99AB3' }}
-                aria-label={`Warna ${selectedVariant?.name}`}
-              >
-                R
+              <div className="flex h-full w-full flex-col items-center justify-center bg-[#EEEAF2] text-brand-slate" aria-label="Foto produk belum tersedia">
+                <span className="font-serif text-7xl font-semibold">R</span>
+                <span className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em]">Rovella by ORVAXIA</span>
               </div>
             )}
 
@@ -99,8 +108,10 @@ export function ProductShowcase() {
             </p>
 
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-serif text-2xl font-bold text-brand-navy">Rp0</span>
-              <span className="text-xs text-slate-500">ongkir dibayar pembeli</span>
+              <span className="font-serif text-xl font-bold text-brand-navy">
+                {canPurchase ? `Rp${productPrice.toLocaleString('id-ID')}` : 'Harga belum tersedia'}
+              </span>
+              <span className="text-xs text-slate-500">{canPurchase ? 'Harga produk' : 'Checkout tersedia setelah harga ditetapkan'}</span>
             </div>
           </div>
 
@@ -124,7 +135,7 @@ export function ProductShowcase() {
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
-                    {variant.image ? (
+                    {variant.image && !variant.image.includes('unsplash.com') ? (
                       <Image
                         src={variant.image}
                         alt={variant.name}
@@ -229,7 +240,9 @@ export function ProductShowcase() {
           <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
             <button
               onClick={handleDirectCheckout}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-navy py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-slate"
+              disabled={!canPurchase}
+              title={!canPurchase ? 'Harga produk belum ditetapkan' : undefined}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-navy py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-slate disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               <ShoppingBag size={17} />
               <span>Lanjutkan pemesanan</span>
@@ -237,7 +250,9 @@ export function ProductShowcase() {
             </button>
             <button
               onClick={handleAddToCart}
-              className="min-h-10 w-full rounded-xl border border-brand-slate py-2.5 text-sm font-semibold text-brand-slate transition-colors hover:bg-brand-surface"
+              disabled={!canPurchase}
+              title={!canPurchase ? 'Harga produk belum ditetapkan' : undefined}
+              className="min-h-10 w-full rounded-xl border border-brand-slate py-2.5 text-sm font-semibold text-brand-slate transition-colors hover:bg-brand-surface disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
             >
               <span>Tambah ke keranjang</span>
             </button>

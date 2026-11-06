@@ -35,6 +35,9 @@ export interface TeamMember {
   responsibilities: string[];
   status: string;
   avatarUrl: string;
+  className?: string;
+  instagramUrl?: string;
+  profileVisible?: boolean;
   phone?: string;
   email?: string;
   sortOrder: number;

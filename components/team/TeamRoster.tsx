@@ -1,205 +1,283 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
+import { Instagram, Search, X } from 'lucide-react';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { TeamMember } from '@/lib/types';
-import { Search, UserCheck, Shield, ChevronRight, Mail, Phone } from 'lucide-react';
+
+const divisions = [
+  { id: 'all', label: 'Semua anggota' },
+  { id: 'Executive', label: 'Executive' },
+  { id: 'Kesekretariatan', label: 'Kesekretariatan' },
+  { id: 'Finance', label: 'Finance' },
+  { id: 'HRD', label: 'HRD' },
+  { id: 'Marketing', label: 'Marketing' },
+  { id: 'Produksi', label: 'Produksi' },
+  { id: 'Public Relations', label: 'Public Relations' },
+  { id: 'Sales', label: 'Sales' },
+];
+
+function isStoredPortrait(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL
+      ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin
+      : '';
+    return (
+      parsedUrl.origin === supabaseOrigin &&
+      parsedUrl.pathname.startsWith('/storage/v1/object/public/orvaxia-images/crew/') ||
+      parsedUrl.origin === supabaseOrigin &&
+      parsedUrl.pathname.startsWith('/storage/v1/object/public/orvaxia-images/catalog/')
+    );
+  } catch {
+    return false;
+  }
+}
+
+function MemberPortrait({ member, large = false }: { member: TeamMember; large?: boolean }) {
+  const hasPhoto = isStoredPortrait(member.avatarUrl);
+  return (
+    <div className={`relative overflow-hidden bg-[#EEEAF2] ${large ? 'aspect-[4/5]' : 'aspect-[4/5]'}`}>
+      {hasPhoto ? (
+        <Image
+          src={member.avatarUrl}
+          alt={`Foto ${member.name}`}
+          fill
+          unoptimized
+          sizes={large ? '(max-width: 640px) 90vw, 460px' : '(max-width: 640px) 50vw, 25vw'}
+          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#F4F0F6] via-[#ECE9F1] to-[#E8E3ED] px-4 text-center">
+          <span className="font-serif text-5xl font-semibold tracking-[0.12em] text-brand-slate/70">
+            {member.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('')}
+          </span>
+          <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-slate/70">
+            ORVAXIA COMPANY
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TeamRoster() {
   const { teamMembers } = useCompanyStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDivision, setSelectedDivision] = useState<string>('all');
-  const [activeModalMember, setActiveModalMember] = useState<TeamMember | null>(null);
+  const [selectedDivision, setSelectedDivision] = useState('all');
+  const [activeMember, setActiveMember] = useState<TeamMember | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
 
-  const divisions = [
-    { id: 'all', label: 'Semua Anggota (31)' },
-    { id: 'Executive', label: 'Executive' },
-    { id: 'Kesekretariatan', label: 'Kesekretariatan' },
-    { id: 'Finance', label: 'Finance' },
-    { id: 'HRD', label: 'HRD' },
-    { id: 'Marketing', label: 'Marketing' },
-    { id: 'Produksi', label: 'Produksi' },
-    { id: 'Public Relations', label: 'PR' },
-    { id: 'Sales', label: 'Sales' },
-  ];
-
+  const visibleMembers = useMemo(
+    () => teamMembers.filter((member) => member.status === 'Aktif' && member.profileVisible !== false),
+    [teamMembers],
+  );
   const filteredMembers = useMemo(() => {
-    return teamMembers.filter((member) => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return visibleMembers.filter((member) => {
+      const matchesDivision = selectedDivision === 'all' || member.division === selectedDivision;
       const matchesSearch =
-        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.division.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesDivision =
-        selectedDivision === 'all' || member.division === selectedDivision;
-
-      return matchesSearch && matchesDivision;
+        !query ||
+        [member.name, member.position, member.division].some((value) =>
+          value.toLocaleLowerCase().includes(query),
+        );
+      return matchesDivision && matchesSearch;
     });
-  }, [teamMembers, searchQuery, selectedDivision]);
+  }, [visibleMembers, searchQuery, selectedDivision]);
+
+  useEffect(() => {
+    if (!activeMember) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveMember(null);
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusableElements = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusableElements.length) return;
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [activeMember]);
+
+  const instagramUrl = (member: TeamMember) => {
+    if (!member.instagramUrl) return null;
+    try {
+      const url = new URL(member.instagramUrl);
+      return url.protocol === 'https:' && ['www.instagram.com', 'instagram.com'].includes(url.hostname)
+        ? url.toString()
+        : null;
+    } catch {
+      return null;
+    }
+  };
 
   return (
-    <div className="w-full space-y-6">
-      {/* Controls: Search and Division Filter */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
+    <div className="w-full space-y-7">
+      <div className="flex flex-col gap-4">
+        <label className="relative block w-full sm:max-w-sm">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            type="text"
-            placeholder="Cari nama atau jabatan..."
+            type="search"
+            placeholder="Cari nama, jabatan, atau divisi"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-xs focus:border-brand-slate focus:outline-none focus:ring-1 focus:ring-brand-slate shadow-sm"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="w-full rounded-full border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm focus:border-brand-slate focus:outline-none focus:ring-1 focus:ring-brand-slate"
           />
-        </div>
-
-        {/* Division Filter Badges */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 w-full md:w-auto no-scrollbar">
-          {divisions.map((div) => (
+        </label>
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label="Filter divisi">
+          {divisions.map((division) => (
             <button
-              key={div.id}
-              onClick={() => setSelectedDivision(div.id)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                selectedDivision === div.id
-                  ? 'bg-brand-slate text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              key={division.id}
+              type="button"
+              onClick={() => setSelectedDivision(division.id)}
+              aria-pressed={selectedDivision === division.id}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition ${
+                selectedDivision === division.id
+                  ? 'bg-brand-navy text-white'
+                  : 'border border-slate-200 bg-white text-slate-600 hover:border-brand-slate'
               }`}
             >
-              {div.label}
+              {division.label}
             </button>
           ))}
         </div>
+        <p className="text-xs text-slate-500">
+          {filteredMembers.length} dari {visibleMembers.length} profil anggota
+        </p>
       </div>
 
-      {/* Roster Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
         {filteredMembers.map((member) => (
-          <div
+          <button
             key={member.id}
-            onClick={() => setActiveModalMember(member)}
-            className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm hover:shadow-md hover:border-brand-lavender transition-all cursor-pointer"
+            type="button"
+            onClick={() => setActiveMember(member)}
+            aria-label={`Lihat profil ${member.name}`}
+            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:border-brand-lavender hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-slate"
           >
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="relative h-12 w-12 rounded-full overflow-hidden border border-brand-lavender/50 bg-slate-100 shrink-0">
-                  <Image
-                    src={member.avatarUrl}
-                    alt={member.name}
-                    fill
-                    unoptimized
-                    sizes="48px"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <span className="inline-block rounded-md bg-brand-surface px-2 py-0.5 text-[10px] font-semibold text-brand-slate border border-brand-lavender/30">
-                    {member.division}
-                  </span>
-                  <h4 className="font-bold text-xs text-brand-navy truncate mt-1 group-hover:text-brand-slate transition-colors">
-                    {member.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 truncate">{member.position}</p>
-                </div>
-              </div>
-
-              <p className="mt-3 text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
-                {member.bio}
-              </p>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] text-slate-500">
-              <span className="flex items-center gap-1 text-emerald-700 font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {member.status}
+            <MemberPortrait member={member} />
+            <span className="block p-3 sm:p-4">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.13em] text-brand-slate">
+                {member.division}
               </span>
-              <span className="flex items-center gap-1 text-brand-slate group-hover:translate-x-0.5 transition-transform">
-                Detail <ChevronRight size={12} />
+              <span className="mt-1 block line-clamp-2 min-h-10 font-serif text-sm font-bold leading-5 text-brand-navy sm:text-base">
+                {member.name}
               </span>
-            </div>
-          </div>
+              <span className="mt-1 block min-h-8 line-clamp-2 text-[11px] leading-4 text-slate-500">
+                {member.position}
+              </span>
+            </span>
+          </button>
         ))}
       </div>
 
       {filteredMembers.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-          <p className="text-sm text-slate-500">Tidak ada anggota yang cocok dengan filter pencarian.</p>
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
+          Tidak ada anggota yang cocok dengan pencarian.
         </div>
       )}
 
-      {/* Member Detail Dialog */}
-      {activeModalMember && (
+      {activeMember && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-          onClick={() => setActiveModalMember(null)}
+          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-brand-navy/55 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setActiveMember(null);
+          }}
         >
-          <div
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl transition-all"
-            onClick={(e) => e.stopPropagation()}
+          <section
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="team-member-title"
+            className="grid w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl sm:grid-cols-[0.85fr_1.15fr]"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-brand-slate shadow-sm shrink-0">
-                  <Image
-                    src={activeModalMember.avatarUrl}
-                    alt={activeModalMember.name}
-                    fill
-                    unoptimized
-                    sizes="64px"
-                    className="h-full w-full object-cover"
-                  />
+            <div className="group">
+              <MemberPortrait member={activeMember} large />
+            </div>
+            <div className="flex flex-col p-5 sm:p-7">
+              <div className="flex justify-end">
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  onClick={() => setActiveMember(null)}
+                  aria-label="Tutup profil"
+                  className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-brand-navy focus:outline-none focus:ring-2 focus:ring-brand-slate"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-slate">
+                {activeMember.division}
+              </p>
+              <h2 id="team-member-title" className="mt-2 font-serif text-2xl font-bold leading-tight text-brand-navy sm:text-3xl">
+                {activeMember.name}
+              </h2>
+              <p className="mt-2 text-sm font-medium text-slate-600">{activeMember.position}</p>
+              <dl className="mt-5 grid gap-3 border-y border-slate-100 py-4 text-sm">
+                <div>
+                  <dt className="text-xs text-slate-400">Kelas</dt>
+                  <dd className="mt-0.5 text-slate-700">{activeMember.className || 'Belum dilengkapi'}</dd>
                 </div>
                 <div>
-                  <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-semibold text-brand-slate border border-brand-lavender/30">
-                    {activeModalMember.division}
-                  </span>
-                  <h3 className="font-bold text-base text-brand-navy mt-1">
-                    {activeModalMember.name}
-                  </h3>
-                  <p className="text-xs text-brand-slate font-medium">
-                    {activeModalMember.position}
-                  </p>
+                  <dt className="text-xs text-slate-400">Status keanggotaan</dt>
+                  <dd className="mt-0.5 text-slate-700">{activeMember.status}</dd>
                 </div>
-              </div>
-              <button
-                onClick={() => setActiveModalMember(null)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4 text-xs">
-              <div>
-                <h5 className="font-semibold text-slate-900 uppercase tracking-wider text-[10px]">
-                  Profil & Dedikasi
-                </h5>
-                <p className="mt-1 leading-relaxed text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  {activeModalMember.bio}
-                </p>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-slate-900 uppercase tracking-wider text-[10px]">
-                  Tanggung Jawab Resmi
-                </h5>
-                <ul className="mt-2 space-y-1.5">
-                  {activeModalMember.responsibilities.map((resp, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-slate-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-brand-slate shrink-0" />
-                      {resp}
+              </dl>
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                {activeMember.bio || 'Informasi profil belum dilengkapi.'}
+              </p>
+              {activeMember.responsibilities.length > 0 && (
+                <ul className="mt-4 space-y-2 text-xs leading-5 text-slate-600">
+                  {activeMember.responsibilities.map((responsibility) => (
+                    <li key={responsibility} className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-brand-slate" />
+                      {responsibility}
                     </li>
                   ))}
                 </ul>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
-                  <UserCheck size={14} /> Status Keanggotaan: {activeModalMember.status}
-                </span>
-                <span className="text-slate-400">ORVAXIA COMPANY</span>
+              )}
+              <div className="mt-auto flex flex-wrap gap-2 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveMember(null)}
+                  className="rounded-full border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+                {instagramUrl(activeMember) && (
+                  <a
+                    href={instagramUrl(activeMember) || undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-slate"
+                  >
+                    <Instagram size={14} /> Lihat Instagram
+                  </a>
+                )}
               </div>
             </div>
-          </div>
+          </section>
         </div>
       )}
     </div>

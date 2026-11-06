@@ -1,7 +1,9 @@
 ﻿'use client';
 
+import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Mail, MapPin, MessageCircle, Palette, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
+import { ArrowRight, Instagram, Mail, MapPin, MessageCircle, Music2, Palette, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
 import { POStatusBanner } from '@/components/shop/POStatusBanner';
@@ -9,7 +11,17 @@ import { ProductShowcase } from '@/components/shop/ProductShowcase';
 import { useCompanyStore } from '@/lib/store/company-store';
 
 export default function HomePage() {
-  const { siteSettings, currentUser } = useCompanyStore();
+  const { siteSettings, currentUser, products } = useCompanyStore();
+  const [heroImageFailed, setHeroImageFailed] = useState(false);
+  const featuredProduct = products.find((product) => product.isFeatured && product.status === 'published');
+  const heroImage = featuredProduct?.images.find(
+    (image) => image && image.includes('/storage/v1/object/public/orvaxia-images/'),
+  );
+  const accountHref = !currentUser
+    ? '/login'
+    : currentUser.role === 'customer'
+      ? '/account'
+      : `/dashboard/${currentUser.role}`;
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-28 text-brand-navy selection:bg-brand-lavender/30 sm:pb-32">
@@ -35,7 +47,7 @@ export default function HomePage() {
               <ShoppingBag size={15} /> Shop
             </Link>
             <Link
-              href={currentUser ? '/account' : '/login'}
+              href={accountHref}
               className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-slate transition hover:border-brand-slate hover:text-brand-navy"
             >
               {currentUser ? 'Akun' : 'Login'}
@@ -89,27 +101,33 @@ export default function HomePage() {
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-slate">
-                      Pre-Order Active
+                      Featured product
                     </p>
                     <h2 className="mt-1 font-serif text-2xl font-bold text-brand-navy">Rovella</h2>
                   </div>
                   <span className="rounded-full bg-brand-surface px-2.5 py-1 text-[10px] font-bold text-brand-navy">
-                    PO Open
+                    Rovella
                   </span>
                 </div>
-                <div className="rounded-2xl border border-brand-lavender/30 bg-gradient-to-br from-brand-surface to-white p-4">
-                  <div className="flex items-center justify-between text-sm text-slate-600">
-                    <span>Brand Identity</span>
-                    <Sparkles className="text-brand-slate" size={16} />
-                  </div>
-                  <div className="mt-5 grid grid-cols-3 gap-2">
-                    {['#606C8D', '#A99AB3', '#FDF5AE'].map((color) => (
-                      <div key={color} className="h-16 rounded-xl border border-white/80" style={{ backgroundColor: color }} />
-                    ))}
-                  </div>
-                  <div className="mt-4 rounded-xl bg-white/80 p-3 text-sm text-slate-600">
-                    Produk utama ORVAXIA adalah tas tumbler rajut multi fungsi yang dapat dilipat menjadi pouch atau gantungan kunci.
-                  </div>
+                <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-brand-lavender/30 bg-[#EEEAF2]">
+                  {heroImage && !heroImageFailed ? (
+                    <Image
+                      src={heroImage}
+                      alt={featuredProduct?.name || 'Produk unggulan ORVAXIA'}
+                      fill
+                      priority
+                      sizes="(max-width: 1024px) 100vw, 42vw"
+                      unoptimized
+                      className="object-cover"
+                      onError={() => setHeroImageFailed(true)}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center text-brand-slate">
+                      <span className="font-serif text-8xl font-semibold">R</span>
+                      <span className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em]">Rovella by ORVAXIA</span>
+                      <span className="mt-1 text-[10px]">Foto produk belum tersedia</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -196,8 +214,10 @@ export default function HomePage() {
             <h4 className="font-semibold text-brand-navy">Contact</h4>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
               <li className="flex items-start gap-2"><MapPin size={15} className="mt-0.5 shrink-0" /> {siteSettings.address}</li>
-              <li className="flex items-center gap-2"><MessageCircle size={15} className="shrink-0" /> {siteSettings.whatsappNumber}</li>
-              <li className="flex items-center gap-2"><Mail size={15} className="shrink-0" /> {siteSettings.email}</li>
+              <li className="flex items-center gap-2"><MessageCircle size={15} className="shrink-0" /> <a href={`https://wa.me/${siteSettings.whatsappNumber.replace(/^0/, '62')}`} className="hover:text-brand-navy">{siteSettings.whatsappNumber}</a></li>
+              <li className="flex items-center gap-2"><Mail size={15} className="shrink-0" /> <a href={`mailto:${siteSettings.email}`} className="hover:text-brand-navy">{siteSettings.email}</a></li>
+              <li className="flex items-center gap-2"><Instagram size={15} className="shrink-0" /> <a href={`https://www.instagram.com/${siteSettings.instagram.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="hover:text-brand-navy">@{siteSettings.instagram.replace(/^@/, '')}</a></li>
+              <li className="flex items-center gap-2"><Music2 size={15} className="shrink-0" /> <a href={`https://www.tiktok.com/@${siteSettings.tiktok.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="hover:text-brand-navy">@{siteSettings.tiktok.replace(/^@/, '')}</a></li>
             </ul>
           </div>
           <div>

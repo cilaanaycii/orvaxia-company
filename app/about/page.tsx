@@ -1,13 +1,15 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Compass, Eye, HeartHandshake, Lightbulb, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, Compass, Eye, Lightbulb, ShieldCheck, Sparkles } from 'lucide-react';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
+import { OrgStructureTree } from '@/components/team/OrgStructureTree';
 import { useCompanyStore } from '@/lib/store/company-store';
 
 export default function AboutPage() {
-  const { teamMembers, gallery } = useCompanyStore();
+  const { gallery } = useCompanyStore();
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-32 text-brand-navy">
@@ -103,6 +105,9 @@ export default function AboutPage() {
 
         <section className="mt-10 rounded-3xl border border-brand-lavender/30 bg-white p-6">
           <h2 className="font-serif text-2xl font-bold text-brand-navy">Company Branding</h2>
+          <div className="mt-5 flex justify-center rounded-2xl bg-[#FAF8F5] p-6">
+            <OrvaxiaLogo size={80} vertical />
+          </div>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 p-4">
               <div className="h-16 rounded-xl" style={{ backgroundColor: '#606C8D' }} />
@@ -123,19 +128,13 @@ export default function AboutPage() {
           <p className="mt-4 text-sm leading-7 text-slate-600">
             Font yang digunakan mengacu pada identitas perusahaan: TAN Meringue, Canva Sans, Noto Serif Display, Brittany, dan Klein.
           </p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Kode warna Dusty Peach belum diverifikasi dari dokumen sumber, sehingga tidak ditetapkan sebagai swatch resmi pada halaman ini.
+          </p>
         </section>
 
-        <section className="mt-10 rounded-3xl border border-brand-lavender/30 bg-white p-6">
-          <h2 className="font-serif text-2xl font-bold text-brand-navy">Company Structure</h2>
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {teamMembers.slice(0, 6).map((member) => (
-              <div key={member.id} className="rounded-2xl border border-slate-200 bg-[#FAF8F5] p-4">
-                <div className="text-sm font-semibold text-brand-navy">{member.name}</div>
-                <div className="mt-1 text-xs text-brand-slate">{member.position}</div>
-                <div className="mt-2 text-xs text-slate-500">{member.division}</div>
-              </div>
-            ))}
-          </div>
+        <section className="mt-10 rounded-3xl border border-brand-lavender/30 bg-white p-5 sm:p-8">
+          <OrgStructureTree />
         </section>
 
         <section className="mt-10 rounded-3xl border border-brand-lavender/30 bg-white p-6">
@@ -143,11 +142,25 @@ export default function AboutPage() {
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {gallery.slice(0, 6).map((item) => (
               <div key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                <div className="h-40 bg-gradient-to-br from-brand-surface via-white to-brand-lavender/40" />
-                <div className="p-3 text-sm font-medium text-brand-navy">{item.title}</div>
+                <div className="relative flex h-40 items-center justify-center bg-brand-surface px-5 text-center text-xs text-brand-slate">
+                  {item.imageUrl &&
+                  !item.imageUrl.includes('unsplash.com') &&
+                  item.imageUrl.includes('/storage/v1/object/public/orvaxia-images/') ? (
+                    <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" unoptimized className="object-cover" />
+                  ) : (
+                    'Dokumentasi belum tersedia'
+                  )}
+                </div>
+                <div className="p-3">
+                  <div className="text-sm font-medium text-brand-navy">{item.title}</div>
+                  {item.caption && <p className="mt-1 text-xs leading-5 text-slate-500">{item.caption}</p>}
+                </div>
               </div>
             ))}
           </div>
+          {gallery.length === 0 && (
+            <p className="mt-4 text-sm text-slate-500">Dokumentasi kegiatan akan ditampilkan setelah diunggah oleh pengelola galeri.</p>
+          )}
         </section>
       </div>
 

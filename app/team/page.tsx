@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { MagicNavigation } from '@/components/navigation/MagicNavigation';
-import { OrgStructureTree } from '@/components/team/OrgStructureTree';
 import { TeamRoster } from '@/components/team/TeamRoster';
 import { ArrowLeft } from 'lucide-react';
 
@@ -25,22 +24,17 @@ export default function TeamPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-10 py-10 space-y-16">
-        <div className="text-center max-w-xl mx-auto">
-          <span className="badge-brand">Tim Profesional ORVAXIA</span>
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-navy mt-2">
-            31 Anggota Resmi Perusahaan
+      <div className="mx-auto max-w-7xl space-y-10 px-4 py-10 md:px-6 lg:px-10">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="badge-brand">Our Team</span>
+          <h1 className="mt-3 font-serif text-4xl font-bold tracking-tight text-brand-navy sm:text-5xl">
+            OUR PEOPLE, OUR STRENGTH.
           </h1>
-          <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Struktur organisasi lengkap dan peran aktif setiap anggota dalam menghadirkan produk dan layanan terbaik.
+          <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">
+            Meet the people behind ORVAXIA COMPANY.
           </p>
         </div>
-
-        <OrgStructureTree />
-
-        <div className="border-t border-slate-200 pt-10">
-          <TeamRoster />
-        </div>
+        <TeamRoster />
       </div>
 
       <MagicNavigation />

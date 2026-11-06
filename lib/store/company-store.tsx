@@ -132,6 +132,9 @@ interface TeamMemberRow {
   responsibilities: unknown;
   status: string;
   avatar_url: string;
+  class_name: string | null;
+  instagram_url: string | null;
+  profile_visible: boolean | null;
   phone: string | null;
   email: string | null;
   sort_order: number;
@@ -149,6 +152,9 @@ function mapTeamMember(row: TeamMemberRow): TeamMember {
       : [],
     status: row.status === 'Tidak Aktif' ? 'Non-aktif' : row.status,
     avatarUrl: row.avatar_url,
+    className: row.class_name || undefined,
+    instagramUrl: row.instagram_url || undefined,
+    profileVisible: row.profile_visible !== false,
     phone: row.phone || undefined,
     email: row.email || undefined,
     sortOrder: row.sort_order,
@@ -359,6 +365,36 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     if (!isHydrated) return;
     let active = true;
 
+    const loadDatabasePrices = async () => {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('products')
+        .select('slug,price,status,is_featured,is_available_for_po')
+        .in('slug', INITIAL_PRODUCTS.map((product) => product.slug));
+      if (!active) return;
+      if (error) {
+        console.error('Product prices failed to load from Supabase', error);
+        toast.error('Harga katalog gagal dimuat dari Supabase. Checkout tetap nonaktif sampai harga tersedia.');
+        setProducts((current) => current.map((product) => ({ ...product, basePrice: 0 })));
+        return;
+      }
+
+      const rows = new Map((data || []).map((row) => [row.slug, row]));
+      setProducts((current) =>
+        current.map((product) => {
+          const row = rows.get(product.slug);
+          if (!row) return { ...product, basePrice: 0 };
+          return {
+            ...product,
+            basePrice: row.price === null ? 0 : Number(row.price),
+            status: row.status,
+            isFeatured: row.is_featured,
+            isPO: row.is_available_for_po,
+          };
+        }),
+      );
+    };
+
     const loadSharedVariants = async () => {
       try {
         const response = await fetch('/api/catalog/variants', { cache: 'no-store' });
@@ -380,6 +416,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    void loadDatabasePrices();
     void loadSharedVariants();
     return () => {
       active = false;
@@ -425,7 +462,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       const { data: rows, error } = await authClient
         .from('team_members')
-        .select('id,name,position,division,bio,responsibilities,status,avatar_url,phone,email,sort_order')
+        .select('id,name,position,division,bio,responsibilities,status,avatar_url,class_name,instagram_url,profile_visible,phone,email,sort_order')
         .order('sort_order');
 
       if (!active) return;
@@ -825,6 +862,47 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProduct = async (id: string, prod: Partial<Product>): Promise<boolean> => {
+    if (prod.basePrice !== undefined) {
+      const product = products.find((item) => item.id === id);
+      if (!product || !Number.isSafeInteger(prod.basePrice) || prod.basePrice <= 0) {
+        toast.error('Harga produk harus berupa bilangan bulat lebih besar dari Rp0.');
+        return false;
+      }
+      if (!supabase) {
+        toast.error('Supabase belum dikonfigurasi untuk menyimpan harga katalog.');
+        return false;
+      }
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        toast.error('Sesi crew gagal diperiksa.');
+        return false;
+      }
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error('Silakan masuk ke akun crew terlebih dahulu.');
+        return false;
+      }
+      try {
+        const response = await fetch('/api/catalog/products', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ slug: product.slug, price: prod.basePrice }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          toast.error(result.error || 'Harga katalog gagal disimpan.');
+          return false;
+        }
+      } catch (error) {
+        console.error('Catalog price save failed', error);
+        toast.error('Harga katalog gagal disimpan. Periksa koneksi lalu coba lagi.');
+        return false;
+      }
+    }
+
     if (prod.variants) {
       if (!supabase) {
         toast.error('Supabase belum dikonfigurasi untuk menyimpan katalog bersama.');
@@ -900,12 +978,15 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         responsibilities: updatedMember.responsibilities,
         status: updatedMember.status,
         avatar_url: updatedMember.avatarUrl,
+        class_name: updatedMember.className || null,
+        instagram_url: updatedMember.instagramUrl || null,
+        profile_visible: updatedMember.profileVisible !== false,
         phone: updatedMember.phone || null,
         email: updatedMember.email || null,
         sort_order: updatedMember.sortOrder,
       })
       .eq('id', id)
-      .select('id,name,position,division,bio,responsibilities,status,avatar_url,phone,email,sort_order')
+      .select('id,name,position,division,bio,responsibilities,status,avatar_url,class_name,instagram_url,profile_visible,phone,email,sort_order')
       .maybeSingle();
 
     if (error || !data) {

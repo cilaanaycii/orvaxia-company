@@ -61,6 +61,9 @@ export async function POST(request: Request) {
   }
 
   const validatedItems: OrderItem[] = [];
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   for (const [index, item] of payload.items.entries()) {
     if (!item || typeof item !== 'object') {
       return NextResponse.json({ error: `Item pesanan nomor ${index + 1} tidak valid.` }, { status: 400 });
@@ -69,27 +72,91 @@ export async function POST(request: Request) {
     const variant = product?.variants.find((candidate) => candidate.name === item.variantName);
     const size = product?.sizes.find((candidate) => candidate.name === item.sizeName);
     const quantity = Number(item.quantity);
-    if (!product || !variant || !size || !Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
+    if (
+      !product ||
+      !variant ||
+      !isText(item.sizeName, 120) ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 20
+    ) {
       return NextResponse.json({ error: `Item pesanan nomor ${index + 1} tidak valid.` }, { status: 400 });
+    }
+    const { data: databaseProduct, error: productError } = await supabase
+      .from('products')
+      .select('id,price,status,is_available_for_po')
+      .eq('slug', product.slug)
+      .maybeSingle();
+    if (productError) {
+      console.error('Order catalog lookup failed', productError);
+      return NextResponse.json({ error: 'Katalog gagal diverifikasi. Coba lagi.' }, { status: 500 });
+    }
+    if (!databaseProduct || databaseProduct.status !== 'published' || !databaseProduct.is_available_for_po) {
+      return NextResponse.json({ error: `Produk ${product.name} tidak tersedia untuk pre-order.` }, { status: 400 });
+    }
+    if (databaseProduct.price === null || Number(databaseProduct.price) <= 0) {
+      return NextResponse.json({ error: `Harga produk ${product.name} belum tersedia.` }, { status: 400 });
+    }
+
+    let sizeAdjustment = 0;
+    if (size) {
+      const { data: databaseSize, error: sizeError } = await supabase
+        .from('product_sizes')
+        .select('price_adjustment')
+        .eq('product_id', databaseProduct.id)
+        .eq('name', size.name)
+        .eq('is_available', true)
+        .maybeSingle();
+      if (sizeError) {
+        console.error('Order size lookup failed', sizeError);
+        return NextResponse.json({ error: 'Ukuran produk gagal diverifikasi.' }, { status: 500 });
+      }
+      if (!databaseSize) {
+        return NextResponse.json({ error: `Ukuran produk ${product.name} tidak tersedia.` }, { status: 400 });
+      }
+      sizeAdjustment = Number(databaseSize.price_adjustment);
+    } else if (product.id !== INITIAL_PRODUCTS[0].id) {
+      return NextResponse.json({ error: `Ukuran produk ${product.name} tidak valid.` }, { status: 400 });
+    }
+
+    const { data: databaseVariant, error: variantError } = await supabase
+      .from('product_variants')
+      .select('id')
+      .eq('product_id', databaseProduct.id)
+      .eq('name', variant.name)
+      .eq('is_available', true)
+      .maybeSingle();
+    if (variantError) {
+      console.error('Order variant lookup failed', variantError);
+      return NextResponse.json({ error: 'Varian produk gagal diverifikasi.' }, { status: 500 });
+    }
+    if (!databaseVariant) {
+      return NextResponse.json({ error: `Varian ${variant.name} tidak tersedia.` }, { status: 400 });
     }
     const customImageRefUrl = getCustomerImageUrl(item.customization?.customImageRefUrl, supabaseUrl);
     if (customImageRefUrl === null) {
       return NextResponse.json({ error: `Tautan gambar referensi item nomor ${index + 1} tidak valid.` }, { status: 400 });
     }
 
-    const unitPrice = product.basePrice + size.priceAdjustment;
+    const unitPrice = Number(databaseProduct.price) + sizeAdjustment;
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      return NextResponse.json(
+        { error: `Harga produk ${product.name} belum tersedia untuk pemesanan.` },
+        { status: 400 },
+      );
+    }
     validatedItems.push({
       id: randomBytes(8).toString('hex'),
       productId: product.id,
       productName: product.name,
       variantName: variant.name,
-      sizeName: size.name,
+      sizeName: item.sizeName.trim(),
       customCharm: typeof item.customCharm === 'string' ? item.customCharm.slice(0, 100) : undefined,
       unitPrice,
       quantity,
       subtotal: unitPrice * quantity,
       customization: {
-        bottleSize: size.name,
+        bottleSize: item.sizeName.trim(),
         variantColor: variant.name,
         customCharm: typeof item.customCharm === 'string' ? item.customCharm.slice(0, 100) : undefined,
         customNotes: typeof item.customization?.customNotes === 'string'
@@ -147,9 +214,6 @@ export async function POST(request: Request) {
     auditTrail: [{ timestamp: now, changedBy: `${payload.customerName.trim()} (Customer)`, action: 'Pemesanan berhasil disimpan' }],
   };
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
   const { data, error } = await supabase
     .from('company_orders')
     .insert({

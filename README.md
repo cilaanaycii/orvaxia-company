@@ -86,6 +86,11 @@ Security (RLS), not just by dashboard navigation.
    including `20261105090000_dashboard_inbox_order_tracking.sql` for the
    cross-device inbox, order persistence, and customer tracking page, and
    `20261105110000_create_orvaxia_image_storage.sql` for shared gallery uploads.
+   Apply `20261106180000_extend_public_team_profiles.sql` to add directory
+   class/Instagram/display fields while preserving existing member UUIDs, then
+   `20261106190000_seed_catalog_for_database_pricing.sql` to register the current
+   catalog with unset prices. An Owner/CEO/Marketing user must set the actual
+   product prices before checkout can be enabled.
 4. Create the initial Owner and CEO identities through Supabase Auth. Then promote
    them from the Supabase SQL editor using their verified email addresses:
 

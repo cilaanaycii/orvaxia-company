@@ -1,8 +1,9 @@
 import { supabase } from '@/lib/supabase/client';
 
-export async function uploadImage(file: File): Promise<string> {
+export async function uploadImage(file: File, purpose: 'crew' | 'catalog' = 'crew'): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('purpose', purpose);
 
   const headers: Record<string, string> = {};
   if (!supabase) throw new Error('Supabase belum dikonfigurasi.');

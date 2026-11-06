@@ -25,6 +25,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TeamProfileManager } from '@/components/team/TeamProfileManager';
 
 export default function OwnerDashboard() {
   const {
@@ -47,7 +48,7 @@ export default function OwnerDashboard() {
     syncWithCloud,
   } = useCompanyStore();
 
-  const [activeTab, setActiveTab] = useState<'approvals' | 'all_crew' | 'settings' | 'po'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'all_crew' | 'settings' | 'po' | 'team'>('approvals');
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleManualSync = async () => {
@@ -214,6 +215,16 @@ export default function OwnerDashboard() {
             }`}
           >
             Kontrol Pre-Order
+          </button>
+          <button
+            onClick={() => setActiveTab('team')}
+            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+              activeTab === 'team'
+                ? 'bg-brand-slate text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            Direktori Anggota
           </button>
         </div>
       </div>
@@ -933,6 +944,7 @@ export default function OwnerDashboard() {
           </div>
         </form>
       )}
+      {activeTab === 'team' && <TeamProfileManager />}
     </div>
   );
 }

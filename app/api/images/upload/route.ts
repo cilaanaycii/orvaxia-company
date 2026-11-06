@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   const purpose = formData.get('purpose');
   const file = formData.get('file');
-  if (purpose !== 'crew' || !(file instanceof File)) {
+  if ((purpose !== 'crew' && purpose !== 'catalog') || !(file instanceof File)) {
     return NextResponse.json({ error: 'Pilih file gambar dari perangkat Anda.' }, { status: 400 });
   }
   if (file.size < 1 || file.size > MAX_FILE_SIZE) {
@@ -45,8 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Isi file tidak sesuai dengan format gambar.' }, { status: 400 });
   }
 
-  const folder = 'catalog';
-  if (purpose === 'crew') {
+  if (purpose === 'crew' || purpose === 'catalog') {
     const token = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
     if (!token) {
       return NextResponse.json({ error: 'Sesi crew diperlukan untuk mengunggah foto model.' }, { status: 401 });
@@ -73,15 +72,16 @@ export async function POST(request: Request) {
       console.error('Image upload profile check failed', profileError);
       return NextResponse.json({ error: 'Hak akses crew gagal diverifikasi.' }, { status: 500 });
     }
-    if (!profile || profile.status !== 'active' || !['owner', 'ceo', 'marketing'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Hanya crew Marketing, CEO, dan Owner yang dapat mengunggah foto model.' }, { status: 403 });
+    const allowedRoles = purpose === 'crew' ? ['owner', 'ceo'] : ['owner', 'ceo', 'marketing'];
+    if (!profile || profile.status !== 'active' || !allowedRoles.includes(profile.role)) {
+      return NextResponse.json({ error: 'Role akun tidak memiliki izin untuk mengunggah gambar ini.' }, { status: 403 });
     }
   }
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const path = `${folder}/${randomUUID()}.${imageType.extension}`;
+  const path = `${purpose}/${randomUUID()}.${imageType.extension}`;
   const { error: uploadError } = await adminClient.storage
     .from(BUCKET)
     .upload(path, bytes, {
