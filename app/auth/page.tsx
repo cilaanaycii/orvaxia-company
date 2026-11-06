@@ -95,7 +95,13 @@ export default function AuthPage() {
           },
         });
         if (error) {
-          toast.error(`OTP gagal dikirim: ${error.message}`);
+          if (error.message?.includes('Unsupported phone provider')) {
+            toast.error(
+              'SMS OTP belum dikonfigurasi di server. Hubungi administrator untuk mengaktifkan penyedia SMS (Twilio/MessageBird) di Supabase Dashboard > Authentication > SMS Provider.'
+            );
+          } else {
+            toast.error(`OTP gagal dikirim: ${error.message}`);
+          }
           return;
         }
         setCustPhone(phone);
@@ -167,7 +173,13 @@ export default function AuthPage() {
         },
       });
       if (error) {
-        toast.error(`OTP gagal dikirim ulang: ${error.message}`);
+        if (error.message?.includes('Unsupported phone provider')) {
+          toast.error(
+            'SMS OTP belum dikonfigurasi di server. Hubungi administrator untuk mengaktifkan penyedia SMS (Twilio/MessageBird) di Supabase Dashboard > Authentication > SMS Provider.'
+          );
+        } else {
+          toast.error(`OTP gagal dikirim ulang: ${error.message}`);
+        }
         return;
       }
       setResendCountdown(30);
