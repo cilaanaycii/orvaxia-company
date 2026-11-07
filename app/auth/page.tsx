@@ -27,6 +27,7 @@ export default function AuthPage() {
   const router = useRouter();
   const { login, registerStaff } = useCompanyStore();
   const [authTab, setAuthTab] = useState<AuthTab>('customer');
+  const [prefillEmail, setPrefillEmail] = useState<string>('');
 
   // Customer Form
   const [custName, setCustName] = useState('');
@@ -58,6 +59,23 @@ export default function AuthPage() {
     const timer = window.setTimeout(() => setResendCountdown((seconds) => seconds - 1), 1000);
     return () => window.clearTimeout(timer);
   }, [resendCountdown]);
+
+  // Baca query param ?tab=login dan ?email=... dari URL saat halaman pertama kali dimuat
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    const emailParam = params.get('email');
+
+    if (tabParam === 'login') {
+      setAuthTab('login');
+      if (emailParam) {
+        setLoginEmail(emailParam);
+        setPrefillEmail(emailParam);
+      }
+    } else if (tabParam === 'register_crew') {
+      setAuthTab('register_crew');
+    }
+  }, []);
 
   const normalizePhone = (value: string) => {
     const compact = value.trim().replace(/[\s().-]/g, '');
@@ -271,8 +289,19 @@ export default function AuthPage() {
 
       if (result.success) {
         setRegisteredSuccess(true);
+        setRegError(null);
       } else {
-        setRegError(result.message);
+        const msg = result.message || 'Pendaftaran crew gagal diproses.';
+        setRegError(msg);
+        // Jika email sudah terdaftar, tawarkan tombol satu-klik untuk pindah ke tab Login Crew dengan email terisi
+        if (
+          msg.toLowerCase().includes('sudah terdaftar') ||
+          msg.toLowerCase().includes('already exists') ||
+          msg.toLowerCase().includes('user_already_exists')
+        ) {
+          setPrefillEmail(staffEmail.trim());
+          setRegError(`${msg} Klik tombol di bawah untuk masuk dengan email ini.`);
+        }
       }
     } catch {
       const message = 'Pendaftaran gagal diproses. Periksa koneksi lalu coba lagi.';
@@ -618,12 +647,6 @@ export default function AuthPage() {
                       }}
                       className="w-full rounded-xl border border-slate-300 p-2.5 font-mono font-bold tracking-wider uppercase text-brand-navy focus:border-brand-slate focus:outline-none bg-white"
                     />
-                    {regError && (
-                      <p className="text-[11px] text-red-600 flex items-center gap-1 font-semibold pt-1">
-                        <AlertCircle size={13} className="shrink-0" />
-                        <span>{regError}</span>
-                      </p>
-                    )}
                   </div>
 
                   <div>
@@ -726,11 +749,32 @@ export default function AuthPage() {
                   <div className="text-center pt-2 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setAuthTab('login')}
+                      onClick={() => {
+                        setPrefillEmail(staffEmail.trim());
+                        setAuthTab('login');
+                      }}
                       className="text-brand-slate hover:text-brand-navy font-semibold hover:underline"
                     >
                       Sudah punya akun? Masuk di sini →
                     </button>
+                    {regError && (
+                      <p className="text-[11px] text-red-600 flex items-center gap-1 font-semibold pt-1">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{regError}</span>
+                      </p>
+                    )}
+                    {regError && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthTab('login');
+                          setLoginEmail(prefillEmail || staffEmail.trim());
+                        }}
+                        className="text-xs font-semibold text-brand-navy hover:underline mt-1"
+                      >
+                        Masuk dengan email ini →
+                      </button>
+                    )}
                   </div>
                 </form>
               )}

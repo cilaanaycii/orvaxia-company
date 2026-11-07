@@ -8,7 +8,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/auth');
+    router.replace('/auth?tab=login');
   }, [router]);
 
   return (

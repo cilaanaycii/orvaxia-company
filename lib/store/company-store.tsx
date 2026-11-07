@@ -510,12 +510,27 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       if (!active) return;
       if (profileError || !profileData) {
-        setCurrentUser(null);
+        // Jangan signOut paksa — sesi Auth Supabase tetap valid meskipun profil belum tersedia.
+        // Tampilkan peringatan namun biarkan pengguna tetap masuk agar tidak terpukau akun hilang.
+        console.warn('Profile load warning:', profileError?.message ?? 'profil tidak ditemukan');
+        const fallbackProfile: UserProfile = {
+          id: userId,
+          email: '',
+          fullName: 'Pengguna',
+          phone: '',
+          role: 'member',
+          status: 'active',
+          division: '',
+          position: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setCurrentUser(fallbackProfile);
         setUsers([]);
         setPerformanceReviews([]);
         setTasks([]);
-        await authClient.auth.signOut();
-        toast.error(profileError ? 'Profil akun gagal dimuat dari Supabase.' : 'Profil akun tidak ditemukan.');
+        setTeamMembers(INITIAL_TEAM_MEMBERS);
+        toast.warning('Profil akun sedang disinkronkan. Beberapa fitur mungkin terbatas sementara.');
         return;
       }
 
@@ -1547,7 +1562,24 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           password: cleanPassword,
         });
 
-        if (!authError && authData.user) {
+        // Tangani error Supabase secara spesifik — jangan ditelan dan jangan jatuh ke fallback palsu
+        if (authError) {
+          const msg = authError.message || '';
+          let userMessage = 'Login gagal. Periksa email dan kata sandi.';
+          if (msg.includes('Invalid login credentials') || msg.includes('email not confirmed') || msg.includes('Email not confirmed')) {
+            userMessage = 'Email atau kata sandi salah. Jika belum memverifikasi email, silakan cek inbox atau gunakan Lupa Kata Sandi.';
+          } else if (msg.includes('Email not confirmed') || msg.includes('email_not_confirmed')) {
+            userMessage = 'Email belum diverifikasi. Silakan periksa inbox email atau gunakan fitur Lupa Kata Sandi.';
+          } else if (msg.includes('rate limit') || msg.includes('Rate limit')) {
+            userMessage = 'Terlalu banyak percobaan login. Silakan coba lagi dalam beberapa saat.';
+          } else if (msg.includes('network') || msg.includes('failed to fetch') || msg.includes('Network')) {
+            userMessage = 'Koneksi ke server terputus. Periksa jaringan lalu coba lagi.';
+          }
+          toast.error(userMessage);
+          return { success: false, message: userMessage };
+        }
+
+        if (authData.user) {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
@@ -1566,9 +1598,29 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             toast.success(`Selamat datang, ${profile.fullName}!`);
             return { success: true, message: 'Berhasil masuk', user: profile };
           }
+
+          // Fallback: autentikasi Supabase berhasil tetapi profil belum tersedia di tabel profiles.
+          // Buat profil sementara dari data Auth agar pengguna tetap bisa masuk tanpa ditolak.
+          const fallbackProfile: UserProfile = {
+            id: authData.user.id,
+            email: authData.user.email ?? cleanEmail,
+            fullName: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Pengguna',
+            phone: authData.user.user_metadata?.phone ?? '',
+            role: 'member',
+            status: 'active',
+            division: '',
+            position: '',
+            createdAt: authData.user.created_at ?? new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          setCurrentUser(fallbackProfile);
+          toast.success(`Selamat datang, ${fallbackProfile.fullName}!`);
+          return { success: true, message: 'Berhasil masuk (profil disinkronkan)', user: fallbackProfile };
         }
       } catch (err) {
         console.warn('Supabase auth attempt error:', err);
+        toast.error('Koneksi ke layanan autentikasi terganggu. Silakan coba lagi.');
+        return { success: false, message: 'Koneksi autentikasi terganggu' };
       }
     }
 
