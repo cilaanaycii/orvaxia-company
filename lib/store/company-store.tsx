@@ -510,27 +510,79 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       if (!active) return;
       if (profileError || !profileData) {
-        // Jangan signOut paksa — sesi Auth Supabase tetap valid meskipun profil belum tersedia.
-        // Tampilkan peringatan namun biarkan pengguna tetap masuk agar tidak terpukau akun hilang.
-        console.warn('Profile load warning:', profileError?.message ?? 'profil tidak ditemukan');
-        const fallbackProfile: UserProfile = {
-          id: userId,
-          email: '',
-          fullName: 'Pengguna',
-          phone: '',
-          role: 'member',
-          status: 'active',
-          division: '',
-          position: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setCurrentUser(fallbackProfile);
+        // Profil tidak ditemukan di Supabase. Coba buat profil dari data Auth metadata
+        // agar pengguna tidak perlu membuat ulang akun.
+        const { data: authData } = await authClient.auth.getUser();
+        if (authData?.user) {
+          const createdProfile: UserProfile = {
+            id: authData.user.id,
+            email: authData.user.email ?? userId,
+            fullName: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Pengguna',
+            phone: authData.user.user_metadata?.phone ?? '',
+            role: authData.user.user_metadata?.account_type === 'customer' ? 'customer' : 'member',
+            status: authData.user.user_metadata?.account_type === 'customer' ? 'active' : 'pending_approval',
+            division: authData.user.user_metadata?.division || '',
+            position: authData.user.user_metadata?.position || 'Crew Baru (Pending)',
+            createdAt: authData.user.created_at ?? new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          // Coba simpan ke tabel profiles agar data persisten di database
+          const { error: insertError } = await authClient
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: createdProfile.email,
+              full_name: createdProfile.fullName,
+              phone: createdProfile.phone,
+              role: createdProfile.role,
+              status: createdProfile.status,
+              division: createdProfile.division || null,
+              position: createdProfile.position || null,
+              avatar_url: null,
+            })
+            .select();
+
+          if (insertError) {
+            console.warn('Failed to create profile from auth metadata:', insertError.message);
+            // Jika tidak bisa insert (RLS/constraint), tetap gunakan profil dari metadata sebagai fallback sementara
+            setCurrentUser(createdProfile);
+            setUsers([]);
+            setPerformanceReviews([]);
+            setTasks([]);
+            setTeamMembers(INITIAL_TEAM_MEMBERS);
+            toast.warning('Profil akun sedang disinkronkan dari data autentikasi. Beberapa fitur mungkin terbatas sementara.');
+            return;
+          }
+
+          const mapped = mapSupabaseProfile({
+            id: createdProfile.id,
+            email: createdProfile.email,
+            full_name: createdProfile.fullName,
+            phone: createdProfile.phone,
+            role: createdProfile.role,
+            status: createdProfile.status,
+            division: createdProfile.division,
+            position: createdProfile.position,
+            avatar_url: null,
+            created_at: createdProfile.createdAt,
+            updated_at: createdProfile.updatedAt,
+          } as SupabaseProfileRow);
+          setCurrentUser(mapped);
+          setUsers([]);
+          setPerformanceReviews([]);
+          setTasks([]);
+          setTeamMembers(INITIAL_TEAM_MEMBERS);
+          toast.success('Profil akun berhasil disinkronkan.');
+          return;
+        }
+
+        // Tidak ada data Auth sama sekali — tampilkan error jelas dengan mekanisme pemulihan
+        setCurrentUser(null);
         setUsers([]);
         setPerformanceReviews([]);
         setTasks([]);
         setTeamMembers(INITIAL_TEAM_MEMBERS);
-        toast.warning('Profil akun sedang disinkronkan. Beberapa fitur mungkin terbatas sementara.');
+        toast.error('Profil akun tidak ditemukan di Supabase. Silakan login kembali atau daftar akun baru.');
         return;
       }
 
@@ -1532,29 +1584,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password?.trim() || '';
 
-    // 1. Built-in Owner Account (selalu aktif)
-    if (
-      cleanEmail === 'rnefviie@gmail.com' &&
-      (cleanPassword === 'orvaxiajaya' || !cleanPassword)
-    ) {
-      const ownerProfile: UserProfile = {
-        id: 'usr-owner-rnefviie',
-        email: 'rnefviie@gmail.com',
-        fullName: 'Owner / Pemegang Kendali Website',
-        phone: '0881027291245',
-        role: 'owner',
-        status: 'active',
-        division: 'Executive',
-        position: 'Owner & Pemegang Kendali Website',
-        createdAt: '2026-11-01T00:00:00Z',
-        updatedAt: new Date().toISOString(),
-      };
-      setCurrentUser(ownerProfile);
-      toast.success('Selamat datang, Owner ORVAXIA!');
-      return { success: true, message: 'Berhasil masuk sebagai Owner', user: ownerProfile };
-    }
-
-    // 2. Jika Supabase aktif, coba login Supabase
+    // 1. Jika Supabase aktif, coba login Supabase
     if (supabase) {
       try {
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -1600,22 +1630,43 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           }
 
           // Fallback: autentikasi Supabase berhasil tetapi profil belum tersedia di tabel profiles.
-          // Buat profil sementara dari data Auth agar pengguna tetap bisa masuk tanpa ditolak.
-          const fallbackProfile: UserProfile = {
+          // Coba buat profil dari data Auth metadata agar data tersimpan di database.
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: authData.user.email ?? cleanEmail,
+              full_name: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Pengguna',
+              phone: authData.user.user_metadata?.phone ?? '',
+              role: authData.user.user_metadata?.account_type === 'customer' ? 'customer' : 'member',
+              status: authData.user.user_metadata?.account_type === 'customer' ? 'active' : 'pending_approval',
+              division: authData.user.user_metadata?.division || null,
+              position: authData.user.user_metadata?.position || 'Crew Baru (Pending)',
+              avatar_url: null,
+            })
+            .select();
+
+          if (insertError) {
+            console.warn('Failed to create profile during login:', insertError.message);
+            toast.error('Profil akun tidak ditemukan dan tidak dapat disinkronkan. Silakan hubungi administrator.');
+            return { success: false, message: 'Profil akun tidak tersedia di database.' };
+          }
+
+          const insertedProfile: UserProfile = {
             id: authData.user.id,
             email: authData.user.email ?? cleanEmail,
             fullName: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Pengguna',
             phone: authData.user.user_metadata?.phone ?? '',
-            role: 'member',
-            status: 'active',
-            division: '',
-            position: '',
+            role: authData.user.user_metadata?.account_type === 'customer' ? 'customer' : 'member',
+            status: authData.user.user_metadata?.account_type === 'customer' ? 'active' : 'pending_approval',
+            division: authData.user.user_metadata?.division || '',
+            position: authData.user.user_metadata?.position || 'Crew Baru (Pending)',
             createdAt: authData.user.created_at ?? new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
-          setCurrentUser(fallbackProfile);
-          toast.success(`Selamat datang, ${fallbackProfile.fullName}!`);
-          return { success: true, message: 'Berhasil masuk (profil disinkronkan)', user: fallbackProfile };
+          setCurrentUser(insertedProfile);
+          toast.success(`Selamat datang, ${insertedProfile.fullName}! Profil baru telah dibuat.`);
+          return { success: true, message: 'Berhasil masuk (profil baru dibuat)', user: insertedProfile };
         }
       } catch (err) {
         console.warn('Supabase auth attempt error:', err);
