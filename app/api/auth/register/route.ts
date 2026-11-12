@@ -88,13 +88,12 @@ export async function POST(request: Request) {
   );
 
   if (!isSupabaseReady) {
-    // Mode offline/fallback: pendaftaran berhasil diproses dan disimpan di registry internal
-    return NextResponse.json({
-      success: true,
-      userId: `usr-${Date.now()}`,
-      requiresEmailConfirmation: false,
-      message: 'Pendaftaran crew berhasil diajukan dan disimpan.',
-    });
+    // Supabase belum dikonfigurasi — tolak pendaftaran dengan error yang jelas.
+    // Jangan membuat ID lokal palsu atau mengklaim pendaftaran berhasil.
+    return NextResponse.json(
+      { error: 'Layanan autentikasi belum dikonfigurasi. Hubungi administrator untuk mengaktifkan Supabase.' },
+      { status: 503 }
+    );
   }
 
   const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {

@@ -54,11 +54,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const {
     currentUser,
+    isAuthReady,
     logout,
     notifications,
   } = useCompanyStore();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // 0. Loading Authentication State
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-brand-lavender/40 p-8 shadow-sm space-y-4">
+          <div className="flex justify-center">
+            <OrvaxiaLogo size={48} />
+          </div>
+          <div className="flex justify-center pt-2">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-slate border-t-transparent" />
+          </div>
+          <p className="text-xs text-slate-500 font-medium">
+            Memulihkan sesi akun ORVAXIA...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // 1. Not Authenticated State
   if (!currentUser) {

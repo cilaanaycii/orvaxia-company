@@ -5,6 +5,77 @@ const CLOUD_BIN_URL = 'https://extendsclass.com/api/json-storage/bin/bfafbaa';
 
 export const dynamic = 'force-dynamic';
 
+function extractValidJson(raw: string): any {
+  const trimmed = raw.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Cari batas JSON jika terdapat markup atau teks tambahan di sekitar payload
+  }
+
+  const firstBrace = trimmed.indexOf('{');
+  const firstBracket = trimmed.indexOf('[');
+
+  let startIndex = -1;
+  let startChar: '{' | '[';
+  let endChar: '}' | ']';
+
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    startIndex = firstBrace;
+    startChar = '{';
+    endChar = '}';
+  } else if (firstBracket !== -1) {
+    startIndex = firstBracket;
+    startChar = '[';
+    endChar = ']';
+  } else {
+    throw new Error('Tidak ditemukan struktur JSON (objek atau array) dalam respons eksternal.');
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let endIndex = -1;
+
+  for (let i = startIndex; i < trimmed.length; i++) {
+    const ch = trimmed[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\' && inString) {
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (!inString) {
+      if (ch === startChar) {
+        depth++;
+      } else if (ch === endChar) {
+        depth--;
+        if (depth === 0) {
+          endIndex = i;
+          break;
+        }
+      }
+    }
+  }
+
+  if (endIndex === -1) {
+    throw new Error('Batas penutup JSON tidak lengkap atau rusak dalam respons eksternal.');
+  }
+
+  const jsonText = trimmed.slice(startIndex, endIndex + 1);
+  return JSON.parse(jsonText);
+}
+
 async function authorizeExecutive(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -71,7 +142,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch from cloud storage' }, { status: 500 });
     }
 
-    const data = await res.json();
+    const rawText = await res.text();
+    const data = extractValidJson(rawText);
     const publicData = { ...data };
     delete publicData.users;
     if (publicData.siteSettings) {
@@ -101,12 +173,35 @@ export async function POST(request: Request) {
 
     // 1. Fetch current cloud state first to merge safely
     let currentData: any = { orders: [] };
+    const getRes = await fetch(CLOUD_BIN_URL, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    });
+
+    if (!getRes.ok) {
+      return NextResponse.json(
+        { error: 'Gagal membaca status cloud saat ini sebelum sinkronisasi' },
+        { status: 500 }
+      );
+    }
+
+    const rawCloudText = await getRes.text();
     try {
-      const getRes = await fetch(CLOUD_BIN_URL, { cache: 'no-store' });
-      if (getRes.ok) {
-        currentData = await getRes.json();
+      currentData = extractValidJson(rawCloudText);
+      if (!currentData || typeof currentData !== 'object') {
+        throw new Error('Data cloud yang dibaca bukan berupa objek valid.');
       }
-    } catch {}
+    } catch (parseError) {
+      return NextResponse.json(
+        {
+          error: 'Format data cloud saat ini tidak valid. Sinkronisasi dibatalkan demi keamanan data.',
+          details: String(parseError),
+        },
+        { status: 500 }
+      );
+    }
 
     // Merge users: keep existing + update/add incoming
     // Merge orders if present

@@ -316,6 +316,11 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [faqs] = useState<FAQItem[]>(INITIAL_FAQS);
   const [gallery, setGallery] = useState<GalleryItem[]>(INITIAL_GALLERY);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const loadProfileRef = React.useRef<((userId: string | null) => Promise<UserProfile | null>) | null>(null);
+  const inFlightProfilePromiseRef = React.useRef<{ userId: string; promise: Promise<UserProfile | null> } | null>(null);
+  const profileLoadSequenceRef = React.useRef(0);
+  const isSyncingRef = React.useRef(false);
+  const cloudFailureCountRef = React.useRef(0);
   const currentUserId = currentUser?.id;
   const currentUserStatus = currentUser?.status;
   const currentUserRole = currentUser?.role;
@@ -353,7 +358,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         if (parsed.transactions) setTransactions(parsed.transactions);
         if (parsed.announcements) setAnnouncements(parsed.announcements);
         if (parsed.gallery) setGallery(parsed.gallery);
-        if (parsed.users) setUsers(parsed.users);
       }
       const savedCart = localStorage.getItem(CART_STORAGE_KEY);
       if (savedCart) {
@@ -492,98 +496,38 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       return;
     };
 
-    const loadProfile = async (userId: string | null) => {
-      if (!userId) {
-        setCurrentUser(null);
-        setUsers([]);
-        setPerformanceReviews([]);
-        setTasks([]);
-        await loadTeamMembers(false);
-        return;
-      }
-
+    const executeLoadProfile = async (userId: string, sequenceId: number): Promise<UserProfile | null> => {
       const { data: profileData, error: profileError } = await authClient
         .from('profiles')
         .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
         .eq('id', userId)
         .maybeSingle();
 
-      if (!active) return;
-      if (profileError || !profileData) {
-        // Profil tidak ditemukan di Supabase. Coba buat profil dari data Auth metadata
-        // agar pengguna tidak perlu membuat ulang akun.
-        const { data: authData } = await authClient.auth.getUser();
-        if (authData?.user) {
-          const createdProfile: UserProfile = {
-            id: authData.user.id,
-            email: authData.user.email ?? userId,
-            fullName: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Pengguna',
-            phone: authData.user.user_metadata?.phone ?? '',
-            role: authData.user.user_metadata?.account_type === 'customer' ? 'customer' : 'member',
-            status: authData.user.user_metadata?.account_type === 'customer' ? 'active' : 'pending_approval',
-            division: authData.user.user_metadata?.division || '',
-            position: authData.user.user_metadata?.position || 'Crew Baru (Pending)',
-            createdAt: authData.user.created_at ?? new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          // Coba simpan ke tabel profiles agar data persisten di database
-          const { error: insertError } = await authClient
-            .from('profiles')
-            .insert({
-              id: authData.user.id,
-              email: createdProfile.email,
-              full_name: createdProfile.fullName,
-              phone: createdProfile.phone,
-              role: createdProfile.role,
-              status: createdProfile.status,
-              division: createdProfile.division || null,
-              position: createdProfile.position || null,
-              avatar_url: null,
-            })
-            .select();
+      if (!active || sequenceId !== profileLoadSequenceRef.current) return null;
 
-          if (insertError) {
-            console.warn('Failed to create profile from auth metadata:', insertError.message);
-            // Jika tidak bisa insert (RLS/constraint), tetap gunakan profil dari metadata sebagai fallback sementara
-            setCurrentUser(createdProfile);
-            setUsers([]);
-            setPerformanceReviews([]);
-            setTasks([]);
-            setTeamMembers(INITIAL_TEAM_MEMBERS);
-            toast.warning('Profil akun sedang disinkronkan dari data autentikasi. Beberapa fitur mungkin terbatas sementara.');
-            return;
-          }
-
-          const mapped = mapSupabaseProfile({
-            id: createdProfile.id,
-            email: createdProfile.email,
-            full_name: createdProfile.fullName,
-            phone: createdProfile.phone,
-            role: createdProfile.role,
-            status: createdProfile.status,
-            division: createdProfile.division,
-            position: createdProfile.position,
-            avatar_url: null,
-            created_at: createdProfile.createdAt,
-            updated_at: createdProfile.updatedAt,
-          } as SupabaseProfileRow);
-          setCurrentUser(mapped);
-          setUsers([]);
-          setPerformanceReviews([]);
-          setTasks([]);
-          setTeamMembers(INITIAL_TEAM_MEMBERS);
-          toast.success('Profil akun berhasil disinkronkan.');
-          return;
-        }
-
-        // Tidak ada data Auth sama sekali — tampilkan error jelas dengan mekanisme pemulihan
+      // Pisahkan: (1) query database gagal, (2) query berhasil tapi profil tidak ada
+      if (profileError) {
+        // Query gagal — bisa karena RLS, jaringan, atau database error. Jangan anggap profil tidak ada.
+        console.error('Profile query failed in loadProfile:', profileError.message, profileError.code);
         setCurrentUser(null);
         setUsers([]);
         setPerformanceReviews([]);
         setTasks([]);
         setTeamMembers(INITIAL_TEAM_MEMBERS);
-        toast.error('Profil akun tidak ditemukan di Supabase. Silakan login kembali atau daftar akun baru.');
-        return;
+        toast.error(`Gagal memuat profil akun dari database (${profileError.code ?? profileError.message}). Periksa koneksi atau hubungi administrator.`);
+        return null;
+      }
+
+      if (!profileData) {
+        // Query berhasil tapi baris profil tidak ditemukan di tabel profiles. Sesi Auth tetap valid.
+        console.warn('loadProfile: auth session active but no profile row found for userId:', userId);
+        setCurrentUser(null);
+        setUsers([]);
+        setPerformanceReviews([]);
+        setTasks([]);
+        setTeamMembers(INITIAL_TEAM_MEMBERS);
+        toast.error('Profil akun tidak ditemukan di database. Hubungi administrator untuk memastikan profil Anda telah didaftarkan.');
+        return null;
       }
 
       const currentProfile = mapSupabaseProfile(profileData as SupabaseProfileRow);
@@ -593,7 +537,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         setTasks([]);
         setPerformanceReviews([]);
         setTeamMembers(INITIAL_TEAM_MEMBERS);
-        return;
+        return currentProfile;
       }
       if (currentProfile.status === 'suspended' || currentProfile.status === 'inactive') {
         setCurrentUser(null);
@@ -602,7 +546,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         setTasks([]);
         await authClient.auth.signOut();
         toast.error('Akun crew tidak aktif. Hubungi Owner.');
-        return;
+        return null;
       }
 
       setCurrentUser(currentProfile);
@@ -610,7 +554,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         .from('crew_tasks')
         .select('*')
         .order('created_at', { ascending: false });
-      if (!active) return;
+      if (!active || sequenceId !== profileLoadSequenceRef.current) return currentProfile;
       if (taskError) {
         setTasks([]);
         toast.error('Daftar tugas gagal dimuat dari Supabase.');
@@ -625,18 +569,18 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         currentProfile.status === 'active' &&
         (currentProfile.role === 'owner' || currentProfile.role === 'ceo' || currentProfile.role === 'hrd');
       await loadTeamMembers(isExecutive);
-      if (!active) return;
+      if (!active || sequenceId !== profileLoadSequenceRef.current) return currentProfile;
       if (isExecutive) {
         const { data: profiles, error: profilesError } = await authClient
           .from('profiles')
           .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
           .order('full_name');
 
-        if (!active) return;
+        if (!active || sequenceId !== profileLoadSequenceRef.current) return currentProfile;
         if (profilesError) {
           setUsers([currentProfile]);
           toast.error('Data crew tidak dapat dimuat sesuai hak akses akun.');
-          return;
+          return currentProfile;
         }
 
         setUsers((profiles || []).map((profile) => mapSupabaseProfile(profile as SupabaseProfileRow)));
@@ -646,20 +590,58 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       if (!canManageReviews) {
         setPerformanceReviews([]);
-        return;
+        return currentProfile;
       }
       const { data: reviews, error: reviewsError } = await authClient
         .from('performance_reviews')
         .select('*')
         .order('review_date', { ascending: false });
-      if (!active) return;
+      if (!active || sequenceId !== profileLoadSequenceRef.current) return currentProfile;
       if (reviewsError) {
         setPerformanceReviews([]);
         toast.error('Evaluasi crew gagal dimuat dari Supabase.');
       } else {
         setPerformanceReviews((reviews || []).map((review) => mapPerformanceReview(review as PerformanceReviewRow)));
       }
+      return currentProfile;
     };
+
+    const loadProfile = async (userId: string | null): Promise<UserProfile | null> => {
+      if (!userId) {
+        // Batalkan proses yang sedang berjalan dengan menaikkan sequence, lalu bersihkan state
+        ++profileLoadSequenceRef.current;
+        inFlightProfilePromiseRef.current = null;
+        setCurrentUser(null);
+        setUsers([]);
+        setPerformanceReviews([]);
+        setTasks([]);
+        await loadTeamMembers(false);
+        return null;
+      }
+
+      // Periksa in-flight SEBELUM menaikkan sequenceId.
+      // Jika ada pemuatan aktif untuk userId yang sama, kembalikan Promise yang sama tanpa
+      // menaikkan counter — hal ini mencegah race condition antara login() dan onAuthStateChange()
+      // yang menyebabkan executeLoadProfile() selalu mengembalikan null akibat sequenceId basi.
+      const inFlight = inFlightProfilePromiseRef.current;
+      if (inFlight && inFlight.userId === userId) {
+        return inFlight.promise;
+      }
+
+      // Naikkan sequenceId hanya ketika benar-benar membuat eksekusi baru.
+      // Ini membatalkan setiap executeLoadProfile lama untuk userId berbeda yang masih berjalan.
+      const sequenceId = ++profileLoadSequenceRef.current;
+
+      const loadPromise = executeLoadProfile(userId, sequenceId).finally(() => {
+        if (inFlightProfilePromiseRef.current?.promise === loadPromise) {
+          inFlightProfilePromiseRef.current = null;
+        }
+      });
+
+      inFlightProfilePromiseRef.current = { userId, promise: loadPromise };
+      return loadPromise;
+    };
+    loadProfileRef.current = loadProfile;
 
     authClient.auth.getSession().then(({ data, error }) => {
       if (error) {
@@ -683,8 +665,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     });
 
     const { data: authListener } = authClient.auth.onAuthStateChange((_event, session) => {
+      const targetUserId = session?.user.id || null;
       queueMicrotask(() => {
-        if (active) void loadProfile(session?.user.id || null);
+        if (active) void loadProfile(targetUserId);
       });
     });
 
@@ -816,7 +799,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         transactions,
         announcements,
         gallery,
-        users,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch {
@@ -836,7 +818,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   // Cloud Sync Handler
   const syncWithCloud = useCallback(async (): Promise<boolean> => {
     if (!supabase || !hasExecutiveAccess) return false;
+    if (isSyncingRef.current) return false;
 
+    isSyncingRef.current = true;
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
@@ -846,16 +830,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) return false;
 
-      const res = await fetch('/api/cloud-sync', {
-        cache: 'no-store',
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!res.ok) {
-        toast.error('Data cloud gagal disegarkan.');
-        return false;
-      }
-      const data = await res.json();
-
+      // 1. Muat data Supabase terlebih dahulu agar kegagalan cloud eksternal tidak memblokir profil & tugas
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
@@ -905,35 +880,79 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      if (data && Array.isArray(data.orders) && data.orders.length > 0) {
-        setOrders((prev) => {
-          let merged = [...prev];
-          data.orders.forEach((cloudOrder: Order) => {
-            const idx = merged.findIndex((o) => o.id === cloudOrder.id || o.referenceCode === cloudOrder.referenceCode);
-            if (idx >= 0) {
-              merged[idx] = { ...merged[idx], ...cloudOrder };
-            } else {
-              merged.push(cloudOrder);
-            }
-          });
-          return merged;
+      // 2. Sinkronisasi data cloud eksternal (/api/cloud-sync)
+      let cloudSuccess = false;
+      try {
+        const res = await fetch('/api/cloud-sync', {
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.orders) && data.orders.length > 0) {
+            setOrders((prev) => {
+              let merged = [...prev];
+              data.orders.forEach((cloudOrder: Order) => {
+                const idx = merged.findIndex((o) => o.id === cloudOrder.id || o.referenceCode === cloudOrder.referenceCode);
+                if (idx >= 0) {
+                  merged[idx] = { ...merged[idx], ...cloudOrder };
+                } else {
+                  merged.push(cloudOrder);
+                }
+              });
+              return merged;
+            });
+          }
+          cloudSuccess = true;
+          cloudFailureCountRef.current = 0;
+        } else {
+          cloudFailureCountRef.current += 1;
+          if (cloudFailureCountRef.current === 1) {
+            toast.error('Data cloud gagal disegarkan.');
+          }
+        }
+      } catch (cloudErr) {
+        console.warn('Gagal menghubungi /api/cloud-sync:', cloudErr);
+        cloudFailureCountRef.current += 1;
+        if (cloudFailureCountRef.current === 1) {
+          toast.error('Sinkronisasi cloud gagal.');
+        }
       }
-      return true;
+
+      return cloudSuccess;
     } catch (error) {
       console.error('Cloud sync failed', error);
       toast.error('Sinkronisasi cloud gagal. Coba lagi nanti.');
       return false;
+    } finally {
+      isSyncingRef.current = false;
     }
   }, [hasExecutiveAccess]);
 
-  // Background Cloud Polling (Setiap 4 detik sinkronisasi cloud)
+  // Background Cloud Polling
+  // Menggunakan interval dinamis: 4 detik jika berhasil, atau backoff 30 detik jika terjadi kegagalan
+  // untuk mencegah banjir request gagal berulang dan menjaga stabilitas koneksi.
   useEffect(() => {
-    if (!isHydrated) return;
-    void syncWithCloud();
-    const interval = setInterval(() => void syncWithCloud(), 4000);
-    return () => clearInterval(interval);
-  }, [isHydrated, syncWithCloud]);
+    if (!isHydrated || !hasExecutiveAccess) return;
+
+    let timeoutId: NodeJS.Timeout | null = null;
+    let isCancelled = false;
+
+    const poll = async () => {
+      const success = await syncWithCloud();
+      if (isCancelled) return;
+      const nextInterval = success ? 4000 : 30000;
+      timeoutId = setTimeout(poll, nextInterval);
+    };
+
+    timeoutId = setTimeout(poll, 1000);
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isHydrated, hasExecutiveAccess, syncWithCloud]);
 
   // Actions
   const updateSiteSettings = (settings: Partial<SiteSettings>) => {
@@ -1610,85 +1629,40 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (authData.user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
-            .eq('id', authData.user.id)
-            .maybeSingle();
+          const profileLoader = loadProfileRef.current;
+          let loadedUser: UserProfile | null = null;
+          if (profileLoader) {
+            loadedUser = await profileLoader(authData.user.id);
+          } else {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('id,email,full_name,phone,role,status,division,position,avatar_url,created_at,updated_at')
+              .eq('id', authData.user.id)
+              .maybeSingle();
+            if (profileData) {
+              loadedUser = mapSupabaseProfile(profileData as SupabaseProfileRow);
+              setCurrentUser(loadedUser);
+            }
+          }
 
-          if (profileData) {
-            const profile = mapSupabaseProfile(profileData as SupabaseProfileRow);
-            if (profile.status === 'suspended' || profile.status === 'inactive') {
+          if (loadedUser) {
+            if (loadedUser.status === 'suspended' || loadedUser.status === 'inactive') {
               await supabase.auth.signOut();
               toast.error('Akun crew tidak aktif. Hubungi Owner.');
               return { success: false, message: 'Akun crew tidak aktif.' };
             }
-
-            setCurrentUser(profile);
-            toast.success(`Selamat datang, ${profile.fullName}!`);
-            return { success: true, message: 'Berhasil masuk', user: profile };
+            toast.success(`Selamat datang, ${loadedUser.fullName}!`);
+            return { success: true, message: 'Berhasil masuk', user: loadedUser };
           }
 
-          // Fallback: autentikasi Supabase berhasil tetapi profil belum tersedia di tabel profiles.
-          // Coba buat profil dari data Auth metadata agar data tersimpan di database.
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authData.user.id,
-              email: authData.user.email ?? cleanEmail,
-              full_name: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Pengguna',
-              phone: authData.user.user_metadata?.phone ?? '',
-              role: authData.user.user_metadata?.account_type === 'customer' ? 'customer' : 'member',
-              status: authData.user.user_metadata?.account_type === 'customer' ? 'active' : 'pending_approval',
-              division: authData.user.user_metadata?.division || null,
-              position: authData.user.user_metadata?.position || 'Crew Baru (Pending)',
-              avatar_url: null,
-            })
-            .select();
-
-          if (insertError) {
-            console.warn('Failed to create profile during login:', insertError.message);
-            toast.error('Profil akun tidak ditemukan dan tidak dapat disinkronkan. Silakan hubungi administrator.');
-            return { success: false, message: 'Profil akun tidak tersedia di database.' };
-          }
-
-          const insertedProfile: UserProfile = {
-            id: authData.user.id,
-            email: authData.user.email ?? cleanEmail,
-            fullName: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Pengguna',
-            phone: authData.user.user_metadata?.phone ?? '',
-            role: authData.user.user_metadata?.account_type === 'customer' ? 'customer' : 'member',
-            status: authData.user.user_metadata?.account_type === 'customer' ? 'active' : 'pending_approval',
-            division: authData.user.user_metadata?.division || '',
-            position: authData.user.user_metadata?.position || 'Crew Baru (Pending)',
-            createdAt: authData.user.created_at ?? new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          setCurrentUser(insertedProfile);
-          toast.success(`Selamat datang, ${insertedProfile.fullName}! Profil baru telah dibuat.`);
-          return { success: true, message: 'Berhasil masuk (profil baru dibuat)', user: insertedProfile };
+          // loadedUser null: executeLoadProfile sudah menampilkan toast spesifik.
+          // handleInternalLogin akan menampilkan result.message sebagai fallback jika diperlukan.
+          return { success: false, message: 'Profil akun tidak tersedia atau gagal dimuat dari database.' };
         }
       } catch (err) {
         console.warn('Supabase auth attempt error:', err);
         toast.error('Koneksi ke layanan autentikasi terganggu. Silakan coba lagi.');
         return { success: false, message: 'Koneksi autentikasi terganggu' };
-      }
-    }
-
-    // 3. Fallback: Cocokkan dari daftar crew terdaftar di store/localStorage
-    const matchedUser = users.find((u) => u.email.trim().toLowerCase() === cleanEmail);
-    if (matchedUser) {
-      if (!matchedUser.password || matchedUser.password === cleanPassword || cleanPassword === 'orvaxiajaya') {
-        if (matchedUser.status === 'suspended' || matchedUser.status === 'inactive') {
-          toast.error('Akun anggota dinonaktifkan atau ditangguhkan.');
-          return { success: false, message: 'Akun tidak aktif' };
-        }
-        setCurrentUser(matchedUser);
-        toast.success(`Selamat datang, ${matchedUser.fullName}!`);
-        return { success: true, message: 'Berhasil masuk', user: matchedUser };
-      } else {
-        toast.error('Kata sandi salah. Silakan coba lagi.');
-        return { success: false, message: 'Kata sandi salah' };
       }
     }
 
@@ -1705,45 +1679,47 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     division?: string;
     position?: string;
   }): Promise<{ success: boolean; message: string; userId?: string }> => {
-    let generatedId = `usr-${Date.now()}`;
-    let requiresConfirmation = false;
+    let response: Response;
+    let result: Record<string, unknown>;
+
+    // Tangani network error — fetch bisa gagal jika koneksi terputus
     try {
-      const response = await fetch('/api/auth/register', {
+      response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      const result = await response.json();
-      if (!response.ok) {
-        return { success: false, message: result.error || 'Pendaftaran crew gagal diproses.' };
-      }
-      if (result.userId) generatedId = result.userId;
-      requiresConfirmation = Boolean(result.requiresEmailConfirmation);
     } catch {
-      // Fallback lokal tetap berlanjut
+      return { success: false, message: 'Koneksi ke server terputus. Periksa jaringan dan coba lagi.' };
     }
 
-    const newCrew: UserProfile = {
-      id: generatedId,
-      email: data.email.trim().toLowerCase(),
-      fullName: data.fullName.trim(),
-      phone: data.phone.trim(),
-      password: data.password,
-      role: 'member',
-      status: 'pending_approval',
-      division: data.division || 'Produksi',
-      position: data.position || `Calon ${data.division || 'Produksi'}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setUsers((prev) => [...prev.filter((u) => u.email !== newCrew.email), newCrew]);
+    // Tangani JSON tidak valid — respons server bisa bukan JSON
+    try {
+      result = (await response.json()) as Record<string, unknown>;
+    } catch {
+      return { success: false, message: 'Respons server tidak valid. Hubungi administrator jika masalah berlanjut.' };
+    }
+
+    // HTTP error — gunakan pesan error dari server jika tersedia
+    if (!response.ok) {
+      const errorMsg = typeof result.error === 'string' ? result.error : 'Pendaftaran crew gagal diproses.';
+      return { success: false, message: errorMsg };
+    }
+
+    // Validasi struktur respons: wajib ada success=true DAN userId yang valid (UUID dari Supabase)
+    if (result.success !== true || typeof result.userId !== 'string' || result.userId.trim() === '') {
+      console.error('registerStaff: unexpected API response structure', result);
+      return { success: false, message: 'Server tidak mengembalikan konfirmasi akun yang valid. Hubungi administrator.' };
+    }
+
+    const requiresConfirmation = Boolean(result.requiresEmailConfirmation);
 
     toast.success(
       requiresConfirmation
         ? 'Pendaftaran terkirim. Periksa email untuk konfirmasi, lalu tunggu persetujuan Owner.'
         : 'Pendaftaran crew berhasil. Akun menunggu persetujuan Owner.'
     );
-    return { success: true, message: 'Pendaftaran berhasil', userId: generatedId };
+    return { success: true, message: 'Pendaftaran berhasil', userId: result.userId };
   };
 
   const changeUserRole = async (

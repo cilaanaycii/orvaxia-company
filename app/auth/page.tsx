@@ -218,9 +218,11 @@ export default function AuthPage() {
     try {
       const result = await login(loginEmail.trim(), loginPassword);
       if (!result.success || !result.user) {
-        if (result.success) {
+        if (result.success && !result.user) {
+          // success=true tapi user=null — kasus tidak terduga
           toast.error('Data akun tidak lengkap. Silakan coba lagi atau hubungi Owner.');
         }
+        // Kasus !result.success: toast sudah ditampilkan oleh login() atau executeLoadProfile().
         return;
       }
 
