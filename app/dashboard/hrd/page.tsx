@@ -25,6 +25,7 @@ export default function HRDDashboard() {
     teamMembers,
     performanceReviews,
     addPerformanceReview,
+    addTeamMember,
     updateTeamMember,
     deleteTeamMember,
     currentUser,
@@ -38,6 +39,13 @@ export default function HRDDashboard() {
   const [memberDivisionDraft, setMemberDivisionDraft] = useState('');
   const [memberAvatarDraft, setMemberAvatarDraft] = useState('');
   const [isUploadingMemberAvatar, setIsUploadingMemberAvatar] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberPosition, setNewMemberPosition] = useState('');
+  const [newMemberDivision, setNewMemberDivision] = useState('Produksi');
+  const [newMemberAvatar, setNewMemberAvatar] = useState('');
+  const [newMemberClass, setNewMemberClass] = useState('');
+  const [isUploadingNewAvatar, setIsUploadingNewAvatar] = useState(false);
   const [period, setPeriod] = useState(() =>
     new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date())
   );
@@ -93,7 +101,9 @@ export default function HRDDashboard() {
   const evaluatedMemberCount = hrdMembers.filter((member) =>
     monthlyMemberScores.has(member.id)
   ).length;
-  const canEditRoster = currentUser?.role === 'owner' || currentUser?.role === 'ceo';
+  const canEditRoster =
+    currentUser?.status === 'active' &&
+    (currentUser?.role === 'owner' || currentUser?.role === 'ceo' || currentUser?.role === 'hrd');
 
   const startEditingMember = (member: TeamMember) => {
     setEditingMember(member);
@@ -118,12 +128,64 @@ export default function HRDDashboard() {
 
     setIsUploadingMemberAvatar(true);
     try {
-      setMemberAvatarDraft(await uploadImage(file));
+      setMemberAvatarDraft(await uploadImage(file, 'crew'));
       toast.success('Foto anggota berhasil diunggah.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Foto anggota gagal diunggah.');
     } finally {
       setIsUploadingMemberAvatar(false);
+    }
+  };
+
+  const handleNewMemberPhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Format gambar harus JPG, PNG, atau WEBP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran gambar maksimal 5MB.');
+      return;
+    }
+
+    setIsUploadingNewAvatar(true);
+    try {
+      setNewMemberAvatar(await uploadImage(file, 'crew'));
+      toast.success('Foto anggota baru berhasil diunggah.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Foto anggota baru gagal diunggah.');
+    } finally {
+      setIsUploadingNewAvatar(false);
+    }
+  };
+
+  const handleAddMember = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newMemberName.trim() || !newMemberPosition.trim() || !newMemberDivision.trim()) {
+      toast.error('Nama, jabatan, dan divisi wajib diisi.');
+      return;
+    }
+    const saved = await addTeamMember({
+      name: newMemberName.trim(),
+      position: newMemberPosition.trim(),
+      division: newMemberDivision.trim(),
+      avatarUrl: newMemberAvatar,
+      className: newMemberClass.trim() || undefined,
+      status: 'Aktif',
+      bio: '',
+      responsibilities: [],
+      profileVisible: true,
+      sortOrder: teamMembers.length + 1,
+    });
+    if (saved) {
+      setShowAddMemberModal(false);
+      setNewMemberName('');
+      setNewMemberPosition('');
+      setNewMemberDivision('Produksi');
+      setNewMemberAvatar('');
+      setNewMemberClass('');
     }
   };
 
@@ -302,7 +364,7 @@ export default function HRDDashboard() {
         </div>
       )}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Pengembangan Sumber Daya Manusia</span>
@@ -310,7 +372,7 @@ export default function HRDDashboard() {
               DIVISI HRD
             </span>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             Human Resource & {hrdMembers.length} Member Performance Management
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -324,8 +386,8 @@ export default function HRDDashboard() {
             onClick={() => setActiveTab('roster')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'roster'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Database Anggota ({hrdMembers.length})
@@ -334,8 +396,8 @@ export default function HRDDashboard() {
             onClick={() => setActiveTab('evaluate')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'evaluate'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Form Penilaian 7 Indikator
@@ -344,8 +406,8 @@ export default function HRDDashboard() {
             onClick={() => setActiveTab('history')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'history'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Riwayat Evaluasi ({performanceReviews.length})
@@ -354,7 +416,7 @@ export default function HRDDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-brand-lavender/30 bg-white p-4 shadow-xs">
           <p className="text-[11px] font-semibold text-slate-500">Rata-rata Nilai · {period}</p>
           <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
             {monthlyAverageScore === null ? '—' : `${monthlyAverageScore} / 100`}
@@ -363,14 +425,14 @@ export default function HRDDashboard() {
             {monthlyReviews.length} evaluasi tersimpan pada periode ini
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-brand-lavender/30 bg-white p-4 shadow-xs">
           <p className="text-[11px] font-semibold text-slate-500">Anggota Sudah Dinilai</p>
           <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
             {evaluatedMemberCount} / 31
           </p>
           <p className="mt-1 text-[11px] text-slate-400">Anggota unik pada periode {period}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-brand-lavender/30 bg-white p-4 shadow-xs">
           <p className="text-[11px] font-semibold text-slate-500">Belum Dinilai</p>
           <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
             {Math.max(hrdMembers.length - evaluatedMemberCount, 0)}
@@ -384,7 +446,7 @@ export default function HRDDashboard() {
       {/* ================= TAB 1: 31 MEMBERS ROSTER ================= */}
       {activeTab === 'roster' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="relative w-full max-w-sm">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -395,16 +457,28 @@ export default function HRDDashboard() {
                 className="w-full rounded-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-xs focus:border-brand-slate focus:outline-none"
               />
             </div>
-            <span className="text-xs text-slate-500 font-medium">
-              {hrdMembers.length} anggota resmi
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500 font-medium">
+                {hrdMembers.length} anggota resmi
+              </span>
+              {canEditRoster && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddMemberModal(true)}
+                  className="flex items-center gap-1.5 rounded-full bg-brand-slate px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-navy transition-colors"
+                >
+                  <Plus size={13} />
+                  Tambah Anggota
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredMembers.map((member) => (
               <div
                 key={member.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-brand-lavender transition-all space-y-3"
+                className="rounded-2xl border border-brand-lavender/30 bg-white p-4 shadow-xs hover:border-brand-lavender transition-all space-y-3"
               >
                 <div className="flex items-center gap-3">
                   <div className="relative flex h-12 w-12 items-center justify-center rounded-full overflow-hidden border border-brand-lavender/50 bg-slate-100 shrink-0">
@@ -489,7 +563,7 @@ export default function HRDDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
               <span className="badge-brand">Standar Evaluasi HRD ORVAXIA</span>
-              <h3 className="font-serif text-lg font-bold text-brand-navy mt-1">
+              <h3 className="font-display text-lg font-bold text-brand-navy mt-1">
                 Formulir Penilaian Kinerja Anggota: {selectedMember.name}
               </h3>
               <p className="text-slate-500 mt-0.5">
@@ -694,7 +768,7 @@ export default function HRDDashboard() {
       {activeTab === 'history' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="font-serif text-lg font-bold text-brand-navy">
+            <h3 className="font-display text-lg font-bold text-brand-navy">
               Arsip Evaluasi Kinerja Karyawan
             </h3>
             <button
@@ -775,6 +849,121 @@ export default function HRDDashboard() {
             ))}
           </div>
           )}
+        </div>
+      )}
+
+      {/* ================= MODAL: TAMBAH ANGGOTA ================= */}
+      {showAddMemberModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setShowAddMemberModal(false)}
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => { void handleAddMember(e); }}
+            className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-display text-lg font-bold text-brand-navy">Tambah Anggota Baru</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddMemberModal(false)}
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Nama Lengkap *</label>
+                <input
+                  type="text"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  required
+                  placeholder="Contoh: Siti Rahayu"
+                  className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Jabatan *</label>
+                <input
+                  type="text"
+                  value={newMemberPosition}
+                  onChange={(e) => setNewMemberPosition(e.target.value)}
+                  required
+                  placeholder="Contoh: Staf Produksi"
+                  className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Divisi *</label>
+                <select
+                  value={newMemberDivision}
+                  onChange={(e) => setNewMemberDivision(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
+                >
+                  {['Produksi', 'Marketing', 'PR & Komunikasi', 'HRD', 'Keuangan', 'Operasional', 'Desain', 'IT', 'Lainnya'].map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Kelas (opsional)</label>
+                <input
+                  type="text"
+                  value={newMemberClass}
+                  onChange={(e) => setNewMemberClass(e.target.value)}
+                  placeholder="Contoh: XII RPL 1"
+                  className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Foto Anggota (opsional)</label>
+                {newMemberAvatar ? (
+                  <div className="relative h-20 w-20 rounded-xl overflow-hidden border border-slate-200">
+                    <Image src={newMemberAvatar} alt="Preview" fill unoptimized sizes="80px" className="object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setNewMemberAvatar('')}
+                      className="absolute top-1 right-1 rounded-full bg-black/50 p-0.5 text-white text-[10px]"
+                    >✕</button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:bg-slate-50">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => { void handleNewMemberPhotoSelect(e); }}
+                      className="sr-only"
+                    />
+                    {isUploadingNewAvatar ? (
+                      <span className="text-slate-500">Mengunggah foto...</span>
+                    ) : (
+                      <span className="text-slate-500">Pilih foto dari galeri perangkat</span>
+                    )}
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAddMemberModal(false)}
+                className="flex-1 rounded-xl border border-slate-200 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 rounded-xl bg-brand-slate py-2 text-xs font-semibold text-white hover:bg-brand-navy transition-colors"
+              >
+                Simpan Anggota
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

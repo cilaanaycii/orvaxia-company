@@ -51,7 +51,7 @@ export default function SalesDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Distribusi & Logistik</span>
@@ -59,7 +59,7 @@ export default function SalesDashboard() {
               DIVISI SALES
             </span>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             Sales & Delivery Operations
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -70,7 +70,7 @@ export default function SalesDashboard() {
 
       {/* Orders Ready for Delivery */}
       <div className="space-y-4">
-        <h3 className="font-serif text-lg font-bold text-brand-navy">
+        <h3 className="font-display text-lg font-bold text-brand-navy">
           Daftar Pesanan & Status Pengiriman ({orders.length})
         </h3>
 
@@ -96,7 +96,7 @@ export default function SalesDashboard() {
             return (
               <div
                 key={order.id}
-                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-4 hover:border-brand-lavender transition-all"
+                className="rounded-3xl border border-brand-lavender/30 bg-white p-5 shadow-xs space-y-4 hover:border-brand-lavender transition-all"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div>

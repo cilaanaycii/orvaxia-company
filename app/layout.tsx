@@ -1,12 +1,18 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans, Noto_Serif_Display } from 'next/font/google';
+import { Plus_Jakarta_Sans, Noto_Serif_Display, Bricolage_Grotesque } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { CompanyProvider } from '@/lib/store/company-store';
 
 const sansFont = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap',
+});
+
+const displayFont = Bricolage_Grotesque({
+  subsets: ['latin'],
+  variable: '--font-display',
   display: 'swap',
 });
 
@@ -24,7 +30,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${sansFont.variable} ${serifFont.variable}`}>
+    <html lang="id" className={`${sansFont.variable} ${displayFont.variable} ${serifFont.variable}`}>
       <body className="font-sans antialiased bg-[#FAF8F5] text-brand-navy min-h-screen selection:bg-brand-lavender/30 selection:text-brand-navy">
         <CompanyProvider>
           {children}

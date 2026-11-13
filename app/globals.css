@@ -46,22 +46,22 @@
   scrollbar-width: none;
 }
 
-/* Magic Navigation Floating Dock animations and active state */
+/* Magic Navigation Floating Dock animations and active state (Mobile Preferred) */
 .magic-dock-container {
-  @apply fixed bottom-6 left-1/2 -translate-x-1/2 z-50;
-  filter: drop-shadow(0 14px 28px rgba(26, 34, 56, 0.18));
+  @apply fixed bottom-5 left-1/2 -translate-x-1/2 z-50;
+  filter: drop-shadow(0 14px 28px rgba(26, 34, 56, 0.16));
 }
 
 .magic-dock {
-  @apply relative flex items-center justify-around gap-1.5 md:gap-3 px-3 py-2 md:px-5 md:py-2.5 rounded-full border border-white/60 bg-white/90 backdrop-blur-xl shadow-lg;
+  @apply relative flex items-center justify-around gap-1 px-3 py-2 rounded-full border border-white/70 bg-white/90 backdrop-blur-xl shadow-lg;
 }
 
 .magic-dock-item {
-  @apply relative flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full text-brand-slate transition-all duration-300 hover:text-brand-navy;
+  @apply relative flex flex-col items-center justify-center w-12 h-12 rounded-full text-brand-slate transition-all duration-300 hover:text-brand-navy;
 }
 
 .magic-dock-item.active {
-  @apply -translate-y-3 text-white font-semibold;
+  @apply -translate-y-2.5 text-white font-semibold;
 }
 
 .magic-dock-item.active .magic-dock-circle {
@@ -72,13 +72,56 @@
   @apply scale-75 opacity-0 transition-all duration-300 -z-10;
 }
 
-/* Clean artisanal subtle accents */
+/* Brand Gradient Text */
 .text-brand-gradient {
-  background: linear-gradient(135deg, #606C8D 0%, #837592 50%, #A99AB3 100%);
+  background: linear-gradient(135deg, #1A2238 0%, #606C8D 60%, #837592 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
+/* Subtle Tactile Grain Pattern (Pure SVG, 0 external requests) */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+/* Micro-Interaction & Interaction Classes */
+.interactive-tap {
+  @apply transition-transform duration-150 ease-out active:scale-[0.98];
+}
+
+.card-interactive {
+  @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-brand-md;
+}
+
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-slate focus-visible:ring-offset-2;
+}
+
+/* Brand Badges */
 .badge-brand {
-  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-brand-surface text-brand-navy border border-brand-lavender/30;
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-brand-surface text-brand-navy border border-brand-lavender/30 tracking-wide;
+}
+
+.badge-brand-navy {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-brand-navy text-white tracking-wide;
+}
+
+.badge-brand-peach {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-brand-peach/20 text-brand-navy border border-brand-peach/40 tracking-wide;
+}
+
+.badge-brand-yellow {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-brand-yellow/30 text-brand-navy border border-brand-yellow/60 tracking-wide;
+}
+
+/* Respect user accessibility motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

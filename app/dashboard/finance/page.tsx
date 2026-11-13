@@ -77,7 +77,7 @@ export default function FinanceDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Manajemen Arus Kas & Verifikasi</span>
@@ -85,7 +85,7 @@ export default function FinanceDashboard() {
               DIVISI FINANCE
             </span>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             Financial Ledger & Payment Reconciliation
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -99,8 +99,8 @@ export default function FinanceDashboard() {
             onClick={() => setActiveTab('verification')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'verification'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Verifikasi Pembayaran ({pendingPayments.length})
@@ -109,8 +109,8 @@ export default function FinanceDashboard() {
             onClick={() => setActiveTab('ledger')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'ledger'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Buku Kas Transaksi ({transactions.length})
@@ -119,8 +119,8 @@ export default function FinanceDashboard() {
             onClick={() => setActiveTab('add_trx')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'add_trx'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             + Catat Pengeluaran/Pemasukan
@@ -175,7 +175,7 @@ export default function FinanceDashboard() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="font-serif text-lg font-bold text-brand-navy">
+              <h3 className="font-display text-lg font-bold text-brand-navy">
                 Antrean Verifikasi Pembayaran Masuk ({pendingPayments.length})
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -231,7 +231,7 @@ export default function FinanceDashboard() {
       {activeTab === 'ledger' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="font-serif text-lg font-bold text-brand-navy">
+            <h3 className="font-display text-lg font-bold text-brand-navy">
               Buku Kas & Riwayat Transaksi Finansial
             </h3>
             <button
@@ -297,7 +297,7 @@ export default function FinanceDashboard() {
           className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 text-xs max-w-2xl"
         >
           <div className="border-b border-slate-100 pb-3">
-            <h3 className="font-serif text-lg font-bold text-brand-navy">
+            <h3 className="font-display text-lg font-bold text-brand-navy">
               Pencatatan Arus Keuangan Baru
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">

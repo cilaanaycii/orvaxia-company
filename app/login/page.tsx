@@ -8,7 +8,13 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/auth?tab=login');
+    const search = window.location.search;
+    const params = new URLSearchParams(search);
+    const next = params.get('next');
+    const target = next
+      ? `/auth?tab=login&next=${encodeURIComponent(next)}`
+      : '/auth?tab=login';
+    router.replace(target);
   }, [router]);
 
   return (

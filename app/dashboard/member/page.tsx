@@ -57,7 +57,7 @@ export default function MemberDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Portal Anggota Internal</span>
@@ -65,7 +65,7 @@ export default function MemberDashboard() {
               31 ANGGOTA ORVAXIA
             </span>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             Personal Workspace: {currentUser?.fullName || 'Anggota Orvaxia'}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -83,7 +83,7 @@ export default function MemberDashboard() {
               {currentUser?.fullName.slice(0, 2).toUpperCase() || 'OV'}
             </div>
             <div>
-              <h3 className="font-serif text-lg font-bold text-brand-navy">
+              <h3 className="font-display text-lg font-bold text-brand-navy">
                 {currentUser?.fullName}
               </h3>
               <p className="text-xs text-brand-slate font-medium">
@@ -232,7 +232,7 @@ export default function MemberDashboard() {
           </div>
 
           {/* Announcements Card */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-3 text-xs">
+          <div className="rounded-3xl border border-brand-lavender/30 bg-white p-5 shadow-xs space-y-3 text-xs">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
               <Bell size={16} className="text-brand-slate" />
               <h4 className="font-serif font-bold text-sm text-brand-navy">

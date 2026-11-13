@@ -226,6 +226,12 @@ export default function AuthPage() {
         return;
       }
 
+      const nextParam = new URLSearchParams(window.location.search).get('next');
+      if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
+        router.push(nextParam);
+        return;
+      }
+
       if (result.user.role === 'owner') {
         router.push('/dashboard/owner');
       } else if (result.user.role === 'ceo') {

@@ -1,9 +1,9 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { ShoppingBag, UserRound, Bell } from 'lucide-react';
 import { OrvaxiaLogo } from '@/components/brand/OrvaxiaLogo';
 import { useCompanyStore } from '@/lib/store/company-store';
 
@@ -22,8 +22,10 @@ const NAV_LINKS: NavLinkItem[] = [
 
 export function TopNav() {
   const pathname = usePathname();
-  const { currentUser, cart } = useCompanyStore();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { currentUser, cart, notifications } = useCompanyStore();
+
+  const totalCartCount = cart.reduce((acc, it) => acc + it.quantity, 0);
+  const unreadCount = notifications.filter((item) => !item.readAt).length;
 
   const accountHref = !currentUser
     ? '/login'
@@ -31,107 +33,96 @@ export function TopNav() {
       ? '/account'
       : `/dashboard/${currentUser.role}`;
 
+  const accountLabel = !currentUser
+    ? 'Masuk'
+    : currentUser.role === 'customer'
+      ? 'Akun'
+      : 'Dashboard';
+
   function isActive(href: string): boolean {
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
   }
 
   return (
-    <>
-      <header className="sticky top-0 z-40 border-b border-brand-lavender/30 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-10">
-          {/* Logo */}
-          <Link href="/" aria-label="ORVAXIA Home">
-            <OrvaxiaLogo size={34} />
+    <header className="sticky top-0 z-40 border-b border-brand-lavender/25 bg-[#FAF8F5]/90 backdrop-blur-md transition-all duration-200">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-10">
+        {/* Brand Logo */}
+        <Link
+          href="/"
+          aria-label="ORVAXIA Home"
+          className="transition-transform duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-slate rounded-lg"
+        >
+          <OrvaxiaLogo size={32} />
+        </Link>
+
+        {/* Desktop Navigation Links */}
+        <nav
+          className="hidden items-center gap-1 rounded-full border border-brand-lavender/30 bg-white/80 p-1 shadow-xs md:flex"
+          aria-label="Navigasi desktop utama"
+        >
+          {NAV_LINKS.map(({ href, label }) => {
+            const active = isActive(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`relative rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-slate ${
+                  active
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'text-brand-slate hover:bg-brand-surface/70 hover:text-brand-navy active:scale-95'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right-Side Actions (Cart & Account) */}
+        <div className="flex items-center gap-2">
+          {/* Inbox Shortcut */}
+          <Link
+            href={currentUser ? '/inbox' : '/auth?tab=login&next=/inbox'}
+            className="relative inline-flex items-center gap-1.5 rounded-full border border-brand-lavender/35 bg-white px-3 py-1.5 text-xs font-semibold text-brand-navy shadow-xs transition-all duration-200 hover:border-brand-slate hover:bg-brand-surface active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-slate"
+            aria-label="Pusat notifikasi dan inbox"
+            title="Pusat Notifikasi dan Inbox"
+          >
+            <Bell size={14} className="text-brand-slate shrink-0" />
+            <span className="hidden sm:inline">Inbox</span>
+            {unreadCount > 0 && (
+              <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={[
-                  'relative px-3 py-2 text-sm font-semibold transition-colors',
-                  isActive(href)
-                    ? 'text-brand-navy'
-                    : 'text-brand-slate hover:text-brand-navy',
-                ].join(' ')}
-              >
-                {label}
-                {isActive(href) && (
-                  <span className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-brand-navy" />
-                )}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Right-side actions */}
-          <div className="flex items-center gap-2">
-            <Link
-              href="/shop"
-              className="hidden items-center gap-1.5 rounded-full border border-brand-lavender/40 bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-navy transition hover:border-brand-slate sm:inline-flex"
-              aria-label="Keranjang belanja"
-            >
-              <ShoppingBag size={15} />
-              {cart.length > 0 && (
-                <span className="font-bold text-brand-navy">{cart.length}</span>
-              )}
-            </Link>
-            <Link
-              href={accountHref}
-              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-slate transition hover:border-brand-slate hover:text-brand-navy"
-            >
-              {currentUser ? 'Akun' : 'Login'}
-            </Link>
-            {/* Mobile hamburger */}
-            <button
-              type="button"
-              className="ml-1 inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-brand-slate transition hover:border-brand-slate md:hidden"
-              aria-label={mobileOpen ? 'Tutup menu' : 'Buka menu'}
-              onClick={() => setMobileOpen((prev) => !prev)}
-            >
-              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile dropdown */}
-        {mobileOpen && (
-          <nav
-            className="border-t border-brand-lavender/20 bg-white px-4 pb-4 pt-2 md:hidden"
-            aria-label="Navigasi mobile"
+          {/* Cart Action */}
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-1.5 rounded-full border border-brand-lavender/35 bg-white px-3 py-1.5 text-xs font-semibold text-brand-navy shadow-xs transition-all duration-200 hover:border-brand-slate hover:bg-brand-surface active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-slate"
+            aria-label={`Keranjang belanja: ${totalCartCount} item`}
           >
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={[
-                  'flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-colors',
-                  isActive(href)
-                    ? 'bg-brand-surface text-brand-navy'
-                    : 'text-brand-slate hover:bg-brand-surface/60 hover:text-brand-navy',
-                ].join(' ')}
-              >
-                {label}
-                {isActive(href) && (
-                  <span className="h-2 w-2 rounded-full bg-brand-navy" />
-                )}
-              </Link>
-            ))}
-            <div className="mt-3 border-t border-brand-lavender/20 pt-3">
-              <Link
-                href={accountHref}
-                onClick={() => setMobileOpen(false)}
-                className="flex w-full items-center justify-center rounded-xl bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-slate"
-              >
-                {currentUser ? 'Dashboard Akun' : 'Login'}
-              </Link>
-            </div>
-          </nav>
-        )}
-      </header>
-    </>
+            <ShoppingBag size={14} className="text-brand-slate shrink-0" />
+            <span className="hidden sm:inline">Keranjang</span>
+            {totalCartCount > 0 && (
+              <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-slate px-1 text-[10px] font-bold text-white">
+                {totalCartCount}
+              </span>
+            )}
+          </Link>
+
+          {/* Account / Login Action */}
+          <Link
+            href={accountHref}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-navy px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition-all duration-200 hover:bg-brand-slate active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-slate"
+            aria-label={currentUser ? `Menu ${accountLabel}` : 'Masuk ke akun'}
+          >
+            <UserRound size={13} className="shrink-0" />
+            <span>{accountLabel}</span>
+          </Link>
+        </div>
+      </div>
+    </header>
   );
 }

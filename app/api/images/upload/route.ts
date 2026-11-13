@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       console.error('Image upload profile check failed', profileError);
       return NextResponse.json({ error: 'Hak akses crew gagal diverifikasi.' }, { status: 500 });
     }
-    const allowedRoles = purpose === 'crew' ? ['owner', 'ceo'] : ['owner', 'ceo', 'marketing'];
+    const allowedRoles = purpose === 'crew' ? ['owner', 'ceo', 'hrd'] : ['owner', 'ceo', 'marketing'];
     if (!profile || profile.status !== 'active' || !allowedRoles.includes(profile.role)) {
       return NextResponse.json({ error: 'Role akun tidak memiliki izin untuk mengunggah gambar ini.' }, { status: 403 });
     }

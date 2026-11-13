@@ -150,7 +150,7 @@ export default function PRDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Komunikasi & Hubungan Masyarakat</span>
@@ -158,7 +158,7 @@ export default function PRDashboard() {
               DIVISI PUBLIC RELATIONS
             </span>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             PR & Public Communications
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -175,8 +175,8 @@ export default function PRDashboard() {
             onClick={() => setActiveTab('announcements')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'announcements'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Pengumuman ({announcements.length})
@@ -185,8 +185,8 @@ export default function PRDashboard() {
             onClick={() => setActiveTab('gallery')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'gallery'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Galeri Dokumentasi ({gallery.length})
@@ -195,8 +195,8 @@ export default function PRDashboard() {
             onClick={() => setActiveTab('socials')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'socials'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Media Sosial
@@ -205,8 +205,8 @@ export default function PRDashboard() {
             onClick={() => setActiveTab('faqs')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'faqs'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             FAQ ({faqs.length})
@@ -499,7 +499,7 @@ export default function PRDashboard() {
           className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 text-xs max-w-xl"
         >
           <div className="border-b border-slate-100 pb-3">
-            <h3 className="font-serif text-lg font-bold text-brand-navy">
+            <h3 className="font-display text-lg font-bold text-brand-navy">
               Saluran Media Sosial Resmi ORVAXIA
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -553,7 +553,7 @@ export default function PRDashboard() {
       {/* ================= TAB 4: FAQS ================= */}
       {activeTab === 'faqs' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 text-xs">
-          <h3 className="font-serif text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
+          <h3 className="font-display text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
             Daftar FAQ Publik ({faqs.length})
           </h3>
 

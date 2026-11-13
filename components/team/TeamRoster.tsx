@@ -2,12 +2,12 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Instagram, Search, X } from 'lucide-react';
+import { Instagram, Search, X, User } from 'lucide-react';
 import { useCompanyStore } from '@/lib/store/company-store';
 import { TeamMember } from '@/lib/types';
 
 const divisions = [
-  { id: 'all', label: 'Semua anggota' },
+  { id: 'all', label: 'Semua Divisi' },
   { id: 'Executive', label: 'Executive' },
   { id: 'Kesekretariatan', label: 'Kesekretariatan' },
   { id: 'Finance', label: 'Finance' },
@@ -25,10 +25,10 @@ function isStoredPortrait(url: string) {
       ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin
       : '';
     return (
-      parsedUrl.origin === supabaseOrigin &&
-      parsedUrl.pathname.startsWith('/storage/v1/object/public/orvaxia-images/crew/') ||
-      parsedUrl.origin === supabaseOrigin &&
-      parsedUrl.pathname.startsWith('/storage/v1/object/public/orvaxia-images/catalog/')
+      (parsedUrl.origin === supabaseOrigin &&
+        parsedUrl.pathname.startsWith('/storage/v1/object/public/orvaxia-images/crew/')) ||
+      (parsedUrl.origin === supabaseOrigin &&
+        parsedUrl.pathname.startsWith('/storage/v1/object/public/orvaxia-images/catalog/'))
     );
   } catch {
     return false;
@@ -38,7 +38,7 @@ function isStoredPortrait(url: string) {
 function MemberPortrait({ member, large = false }: { member: TeamMember; large?: boolean }) {
   const hasPhoto = isStoredPortrait(member.avatarUrl);
   return (
-    <div className={`relative overflow-hidden bg-[#EEEAF2] ${large ? 'aspect-[4/5]' : 'aspect-[4/5]'}`}>
+    <div className={`relative overflow-hidden bg-[#FAF8F5] ${large ? 'aspect-[4/5]' : 'aspect-[4/5]'}`}>
       {hasPhoto ? (
         <Image
           src={member.avatarUrl}
@@ -49,12 +49,16 @@ function MemberPortrait({ member, large = false }: { member: TeamMember; large?:
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#F4F0F6] via-[#ECE9F1] to-[#E8E3ED] px-4 text-center">
-          <span className="font-serif text-5xl font-semibold tracking-[0.12em] text-brand-slate/70">
-            {member.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('')}
+        /* Fallback Area Gambar Kosong Rapi (Tanpa Monogram, Tanpa AI/Foto Palsu) */
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#F4F2F7] p-4 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-lavender/30 bg-white text-brand-slate shadow-2xs">
+            <User size={22} strokeWidth={1.5} />
+          </div>
+          <span className="mt-2.5 text-[10px] font-semibold uppercase tracking-wider text-brand-slate">
+            Foto Belum Tersedia
           </span>
-          <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-slate/70">
-            ORVAXIA COMPANY
+          <span className="mt-0.5 text-[9px] text-slate-400">
+            Kru SMKN 2 Buduran
           </span>
         </div>
       )}
@@ -74,6 +78,7 @@ export function TeamRoster() {
     () => teamMembers.filter((member) => member.profileVisible !== false),
     [teamMembers],
   );
+
   const filteredMembers = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase();
     return visibleMembers.filter((member) => {
@@ -133,18 +138,26 @@ export function TeamRoster() {
   };
 
   return (
-    <div className="w-full space-y-7">
+    <div className="w-full space-y-8">
+      {/* Kolom Filter & Pencarian */}
       <div className="flex flex-col gap-4">
-        <label className="relative block w-full sm:max-w-sm">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            placeholder="Cari nama, jabatan, atau divisi"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            className="w-full rounded-full border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm focus:border-brand-slate focus:outline-none focus:ring-1 focus:ring-brand-slate"
-          />
-        </label>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <label className="relative block w-full sm:max-w-md">
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              placeholder="Cari nama anggota, jabatan, atau divisi..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="w-full rounded-full border border-brand-lavender/30 bg-white py-3 pl-11 pr-4 text-xs text-brand-navy shadow-2xs focus:border-brand-slate focus:outline-none focus:ring-2 focus:ring-brand-slate/20"
+            />
+          </label>
+          <span className="text-xs font-semibold text-brand-slate">
+            {filteredMembers.length} dari {visibleMembers.length} anggota tercatat
+          </span>
+        </div>
+
+        {/* Pill Navigasi Filter Divisi */}
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label="Filter divisi">
           {divisions.map((division) => (
             <button
@@ -152,39 +165,37 @@ export function TeamRoster() {
               type="button"
               onClick={() => setSelectedDivision(division.id)}
               aria-pressed={selectedDivision === division.id}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition ${
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all ${
                 selectedDivision === division.id
-                  ? 'bg-brand-navy text-white'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:border-brand-slate'
+                  ? 'bg-brand-navy text-white shadow-brand-sm'
+                  : 'border border-brand-lavender/30 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface'
               }`}
             >
               {division.label}
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-500">
-          {filteredMembers.length} dari {visibleMembers.length} profil anggota
-        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
+      {/* Grid Roster Kartu Anggota */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4 xl:grid-cols-5">
         {filteredMembers.map((member) => (
           <button
             key={member.id}
             type="button"
             onClick={() => setActiveMember(member)}
             aria-label={`Lihat profil ${member.name}`}
-            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:border-brand-lavender hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-slate"
+            className="group overflow-hidden rounded-[1.75rem] border border-brand-lavender/30 bg-white text-left shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-brand-slate hover:shadow-brand-sm focus:outline-none focus:ring-2 focus:ring-brand-slate"
           >
             <MemberPortrait member={member} />
-            <span className="block p-3 sm:p-4">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.13em] text-brand-slate">
+            <span className="block p-4 sm:p-5">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-slate">
                 {member.division}
               </span>
-              <span className="mt-1 block line-clamp-2 min-h-10 font-serif text-sm font-bold leading-5 text-brand-navy sm:text-base">
+              <span className="mt-1 block line-clamp-1 font-display text-sm font-bold text-brand-navy sm:text-base">
                 {member.name}
               </span>
-              <span className="mt-1 block min-h-8 line-clamp-2 text-[11px] leading-4 text-slate-500">
+              <span className="mt-0.5 block line-clamp-2 min-h-8 text-[11px] leading-4 text-slate-500">
                 {member.position}
               </span>
             </span>
@@ -192,15 +203,17 @@ export function TeamRoster() {
         ))}
       </div>
 
+      {/* Pesan Jika Hasil Pencarian Kosong */}
       {filteredMembers.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          Tidak ada anggota yang cocok dengan pencarian.
+        <div className="rounded-[2rem] border border-dashed border-brand-lavender/40 bg-white p-12 text-center text-xs text-slate-500">
+          Tidak ada anggota yang sesuai dengan filter atau kata kunci pencarian.
         </div>
       )}
 
+      {/* Modal Dialog Detail Anggota */}
       {activeMember && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-brand-navy/55 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-brand-navy/60 p-4 backdrop-blur-xs"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setActiveMember(null);
           }}
@@ -210,69 +223,82 @@ export function TeamRoster() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="team-member-title"
-            className="grid w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl sm:grid-cols-[0.85fr_1.15fr]"
+            className="grid w-full max-w-3xl overflow-hidden rounded-[2.25rem] bg-white shadow-2xl sm:grid-cols-[0.85fr_1.15fr] border border-brand-lavender/30"
           >
             <div className="group">
               <MemberPortrait member={activeMember} large />
             </div>
-            <div className="flex flex-col p-5 sm:p-7">
-              <div className="flex justify-end">
-                <button
-                  ref={closeButtonRef}
-                  type="button"
-                  onClick={() => setActiveMember(null)}
-                  aria-label="Tutup profil"
-                  className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-brand-navy focus:outline-none focus:ring-2 focus:ring-brand-slate"
-                >
-                  <X size={18} />
-                </button>
+
+            <div className="flex flex-col p-6 sm:p-8 justify-between space-y-4">
+              <div>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <span className="badge-brand">
+                    Divisi {activeMember.division}
+                  </span>
+                  <button
+                    ref={closeButtonRef}
+                    type="button"
+                    onClick={() => setActiveMember(null)}
+                    aria-label="Tutup profil"
+                    className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-brand-navy"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <h2 id="team-member-title" className="mt-3 font-display text-2xl font-bold text-brand-navy sm:text-3xl">
+                  {activeMember.name}
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-brand-slate">{activeMember.position}</p>
+
+                <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-slate-100 py-3 text-xs">
+                  <div>
+                    <dt className="text-slate-400">Kelas</dt>
+                    <dd className="mt-0.5 font-semibold text-brand-navy">{activeMember.className || 'SMKN 2 Buduran'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-400">Status Kru</dt>
+                    <dd className="mt-0.5 font-semibold text-emerald-700">{activeMember.status}</dd>
+                  </div>
+                </dl>
+
+                <p className="mt-4 text-xs leading-6 text-slate-600">
+                  {activeMember.bio || 'Profil anggota terdaftar resmi dalam struktur organisasi ORVAXIA COMPANY.'}
+                </p>
+
+                {activeMember.responsibilities && activeMember.responsibilities.length > 0 && (
+                  <div className="mt-4 space-y-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-brand-slate block">
+                      Tanggung Jawab Utama
+                    </span>
+                    <ul className="space-y-1.5 text-xs text-slate-600">
+                      {activeMember.responsibilities.map((responsibility) => (
+                        <li key={responsibility} className="flex gap-2">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-slate" />
+                          <span>{responsibility}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-slate">
-                {activeMember.division}
-              </p>
-              <h2 id="team-member-title" className="mt-2 font-serif text-2xl font-bold leading-tight text-brand-navy sm:text-3xl">
-                {activeMember.name}
-              </h2>
-              <p className="mt-2 text-sm font-medium text-slate-600">{activeMember.position}</p>
-              <dl className="mt-5 grid gap-3 border-y border-slate-100 py-4 text-sm">
-                <div>
-                  <dt className="text-xs text-slate-400">Kelas</dt>
-                  <dd className="mt-0.5 text-slate-700">{activeMember.className || 'Belum dilengkapi'}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-slate-400">Status keanggotaan</dt>
-                  <dd className="mt-0.5 text-slate-700">{activeMember.status}</dd>
-                </div>
-              </dl>
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                {activeMember.bio || 'Informasi profil belum dilengkapi.'}
-              </p>
-              {activeMember.responsibilities.length > 0 && (
-                <ul className="mt-4 space-y-2 text-xs leading-5 text-slate-600">
-                  {activeMember.responsibilities.map((responsibility) => (
-                    <li key={responsibility} className="flex gap-2">
-                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-brand-slate" />
-                      {responsibility}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="mt-auto flex flex-wrap gap-2 pt-6">
+
+              <div className="flex flex-wrap gap-2.5 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setActiveMember(null)}
-                  className="rounded-full border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  className="rounded-full border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all"
                 >
-                  Close
+                  Tutup
                 </button>
                 {instagramUrl(activeMember) && (
                   <a
                     href={instagramUrl(activeMember) || undefined}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-slate"
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-slate transition-all"
                   >
-                    <Instagram size={14} /> Lihat Instagram
+                    <Instagram size={14} /> Kunjungi Instagram
                   </a>
                 )}
               </div>

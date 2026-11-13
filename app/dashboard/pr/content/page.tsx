@@ -171,9 +171,9 @@ export default function PRContentPage() {
 
   return (
     <div className="space-y-6">
-      <header className="border-b border-slate-200 pb-5">
+      <header className="border-b border-brand-lavender/30 pb-5">
         <span className="badge-brand">Public Relations</span>
-        <h1 className="mt-2 font-serif text-3xl font-bold text-brand-navy">CMS Konten Publik</h1>
+        <h1 className="mt-2 font-display text-3xl font-extrabold text-brand-navy tracking-tight">CMS Konten Publik</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
           Simpan draft atau publikasikan konten tanpa deployment. Konten hanya tampil di halaman publik setelah dipublikasikan.
         </p>
@@ -181,7 +181,7 @@ export default function PRContentPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
-        <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="space-y-4 rounded-3xl border border-brand-lavender/30 bg-white p-5 shadow-xs">
           <div className="flex flex-col gap-3 sm:flex-row">
             <label className="relative flex-1">
               <span className="sr-only">Cari konten</span>
@@ -233,7 +233,7 @@ export default function PRContentPage() {
         </section>
 
         <div className="space-y-5">
-          <form onSubmit={(event) => { event.preventDefault(); void saveContent('draft'); }} className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <form onSubmit={(event) => { event.preventDefault(); void saveContent('draft'); }} className="space-y-4 rounded-3xl border border-brand-lavender/30 bg-white p-5 shadow-xs">
             <h2 className="font-serif text-xl font-bold text-brand-navy">{selectedId ? 'Edit konten' : 'Tambah konten'}</h2>
             <label className="block text-xs font-semibold text-slate-700">
               Slug unik

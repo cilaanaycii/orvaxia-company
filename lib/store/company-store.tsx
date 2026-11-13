@@ -229,6 +229,7 @@ interface CompanyContextType {
   updateProduct: (id: string, prod: Partial<Product>) => Promise<boolean>;
   deleteProduct: (id: string) => void;
   teamMembers: TeamMember[];
+  addTeamMember: (member: Omit<TeamMember, 'id'>) => Promise<boolean>;
   updateTeamMember: (id: string, member: Partial<TeamMember>) => Promise<boolean>;
   deleteTeamMember: (id: string) => Promise<boolean>;
   orders: Order[];
@@ -327,6 +328,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const hasExecutiveAccess =
     currentUser?.status === 'active' &&
     (currentUser.role === 'owner' || currentUser.role === 'ceo');
+  const canManageTeamMembers =
+    currentUser?.status === 'active' &&
+    (currentUser.role === 'owner' || currentUser.role === 'ceo' || currentUser.role === 'hrd');
   const canManagePerformanceReviews =
     currentUser?.status === 'active' &&
     (currentUser.role === 'owner' || currentUser.role === 'ceo' || currentUser.role === 'hrd');
@@ -1061,9 +1065,52 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     toast.success('Produk dihapus');
   };
 
+  const addTeamMember = async (member: Omit<TeamMember, 'id'>): Promise<boolean> => {
+    if (!canManageTeamMembers) {
+      toast.error('Hanya HRD, CEO, dan Owner yang dapat menambah data anggota crew.');
+      return false;
+    }
+    if (!supabase) {
+      toast.error('Supabase belum dikonfigurasi.');
+      return false;
+    }
+
+    const newSortOrder = member.sortOrder || teamMembers.length + 1;
+    const { data, error } = await supabase
+      .from('team_members')
+      .insert({
+        name: member.name,
+        position: member.position,
+        division: member.division,
+        bio: member.bio || '',
+        responsibilities: member.responsibilities || [],
+        status: member.status || 'Aktif',
+        avatar_url: member.avatarUrl || '',
+        class_name: member.className || null,
+        instagram_url: member.instagramUrl || null,
+        profile_visible: member.profileVisible !== false,
+        phone: member.phone || null,
+        email: member.email || null,
+        sort_order: newSortOrder,
+      })
+      .select('id,name,position,division,bio,responsibilities,status,avatar_url,class_name,instagram_url,profile_visible,phone,email,sort_order')
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error('Team member insert failed', error);
+      toast.error('Data anggota gagal ditambahkan ke database.');
+      return false;
+    }
+
+    const savedMember = mapTeamMember(data as TeamMemberRow);
+    setTeamMembers((prev) => [...prev, savedMember]);
+    toast.success('Anggota baru berhasil ditambahkan');
+    return true;
+  };
+
   const updateTeamMember = async (id: string, member: Partial<TeamMember>): Promise<boolean> => {
-    if (!hasExecutiveAccess) {
-      toast.error('Hanya CEO dan Owner yang dapat mengubah data anggota crew.');
+    if (!canManageTeamMembers) {
+      toast.error('Hanya HRD, CEO, dan Owner yang dapat mengubah data anggota crew.');
       return false;
     }
     if (!supabase) {
@@ -1111,8 +1158,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTeamMember = async (id: string): Promise<boolean> => {
-    if (!hasExecutiveAccess) {
-      toast.error('Hanya CEO dan Owner yang dapat menghapus data anggota crew.');
+    if (!canManageTeamMembers) {
+      toast.error('Hanya HRD, CEO, dan Owner yang dapat menghapus data anggota crew.');
       return false;
     }
     if (!supabase) {
@@ -1977,6 +2024,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         updateProduct,
         deleteProduct,
         teamMembers,
+        addTeamMember,
         updateTeamMember,
         deleteTeamMember,
         orders,

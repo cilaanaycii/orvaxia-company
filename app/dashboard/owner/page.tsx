@@ -149,7 +149,7 @@ export default function OwnerDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Pemegang Kendali Website</span>
@@ -166,7 +166,7 @@ export default function OwnerDashboard() {
               <span>{isSyncing ? 'Menyinkronkan...' : 'Segarkan Data Cloud'}</span>
             </button>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             Owner & Website Controller Panel
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -180,8 +180,8 @@ export default function OwnerDashboard() {
             onClick={() => setActiveTab('approvals')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'approvals'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Arahan Crew Baru ({pendingUsers.length})
@@ -190,8 +190,8 @@ export default function OwnerDashboard() {
             onClick={() => setActiveTab('all_crew')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'all_crew'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Kelola Seluruh Crew ({users.length})
@@ -200,8 +200,8 @@ export default function OwnerDashboard() {
             onClick={() => setActiveTab('settings')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'settings'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Pengaturan & Reset Data
@@ -210,8 +210,8 @@ export default function OwnerDashboard() {
             onClick={() => setActiveTab('po')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'po'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Kontrol Pre-Order
@@ -220,8 +220,8 @@ export default function OwnerDashboard() {
             onClick={() => setActiveTab('team')}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               activeTab === 'team'
-                ? 'bg-brand-slate text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
             Direktori Anggota
@@ -250,37 +250,37 @@ export default function OwnerDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Produksi</span>
-          <span className="font-serif text-lg font-bold text-brand-navy">{countProduksi}</span>
+          <span className="font-display text-lg font-bold text-brand-navy">{countProduksi}</span>
           <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Sales</span>
-          <span className="font-serif text-lg font-bold text-brand-navy">{countSales}</span>
+          <span className="font-display text-lg font-bold text-brand-navy">{countSales}</span>
           <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Finance</span>
-          <span className="font-serif text-lg font-bold text-brand-navy">{countFinance}</span>
+          <span className="font-display text-lg font-bold text-brand-navy">{countFinance}</span>
           <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Marketing</span>
-          <span className="font-serif text-lg font-bold text-brand-navy">{countMarketing}</span>
+          <span className="font-display text-lg font-bold text-brand-navy">{countMarketing}</span>
           <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">HRD</span>
-          <span className="font-serif text-lg font-bold text-brand-navy">{countHRD}</span>
+          <span className="font-display text-lg font-bold text-brand-navy">{countHRD}</span>
           <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">PR / Humas</span>
-          <span className="font-serif text-lg font-bold text-brand-navy">{countPR}</span>
+          <span className="font-display text-lg font-bold text-brand-navy">{countPR}</span>
           <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">CEO Exec</span>
-          <span className="font-serif text-lg font-bold text-brand-navy">{countCEO}</span>
+          <span className="font-display text-lg font-bold text-brand-navy">{countCEO}</span>
           <span className="text-[9px] text-slate-400 block">Pimpinan</span>
         </div>
         <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 text-center shadow-xs">
@@ -514,7 +514,7 @@ export default function OwnerDashboard() {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-serif text-lg font-bold text-brand-navy">
+                <h3 className="font-display text-lg font-bold text-brand-navy">
                   Daftar Seluruh Anggota Tim & Otoritas Penugasan
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -755,7 +755,7 @@ export default function OwnerDashboard() {
 
           <form onSubmit={handleSaveSettings} className="space-y-6">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-              <h3 className="font-serif text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
+              <h3 className="font-display text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
                 Informasi Kontak & Komunikasi Resmi
               </h3>
 
@@ -802,7 +802,7 @@ export default function OwnerDashboard() {
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-              <h3 className="font-serif text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
+              <h3 className="font-display text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
                 Rekening Penerimaan & Aturan Ongkir Dinamis
               </h3>
 
@@ -865,7 +865,7 @@ export default function OwnerDashboard() {
         <form onSubmit={handleSavePO} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="font-serif text-lg font-bold text-brand-navy">
+              <h3 className="font-display text-lg font-bold text-brand-navy">
                 Manajemen Periode Pre-Order (PO)
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">

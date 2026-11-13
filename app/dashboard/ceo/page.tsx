@@ -45,7 +45,7 @@ export default function CEODashboard() {
   return (
     <div className="space-y-6">
       {/* Executive Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Ringkasan Eksekutif</span>
@@ -53,7 +53,7 @@ export default function CEODashboard() {
               CHIEF EXECUTIVE OFFICER
             </span>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             Executive Leadership & Company Monitoring
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -126,7 +126,7 @@ export default function CEODashboard() {
 
       {/* Operational Pipeline Tracker */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="font-serif text-lg font-bold text-brand-navy mb-4">
+        <h3 className="font-display text-lg font-bold text-brand-navy mb-4">
           Status Alur Operasional Pesanan Lintas Divisi
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-center">

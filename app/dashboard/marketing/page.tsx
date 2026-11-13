@@ -138,7 +138,7 @@ export default function MarketingDashboard() {
     <div className="space-y-6">
       <ProductPriceManager />
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="badge-brand">Pemasaran & Display</span>
@@ -146,7 +146,7 @@ export default function MarketingDashboard() {
               DIVISI MARKETING
             </span>
           </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
             Kelola Gambar & Model Varian Produk
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -156,7 +156,7 @@ export default function MarketingDashboard() {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-brand-navy px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-brand-slate transition-all"
+          className="flex items-center gap-2 rounded-2xl bg-brand-navy px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-brand-slate active:scale-[0.98] transition-all duration-150"
         >
           <Plus size={15} /> Tambah Model Baru
         </button>
@@ -328,7 +328,7 @@ export default function MarketingDashboard() {
       {rovella && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-serif text-lg font-bold text-brand-navy">
+            <h3 className="font-display text-lg font-bold text-brand-navy">
               Daftar Model Varian Aktif ({rovella.variants.length})
             </h3>
             <span className="text-xs text-slate-500">
