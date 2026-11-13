@@ -12,6 +12,10 @@ import {
   Minus,
   Check,
   X,
+  Phone,
+  MessageCircle,
+  ExternalLink,
+  Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,11 +46,13 @@ export default function ProductionDashboard() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingStockVal, setEditingStockVal] = useState<number>(0);
 
-  // Filter production-relevant orders
-  const productionOrders = orders.filter((o) => {
-    if (filterStatus === 'all') return true;
-    return o.orderStatus === filterStatus;
-  });
+  // Filter & sort production-relevant orders (newest first)
+  const productionOrders = [...orders]
+    .filter((o) => {
+      if (filterStatus === 'all') return true;
+      return o.orderStatus === filterStatus;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const handleAdvanceStatus = (orderId: string, currentStatus: OrderStatus) => {
     let nextStatus: OrderStatus = 'in_production';
@@ -75,16 +81,16 @@ export default function ProductionDashboard() {
 
   const handleCreateMaterial = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMatName) {
+    if (!newMatName.trim()) {
       toast.error('Mohon isi nama material');
       return;
     }
 
     addInventoryItem({
-      name: newMatName,
+      name: newMatName.trim(),
       category: newMatCat,
       stock: Number(newMatStock),
-      unit: newMatUnit,
+      unit: newMatUnit.trim(),
       minThreshold: Number(newMatMin),
       unitCost: Number(newMatCost),
     });
@@ -144,11 +150,13 @@ export default function ProductionDashboard() {
           <div className="flex flex-wrap items-center gap-2">
             {[
               { id: 'all', label: 'Semua Status' },
+              { id: 'pending_confirmation', label: 'Menunggu Konfirmasi' },
               { id: 'payment_verified', label: 'Siap Diproduksi' },
               { id: 'in_production', label: 'Sedang Dirajut' },
               { id: 'quality_check', label: 'Pemeriksaan QC' },
               { id: 'packaging', label: 'Pengemasan' },
               { id: 'ready_to_ship', label: 'Siap Kirim' },
+              { id: 'completed', label: 'Selesai' },
             ].map((st) => (
               <button
                 key={st.id}
@@ -178,116 +186,205 @@ export default function ProductionDashboard() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {productionOrders.map((order) => {
-                const item = order.items[0];
+                const cleanPhone = (order.customerPhone || '').replace(/\D/g, '');
+                const waPhone = cleanPhone.startsWith('0') ? `62${cleanPhone.slice(1)}` : cleanPhone;
 
                 return (
                   <div
                     key={order.id}
-                    className="rounded-3xl border border-brand-lavender/30 bg-white p-5 shadow-xs space-y-4 hover:border-brand-lavender transition-all"
+                    className="rounded-3xl border border-brand-lavender/30 bg-white p-5 sm:p-6 shadow-xs space-y-4 hover:border-brand-lavender transition-all"
                   >
-                    <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                    {/* Top Row: Reference, Date, Delivery, Status */}
+                    <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-brand-slate">
+                          <span className="font-mono text-xs font-bold text-brand-navy">
                             {order.referenceCode}
                           </span>
                           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">
-                            {order.deliveryType}
+                            {order.deliveryType === 'school'
+                              ? 'Antar Sekolah'
+                              : order.deliveryType === 'pickup'
+                              ? 'Ambil Booth'
+                              : 'Kirim Rumah'}
                           </span>
                         </div>
-                        <h4 className="font-semibold text-sm text-slate-900 mt-1">
-                          {order.customerName} ({order.schoolName} - {order.className})
-                        </h4>
+                        <span className="text-[11px] text-slate-400 block mt-0.5">
+                          {new Date(order.createdAt).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
                       </div>
 
                       <span
                         className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${
                           order.orderStatus === 'in_production'
-                            ? 'bg-blue-100 text-blue-800'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
                             : order.orderStatus === 'quality_check'
-                            ? 'bg-purple-100 text-purple-800'
+                            ? 'bg-purple-50 text-purple-800 border border-purple-200'
                             : order.orderStatus === 'packaging'
-                            ? 'bg-amber-100 text-amber-800'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
                             : order.orderStatus === 'ready_to_ship'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : order.orderStatus === 'completed'
+                            ? 'bg-slate-100 text-slate-800'
                             : 'bg-slate-100 text-slate-700'
                         }`}
                       >
-                        {order.orderStatus.replace(/_/g, ' ')}
+                        {order.orderStatus === 'pending_confirmation'
+                          ? 'Menunggu Konfirmasi'
+                          : order.orderStatus === 'payment_verified'
+                          ? 'Siap Diproduksi'
+                          : order.orderStatus === 'in_production'
+                          ? 'Sedang Dirajut'
+                          : order.orderStatus === 'quality_check'
+                          ? 'Pemeriksaan QC'
+                          : order.orderStatus === 'packaging'
+                          ? 'Pengemasan'
+                          : order.orderStatus === 'ready_to_ship'
+                          ? 'Siap Kirim'
+                          : order.orderStatus === 'completed'
+                          ? 'Selesai'
+                          : order.orderStatus.replace(/_/g, ' ')}
                       </span>
                     </div>
 
-                    {/* Order Details & Customization Note */}
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-slate-700">
-                        <span className="text-slate-500">Varian Warna:</span>
-                        <span className="font-medium text-brand-navy">{item?.variantName}</span>
+                    {/* Customer Information */}
+                    <div className="rounded-2xl border border-slate-100 bg-[#FAF8F5] p-3 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-900">
+                          {order.customerName}
+                        </span>
+                        <span className="text-[11px] text-slate-600">
+                          {order.schoolName} — {order.className}
+                        </span>
                       </div>
-                      <div className="flex items-center justify-between text-slate-700">
-                        <span className="text-slate-500">Ukuran Tumbler:</span>
-                        <span>{item?.sizeName}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-slate-700">
-                        <span className="text-slate-500">Charm Tambahan:</span>
-                        <span>{item?.customCharm || 'Tidak ada'}</span>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-100 text-[11px] space-y-1">
-                        {item?.customization?.bottleSize && (
-                          <p className="text-slate-600">
-                            <strong>Ukuran Botol:</strong> {item.customization.bottleSize}
-                          </p>
-                        )}
-                        {item?.customization?.customNotes && (
-                          <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 font-normal">
-                            Catatan Pemesan: &quot;{item.customization.customNotes}&quot;
-                          </p>
-                        )}
-                        {item?.customization?.customImageRefUrl && (
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/50">
+                        <span className="text-slate-500">WhatsApp: {order.customerPhone}</span>
+                        {waPhone && (
                           <a
-                            href={item.customization.customImageRefUrl}
+                            href={`https://wa.me/${waPhone}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 text-brand-slate hover:bg-slate-50"
+                            className="inline-flex items-center gap-1 font-medium text-emerald-700 hover:text-emerald-800"
                           >
-                            <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md">
-                              <Image
-                                src={item.customization.customImageRefUrl}
-                                alt={`Referensi custom ${item.productName}`}
-                                fill
-                                unoptimized
-                                className="object-cover"
-                              />
-                            </span>
-                            <span className="font-medium">Lihat foto referensi pelanggan</span>
+                            <MessageCircle size={12} /> Chat Pemesan
                           </a>
                         )}
                       </div>
                     </div>
 
-                    {/* Advance Workflow Button */}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <span className="text-[10px] text-slate-400">
-                        Tercatat: {new Date(order.createdAt).toLocaleDateString('id-ID')}
-                      </span>
+                    {/* All Items in Order */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-navy">
+                        <Package size={14} className="text-brand-slate" />
+                        <span>Rincian Produk ({order.items.length} item):</span>
+                      </div>
 
-                      {order.orderStatus !== 'ready_to_ship' && order.orderStatus !== 'shipped' && order.orderStatus !== 'completed' && (
-                        <button
-                          onClick={() => handleAdvanceStatus(order.id, order.orderStatus)}
-                          className="flex items-center gap-1.5 rounded-full bg-brand-navy px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-slate shadow-xs transition-all"
-                        >
-                          {order.orderStatus === 'pending_confirmation' || order.orderStatus === 'payment_verified'
-                            ? 'Mulai Perajutan'
-                            : order.orderStatus === 'in_production'
-                            ? 'Kirim ke QC'
-                            : order.orderStatus === 'quality_check'
-                            ? 'Lolos QC, Masuk Kemas'
-                            : 'Selesai Kemas'}{' '}
-                          <ArrowRight size={12} />
-                        </button>
-                      )}
+                      <div className="space-y-2">
+                        {order.items.map((item, idx) => (
+                          <div
+                            key={item.id || idx}
+                            className="rounded-xl border border-slate-200 bg-white p-3 text-xs space-y-2"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <span className="font-bold text-brand-navy">
+                                  {item.productName}
+                                </span>
+                                <p className="text-[11px] text-slate-600 mt-0.5">
+                                  Varian: <strong className="text-slate-800">{item.variantName}</strong> · Ukuran: <strong className="text-slate-800">{item.sizeName}</strong>
+                                  {item.customCharm && ` · Charm: ${item.customCharm}`}
+                                </p>
+                              </div>
+                              <span className="font-semibold text-slate-800">
+                                {item.quantity} pcs
+                              </span>
+                            </div>
+
+                            {/* Customization Details */}
+                            {(item.customization?.bottleSize ||
+                              item.customization?.customNotes ||
+                              item.customization?.customImageRefUrl) && (
+                              <div className="pt-2 border-t border-slate-100 text-[11px] space-y-1">
+                                {item.customization.bottleSize && (
+                                  <p className="text-slate-600">
+                                    <span className="font-medium text-slate-700">Dimensi / Botol:</span> {item.customization.bottleSize}
+                                  </p>
+                                )}
+                                {item.customization.customNotes && (
+                                  <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 leading-relaxed">
+                                    <span className="font-semibold">Catatan Custom:</span> &quot;{item.customization.customNotes}&quot;
+                                  </p>
+                                )}
+                                {item.customization.customImageRefUrl && (
+                                  <a
+                                    href={item.customization.customImageRefUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 text-brand-slate hover:bg-slate-50"
+                                  >
+                                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
+                                      <Image
+                                        src={item.customization.customImageRefUrl}
+                                        alt={`Referensi custom ${item.productName}`}
+                                        fill
+                                        unoptimized
+                                        className="object-cover"
+                                      />
+                                    </span>
+                                    <span className="font-medium text-[11px]">Lihat foto referensi</span>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Order-level Notes */}
+                    {order.notes && (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-700">
+                        <span className="font-semibold text-slate-800">Catatan Pemesan:</span> {order.notes}
+                      </div>
+                    )}
+
+                    {/* Total Amount & Workflow Transition Button */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                      <div>
+                        <span className="text-[11px] text-slate-500 block">Total Pesanan:</span>
+                        <span className="font-display font-bold text-sm text-brand-navy">
+                          Rp{order.totalAmount.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+
+                      {order.orderStatus !== 'ready_to_ship' &&
+                        order.orderStatus !== 'shipped' &&
+                        order.orderStatus !== 'completed' && (
+                          <button
+                            onClick={() => handleAdvanceStatus(order.id, order.orderStatus)}
+                            className="flex items-center gap-1.5 rounded-full bg-brand-navy px-4 py-2 text-xs font-semibold text-white hover:bg-brand-slate shadow-xs transition-all"
+                          >
+                            <span>
+                              {order.orderStatus === 'pending_confirmation' || order.orderStatus === 'payment_verified'
+                                ? 'Mulai Perajutan'
+                                : order.orderStatus === 'in_production'
+                                ? 'Kirim ke QC'
+                                : order.orderStatus === 'quality_check'
+                                ? 'Lolos QC, Masuk Kemas'
+                                : 'Selesai Kemas'}
+                            </span>
+                            <ArrowRight size={13} />
+                          </button>
+                        )}
                     </div>
                   </div>
                 );
@@ -345,7 +442,7 @@ export default function ProductionDashboard() {
                     placeholder="Contoh: Benang Milk Cotton Kuning"
                     value={newMatName}
                     onChange={(e) => setNewMatName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white text-slate-900"
                   />
                 </div>
 
@@ -354,7 +451,7 @@ export default function ProductionDashboard() {
                   <select
                     value={newMatCat}
                     onChange={(e) => setNewMatCat(e.target.value as any)}
-                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white text-slate-900"
                   >
                     <option value="Benang Rajut">Benang Rajut</option>
                     <option value="Aksesoris Gantungan">Aksesoris Gantungan / Charm</option>
@@ -369,7 +466,7 @@ export default function ProductionDashboard() {
                     type="number"
                     value={newMatStock}
                     onChange={(e) => setNewMatStock(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white text-slate-900"
                   />
                 </div>
 
@@ -379,7 +476,7 @@ export default function ProductionDashboard() {
                     type="text"
                     value={newMatUnit}
                     onChange={(e) => setNewMatUnit(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white text-slate-900"
                   />
                 </div>
 
@@ -389,7 +486,7 @@ export default function ProductionDashboard() {
                     type="number"
                     value={newMatMin}
                     onChange={(e) => setNewMatMin(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white text-slate-900"
                   />
                 </div>
 
@@ -399,7 +496,7 @@ export default function ProductionDashboard() {
                     type="number"
                     value={newMatCost}
                     onChange={(e) => setNewMatCost(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-200 p-2 bg-white"
+                    className="w-full rounded-xl border border-slate-200 p-2 bg-white text-slate-900"
                   />
                 </div>
               </div>

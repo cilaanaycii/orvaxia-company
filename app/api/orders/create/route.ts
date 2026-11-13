@@ -29,6 +29,11 @@ function getCustomerImageUrl(value: unknown, supabaseUrl: string) {
   return null;
 }
 
+const normalizeIdPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  return digits.startsWith('0') ? `62${digits.slice(1)}` : digits;
+};
+
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -95,11 +100,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Hanya akun customer aktif yang dapat membuat pesanan.' }, { status: 403 });
   }
 
-  const normalizedProfilePhone = String(customer.phone || '').replace(/\D/g, '');
-  const normalizedAuthPhone = authData.user.phone.replace(/\D/g, '');
-  const normalizedRequestPhone = typeof payload.customerPhone === 'string'
-    ? payload.customerPhone.replace(/\D/g, '')
-    : '';
+  const normalizedProfilePhone = normalizeIdPhone(String(customer.phone || ''));
+  const normalizedAuthPhone = normalizeIdPhone(String(authData.user.phone || ''));
+  const normalizedRequestPhone = normalizeIdPhone(String(payload.customerPhone || ''));
   if (
     !normalizedProfilePhone ||
     normalizedProfilePhone !== normalizedAuthPhone ||
@@ -122,27 +125,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ ...(priorOrder.details as Order), id: priorOrder.id }, { status: 200 });
   }
 
-  if (typeof payload.poPeriodId !== 'string') {
-    return NextResponse.json({ error: 'Periode PO belum dipilih.' }, { status: 400 });
+  // Verify PO period
+  let activePoPeriod = null;
+  if (typeof payload.poPeriodId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.poPeriodId)) {
+    const { data, error } = await supabase
+      .from('po_periods')
+      .select('id,status,starts_at,ends_at')
+      .eq('id', payload.poPeriodId)
+      .maybeSingle();
+    if (!error && data) activePoPeriod = data;
   }
-  const { data: poPeriod, error: poError } = await supabase
-    .from('po_periods')
-    .select('id,status,starts_at,ends_at')
-    .eq('id', payload.poPeriodId)
-    .maybeSingle();
-  if (poError) {
-    console.error('Order PO period lookup failed', poError);
-    return NextResponse.json({ error: 'Periode PO gagal diverifikasi di database.' }, { status: 500 });
+  if (!activePoPeriod) {
+    const { data } = await supabase
+      .from('po_periods')
+      .select('id,status,starts_at,ends_at')
+      .eq('status', 'open')
+      .order('starts_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) activePoPeriod = data;
   }
+
   const nowDate = new Date();
   if (
-    !poPeriod ||
-    poPeriod.status !== 'open' ||
-    new Date(poPeriod.starts_at) > nowDate ||
-    new Date(poPeriod.ends_at) <= nowDate
+    activePoPeriod &&
+    (activePoPeriod.status !== 'open' ||
+      new Date(activePoPeriod.starts_at) > nowDate ||
+      new Date(activePoPeriod.ends_at) <= nowDate)
   ) {
     return NextResponse.json({ error: 'Periode pre-order tidak tersedia atau sudah ditutup.' }, { status: 400 });
   }
+
   for (const [index, item] of payload.items.entries()) {
     if (!item || typeof item !== 'object') {
       return NextResponse.json({ error: `Item pesanan nomor ${index + 1} tidak valid.` }, { status: 400 });
@@ -285,12 +298,12 @@ export async function POST(request: Request) {
     paymentMethod: payload.paymentMethod,
     paymentStatus: 'pending',
     orderStatus: 'pending_confirmation',
-    poPeriodId: typeof payload.poPeriodId === 'string' ? payload.poPeriodId.slice(0, 80) : '',
+    poPeriodId: activePoPeriod?.id || (typeof payload.poPeriodId === 'string' ? payload.poPeriodId.slice(0, 80) : ''),
     items: validatedItems,
     notes: typeof payload.notes === 'string' ? payload.notes.trim().slice(0, 1000) : '',
     createdAt: now,
     updatedAt: now,
-    auditTrail: [{ timestamp: now, changedBy: `${payload.customerName.trim()} (Customer)`, action: 'Pemesanan berhasil disimpan' }],
+    auditTrail: [{ timestamp: now, changedBy: `${customer.full_name} (Customer)`, action: 'Pemesanan berhasil disimpan' }],
   };
 
   const { data, error } = await supabase
