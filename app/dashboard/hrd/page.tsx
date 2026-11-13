@@ -263,7 +263,7 @@ export default function HRDDashboard() {
   ) {
     return (
       <div className="rounded-3xl border border-amber-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="font-serif text-2xl font-bold text-brand-navy">Akses evaluasi crew dibatasi</h2>
+        <h2 className="font-display text-2xl font-bold text-brand-navy">Akses evaluasi crew dibatasi</h2>
         <p className="mt-2 text-sm text-slate-600">
           Evaluasi kinerja hanya dapat dikelola oleh anggota HRD aktif, CEO, dan Owner.
         </p>
@@ -367,16 +367,15 @@ export default function HRDDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-brand">Pengembangan Sumber Daya Manusia</span>
-            <span className="rounded-full bg-purple-100 text-purple-800 px-2.5 py-0.5 text-[10px] font-bold">
-              DIVISI HRD
+            <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+              Divisi HRD
             </span>
           </div>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
-            Human Resource & {hrdMembers.length} Member Performance Management
-          </h2>
+          <h1 className="font-display text-2xl font-bold text-brand-navy tracking-tight mt-1 sm:text-3xl">
+            Dashboard HRD
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Database anggota ORVAXIA COMPANY, penilaian kinerja 7 indikator, bimbingan berkala, dan laporan evaluasi.
+            Database anggota tim Orvaxia, penilaian kinerja 7 indikator, bimbingan berkala, dan laporan evaluasi.
           </p>
         </div>
 
@@ -428,7 +427,7 @@ export default function HRDDashboard() {
         <div className="rounded-2xl border border-brand-lavender/30 bg-white p-4 shadow-xs">
           <p className="text-[11px] font-semibold text-slate-500">Anggota Sudah Dinilai</p>
           <p className="mt-1 font-serif text-2xl font-bold text-brand-navy">
-            {evaluatedMemberCount} / 31
+            {evaluatedMemberCount} / {hrdMembers.length}
           </p>
           <p className="mt-1 text-[11px] text-slate-400">Anggota unik pada periode {period}</p>
         </div>
@@ -562,7 +561,7 @@ export default function HRDDashboard() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
-              <span className="badge-brand">Standar Evaluasi HRD ORVAXIA</span>
+
               <h3 className="font-display text-lg font-bold text-brand-navy mt-1">
                 Formulir Penilaian Kinerja Anggota: {selectedMember.name}
               </h3>
@@ -575,7 +574,7 @@ export default function HRDDashboard() {
               <span className="text-[10px] uppercase font-bold text-slate-500 block">
                 Skor Rata-Rata:
               </span>
-              <span className="font-serif text-2xl font-bold text-brand-slate">
+              <span className="font-display text-2xl font-bold text-brand-navy">
                 {averageScore} <span className="text-xs text-slate-400">/ 100</span>
               </span>
             </div>
@@ -783,7 +782,7 @@ export default function HRDDashboard() {
             <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center space-y-2">
               <p className="text-sm font-semibold text-slate-700">Belum ada riwayat penilaian kinerja anggota</p>
               <p className="text-xs text-slate-400">
-                Divisi HRD dapat menilai 31 anggota ORVAXIA melalui tab &quot;Form Penilaian 7 Indikator&quot; di atas.
+                Divisi HRD dapat menilai anggota melalui tab &quot;Form Penilaian 7 Indikator&quot; di atas.
               </p>
             </div>
           ) : (

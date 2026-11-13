@@ -22,7 +22,7 @@ export function ProductShowcase() {
     }
   );
 
-  // Ukuran botol custom (Tinggi & Lebar/Diameter) - GRATIS!
+  // Ukuran botol custom (Tinggi & Lebar/Diameter)
   const [customBottleDimensions, setCustomBottleDimensions] = useState('Tinggi 20 cm, Diameter 7.5 cm (Standard 500-600 ml)');
   const [selectedCharm, setSelectedCharm] = useState<string>(
     rovella?.customCharms[0] || 'Tanpa Charm Tambahan'
@@ -87,38 +87,25 @@ export function ProductShowcase() {
                 onError={() => setFailedImageSource(imageSource)}
               />
             ) : (
-              /* Fallback Area Gambar Kosong Bersih (Tanpa Monogram, Tanpa Gambar AI, Tanpa Dummy) */
-              <div className="flex h-full w-full flex-col items-center justify-between p-6 text-center bg-[#FAF8F5]">
-                <div className="w-full flex justify-end">
-                  <span className="rounded-full bg-white px-2.5 py-0.5 text-[10px] font-bold text-brand-slate uppercase tracking-wider border border-brand-lavender/30">
-                    Foto Resmi
-                  </span>
-                </div>
-
-                <div className="space-y-2.5 my-auto">
+              /* Fallback Area Gambar Kosong Bersih */
+              <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center bg-[#FAF8F5]">
+                <div className="space-y-2 max-w-xs">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-lavender/30 bg-white text-brand-slate shadow-2xs">
-                    <ImageIcon size={22} strokeWidth={1.75} />
+                    <ImageIcon size={22} strokeWidth={1.5} />
                   </div>
                   <div>
-                    <h4 className="font-display text-sm font-bold text-brand-navy">
-                      Foto Model Segera Hadir
+                    <h4 className="font-display text-sm font-semibold text-brand-navy">
+                      Foto Produk Segera Hadir
                     </h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {selectedVariant?.name || 'ROVELLA'}
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Dalam persiapan tim produksi
                     </p>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 pt-1">
-                  <span className="h-3.5 w-3.5 rounded-full border border-white shadow-2xs" style={{ backgroundColor: '#606C8D' }} />
-                  <span className="h-3.5 w-3.5 rounded-full border border-white shadow-2xs" style={{ backgroundColor: '#A99AB3' }} />
-                  <span className="h-3.5 w-3.5 rounded-full border border-white shadow-2xs" style={{ backgroundColor: '#FDF5AE' }} />
-                  <span className="h-3.5 w-3.5 rounded-full border border-white shadow-2xs" style={{ backgroundColor: '#D0A9A0' }} />
                 </div>
               </div>
             )}
 
-            <div className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-slate-200 bg-white/95 px-3 py-1 text-xs font-semibold text-brand-navy shadow-xs backdrop-blur-xs">
+            <div className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-slate-200 bg-white/95 px-3 py-1 text-xs font-medium text-brand-navy shadow-xs backdrop-blur-xs">
               {selectedVariant?.name}
             </div>
           </div>
@@ -127,26 +114,23 @@ export function ProductShowcase() {
         {/* Kolom Informasi & Konfigurasi Produk */}
         <div className="flex flex-col justify-between space-y-5 lg:col-span-7">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="badge-brand">Karya SMKN 2 Buduran</span>
-              <span className="rounded-full border border-brand-peach/40 bg-brand-peach/20 px-2.5 py-0.5 text-[10px] font-bold text-brand-navy">
-                Fungsi 3-in-1
-              </span>
-            </div>
+            <p className="text-xs font-semibold text-brand-slate">
+              Produk Pilihan
+            </p>
 
-            <h3 className="mt-2 font-display text-2xl font-bold tracking-tight text-brand-navy sm:text-3xl">
+            <h3 className="mt-1 font-display text-2xl font-bold tracking-tight text-brand-navy sm:text-3xl">
               {rovella.name}
             </h3>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
+            <p className="mt-1 text-sm leading-6 text-slate-600 font-normal">
               Tas tumbler rajut buatan tangan dengan konsep inovatif untuk melengkapi keseharianmu.
             </p>
 
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-display text-2xl font-extrabold text-brand-navy">
+              <span className="font-display text-2xl font-bold text-brand-navy">
                 {canPurchase ? `Rp${productPrice.toLocaleString('id-ID')}` : 'Harga belum tersedia'}
               </span>
               <span className="text-xs text-slate-500">
-                {canPurchase ? 'Harga per item' : 'Checkout aktif setelah harga ditetapkan'}
+                {canPurchase ? 'Harga per item' : 'Pemesanan aktif setelah harga ditetapkan'}
               </span>
             </div>
           </div>
@@ -155,10 +139,10 @@ export function ProductShowcase() {
             {/* Pilihan Desain / Model Varian */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy">
+                <label className="block text-xs font-semibold text-brand-navy">
                   Pilih Model Rajutan
                 </label>
-                <span className="text-xs text-slate-500">{rovella.variants.length} pilihan</span>
+                <span className="text-xs text-slate-400">{rovella.variants.length} pilihan</span>
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {(rovella.variants || []).map((variant) => (
@@ -168,7 +152,7 @@ export function ProductShowcase() {
                     onClick={() => setSelectedVariant(variant)}
                     className={`shrink-0 flex items-center gap-2 rounded-2xl p-2 border transition-all text-left ${
                       selectedVariant?.id === variant.id
-                        ? 'border-brand-slate bg-brand-surface text-brand-navy ring-2 ring-brand-slate/40 shadow-xs font-bold'
+                        ? 'border-brand-slate bg-brand-surface text-brand-navy ring-1 ring-brand-slate shadow-xs font-semibold'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
@@ -190,20 +174,20 @@ export function ProductShowcase() {
                         {selectedVariant?.id === variant.id ? <Check size={12} /> : '•'}
                       </span>
                     )}
-                    <span className="pr-2 text-xs font-semibold leading-tight">{variant.name}</span>
+                    <span className="pr-2 text-xs font-medium leading-tight">{variant.name}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Custom Ukuran Botol (GRATIS) */}
+            {/* Custom Ukuran Botol */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy">
-                  Custom Ukuran Botol
+                <label className="block text-xs font-semibold text-brand-navy">
+                  Ukuran Botol Custom
                 </label>
-                <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
-                  GRATIS
+                <span className="text-[11px] text-slate-500">
+                  Tanpa biaya tambahan
                 </span>
               </div>
               <input
@@ -214,96 +198,67 @@ export function ProductShowcase() {
                 onChange={(e) => setCustomBottleDimensions(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3.5 text-xs text-brand-navy focus:border-brand-slate focus:bg-white focus:outline-none"
               />
-              <p className="mt-1 text-[11px] leading-4 text-slate-500">
-                Pembeli bebas menyesuaikan ukuran tas rajut dengan diameter & tinggi botol tanpa biaya tambahan.
+              <p className="mt-1 text-[11px] leading-4 text-slate-500 font-normal">
+                Ukuran tas rajut dapat disesuaikan dengan dimensi botol minum Anda.
               </p>
             </div>
 
             {/* Pilihan Charm */}
             {rovella.customCharms && rovella.customCharms.length > 0 && (
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-brand-navy">
-                  Pilihan Gantungan / Charm
+                <label className="block text-xs font-semibold text-brand-navy mb-1.5">
+                  Aksesoris Tambahan
                 </label>
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-wrap">
+                <select
+                  value={selectedCharm}
+                  onChange={(e) => setSelectedCharm(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-xs text-brand-navy focus:border-brand-slate focus:bg-white focus:outline-none"
+                >
                   {rovella.customCharms.map((charm) => (
-                    <button
-                      key={charm}
-                      type="button"
-                      onClick={() => setSelectedCharm(charm)}
-                      className={`rounded-xl px-3 py-1.5 border transition-all text-left text-xs ${
-                        selectedCharm === charm
-                          ? 'border-brand-slate bg-brand-surface text-brand-navy ring-2 ring-brand-slate/40 shadow-xs font-bold'
-                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
+                    <option key={charm} value={charm}>
                       {charm}
-                    </button>
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
             )}
 
-            {/* Jumlah & Catatan */}
-            <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-12">
-              <div className="sm:col-span-4">
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-brand-navy">
-                  Jumlah
-                </label>
-                <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="h-8 w-8 rounded-lg bg-slate-100 font-bold hover:bg-slate-200 flex items-center justify-center text-slate-700"
-                  >
-                    -
-                  </button>
-                  <span className="flex-1 text-center font-bold text-xs">{quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => Math.min(20, q + 1))}
-                    className="h-8 w-8 rounded-lg bg-slate-100 font-bold hover:bg-slate-200 flex items-center justify-center text-slate-700"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div className="sm:col-span-8">
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-brand-navy">
-                  Catatan Tambahan
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Request inisial atau catatan ukuran khusus"
-                  value={customNotes}
-                  onChange={(e) => setCustomNotes(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs focus:border-brand-slate focus:outline-none"
-                />
-              </div>
+            {/* Catatan Khusus */}
+            <div>
+              <label className="block text-xs font-semibold text-brand-navy mb-1">
+                Catatan Pesanan (opsional)
+              </label>
+              <input
+                type="text"
+                placeholder="Contoh: Warna tali ingin dibuat lebih panjang"
+                value={customNotes}
+                onChange={(e) => setCustomNotes(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 px-3 text-xs text-brand-navy focus:border-brand-slate focus:bg-white focus:outline-none"
+              />
             </div>
-          </div>
 
-          {/* Tombol Aksi */}
-          <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-100">
-            <button
-              onClick={handleDirectCheckout}
-              disabled={!canPurchase}
-              title={!canPurchase ? 'Harga produk belum ditetapkan' : undefined}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-navy py-3 text-xs font-bold uppercase tracking-wider text-white shadow-brand-sm transition-all duration-200 hover:bg-brand-slate active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              <ShoppingBag size={16} />
-              <span>Lanjutkan Pemesanan</span>
-              <ArrowRight size={15} />
-            </button>
-            <button
-              onClick={handleAddToCart}
-              disabled={!canPurchase}
-              title={!canPurchase ? 'Harga produk belum ditetapkan' : undefined}
-              className="min-h-11 w-full rounded-full border border-brand-lavender/40 bg-white py-2.5 text-xs font-bold uppercase tracking-wider text-brand-navy shadow-xs transition-all duration-200 hover:border-brand-slate hover:bg-brand-surface active:scale-95 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
-            >
-              <span>Tambah ke Keranjang</span>
-            </button>
+            {/* Tombol Aksi */}
+            <div className="flex flex-col gap-2.5 pt-2 sm:flex-row">
+              <button
+                type="button"
+                disabled={!canPurchase}
+                onClick={handleAddToCart}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-brand-lavender/40 bg-white py-3 text-xs font-semibold text-brand-navy shadow-xs transition-all duration-150 hover:border-brand-slate hover:bg-brand-surface active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                <ShoppingBag size={14} />
+                <span>Tambah ke Keranjang</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={!canPurchase}
+                onClick={handleDirectCheckout}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-brand-navy py-3 text-xs font-semibold text-white shadow-xs transition-all duration-150 hover:bg-brand-slate active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                <span>Beli Sekarang</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

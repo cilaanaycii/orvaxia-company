@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { useCompanyStore } from '@/lib/store/company-store';
-import { Network, Users } from 'lucide-react';
 
 const DIVISIONS = [
   'Kesekretariatan',
@@ -42,7 +41,7 @@ export function OrgStructureTree() {
         ? 'border-brand-lavender/60 bg-white shadow-2xs'
         : 'border-slate-100 bg-white/80 hover:bg-white'
     }`}>
-      <p className="text-xs font-bold leading-5 text-brand-navy">{name}</p>
+      <p className="text-xs font-semibold leading-5 text-brand-navy">{name}</p>
       <p className="mt-0.5 text-[11px] leading-4 text-slate-500">{position || 'Anggota Tim'}</p>
     </div>
   );
@@ -50,18 +49,14 @@ export function OrgStructureTree() {
   return (
     <div className="w-full space-y-8">
       <div className="mx-auto max-w-2xl text-center space-y-2">
-        <span className="badge-brand">
-          <Network size={12} className="text-brand-slate" />
-          Struktur Resmi
-        </span>
         <h2 className="font-display text-2xl font-bold tracking-tight text-brand-navy sm:text-3xl">
-          Bagan Organisasi Perusahaan
+          Bagan Organisasi
         </h2>
         <p className="text-xs leading-5 text-slate-600 sm:text-sm">
-          Susunan tim resmi ORVAXIA COMPANY yang dikelola oleh divisi HRD.
+          Susunan tim resmi Orvaxia.
         </p>
-        <span className="inline-block rounded-full bg-brand-surface px-3 py-1 text-[11px] font-semibold text-brand-slate border border-brand-lavender/30">
-          {members.length} dari 31 anggota aktif tercatat
+        <span className="inline-block rounded-full bg-brand-surface px-3 py-1 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+          {members.length} anggota aktif
         </span>
       </div>
 
@@ -69,11 +64,11 @@ export function OrgStructureTree() {
       <div className="flex flex-col items-center">
         {ceo ? (
           <div className="w-full max-w-sm rounded-2xl bg-brand-navy p-5 text-center text-white shadow-brand-sm">
-            <span className="rounded-full bg-white/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-peach">
-              Pimpinan Tertinggi
+            <span className="text-[11px] font-medium text-brand-peach">
+              Pimpinan Utama
             </span>
-            <p className="mt-2 font-display text-lg font-bold">{ceo.name}</p>
-            <p className="mt-0.5 text-xs text-white/80 font-medium">{ceo.position}</p>
+            <p className="mt-1.5 font-display text-lg font-bold">{ceo.name}</p>
+            <p className="mt-0.5 text-xs text-white/80 font-normal">{ceo.position}</p>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 text-center">
@@ -111,10 +106,10 @@ export function OrgStructureTree() {
             >
               <div>
                 <div className="mb-3.5 flex items-center justify-between border-b border-brand-lavender/25 pb-2.5">
-                  <h3 className="font-display text-xs font-bold uppercase tracking-wider text-brand-navy">
+                  <h3 className="font-display text-sm font-semibold text-brand-navy">
                     Divisi {name}
                   </h3>
-                  <span className="text-[10px] font-semibold text-brand-slate">
+                  <span className="text-xs text-brand-slate">
                     {orderedMembers.length} anggota
                   </span>
                 </div>

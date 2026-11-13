@@ -5,24 +5,15 @@ import { useCompanyStore } from '@/lib/store/company-store';
 import { UserRole, UserProfile } from '@/lib/types';
 import {
   ShieldCheck,
-  UserCheck,
-  UserX,
-  Settings,
-  Clock,
-  Truck,
-  CheckCircle,
-  FileText,
-  AlertTriangle,
-  Save,
   RotateCcw,
-  Sparkles,
   Users,
   Edit2,
   Trash2,
   Check,
   X,
-  KeyRound,
   Mail,
+  Save,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TeamProfileManager } from '@/components/team/TeamProfileManager';
@@ -55,7 +46,7 @@ export default function OwnerDashboard() {
     setIsSyncing(true);
     const synced = await syncWithCloud();
     setIsSyncing(false);
-    if (synced) toast.success('Data cloud berhasil disegarkan!');
+    if (synced) toast.success('Data berhasil diperbarui.');
   };
 
   // Form states for settings
@@ -152,161 +143,127 @@ export default function OwnerDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-brand">Pemegang Kendali Website</span>
-            <span className="rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold">
-              👑 SUPER ADMIN / OWNER
+            <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+              Owner
             </span>
             <button
               onClick={handleManualSync}
               disabled={isSyncing}
-              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition-all shadow-2xs"
-              title="Periksa pendaftaran crew baru yang masuk dari HP"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-2xs"
             >
-              <span className={`h-2 w-2 rounded-full bg-emerald-500 ${isSyncing ? 'animate-ping' : 'animate-pulse'}`} />
-              <span>{isSyncing ? 'Menyinkronkan...' : 'Segarkan Data Cloud'}</span>
+              <span>{isSyncing ? 'Menyinkronkan...' : 'Segarkan Data'}</span>
             </button>
           </div>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
-            Owner & Website Controller Panel
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Akun Masuk: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-brand-slate">{currentUser?.email}</code> · Anda berhak penuh mengarahkan posisi/role setiap crew dan mengatur seluruh sistem.
-          </p>
+          <h1 className="font-display text-2xl font-bold text-brand-navy tracking-tight mt-1 sm:text-3xl">
+            Panel Owner
+          </h1>
         </div>
 
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('approvals')}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-medium transition-all ${
               activeTab === 'approvals'
                 ? 'bg-brand-navy text-white shadow-xs'
                 : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
-            Arahan Crew Baru ({pendingUsers.length})
+            Persetujuan Anggota ({pendingUsers.length})
           </button>
           <button
             onClick={() => setActiveTab('all_crew')}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-medium transition-all ${
               activeTab === 'all_crew'
                 ? 'bg-brand-navy text-white shadow-xs'
                 : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
-            Kelola Seluruh Crew ({users.length})
+            Kelola Anggota ({users.length})
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-medium transition-all ${
               activeTab === 'settings'
                 ? 'bg-brand-navy text-white shadow-xs'
                 : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
-            Pengaturan & Reset Data
+            Pengaturan
           </button>
           <button
             onClick={() => setActiveTab('po')}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-medium transition-all ${
               activeTab === 'po'
                 ? 'bg-brand-navy text-white shadow-xs'
                 : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
-            Kontrol Pre-Order
+            Pre-Order
           </button>
           <button
             onClick={() => setActiveTab('team')}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-medium transition-all ${
               activeTab === 'team'
                 ? 'bg-brand-navy text-white shadow-xs'
                 : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
-            Direktori Anggota
+            Direktori Tim
           </button>
         </div>
       </div>
 
-      {/* Crew invitation codes are server-side environment configuration. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 border border-amber-300 p-4 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-            <KeyRound size={20} />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-xs text-amber-950">Kode undangan crew disimpan aman di server.</span>
-            </div>
-            <p className="text-[11px] text-amber-800/80 mt-0.5">
-              Atur melalui variabel lingkungan CREW_INVITATION_CODE pada konfigurasi server, lalu bagikan secara pribadi kepada crew resmi.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Division Summary Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Produksi</span>
+          <span className="text-xs text-slate-500 block">Produksi</span>
           <span className="font-display text-lg font-bold text-brand-navy">{countProduksi}</span>
-          <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Sales</span>
+          <span className="text-xs text-slate-500 block">Sales</span>
           <span className="font-display text-lg font-bold text-brand-navy">{countSales}</span>
-          <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Finance</span>
+          <span className="text-xs text-slate-500 block">Finance</span>
           <span className="font-display text-lg font-bold text-brand-navy">{countFinance}</span>
-          <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Marketing</span>
+          <span className="text-xs text-slate-500 block">Marketing</span>
           <span className="font-display text-lg font-bold text-brand-navy">{countMarketing}</span>
-          <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">HRD</span>
+          <span className="text-xs text-slate-500 block">HRD</span>
           <span className="font-display text-lg font-bold text-brand-navy">{countHRD}</span>
-          <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">PR / Humas</span>
+          <span className="text-xs text-slate-500 block">PR</span>
           <span className="font-display text-lg font-bold text-brand-navy">{countPR}</span>
-          <span className="text-[9px] text-slate-400 block">Crew</span>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">CEO Exec</span>
+          <span className="text-xs text-slate-500 block">CEO</span>
           <span className="font-display text-lg font-bold text-brand-navy">{countCEO}</span>
-          <span className="text-[9px] text-slate-400 block">Pimpinan</span>
         </div>
         <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 text-center shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-amber-700 block">Pending</span>
-          <span className="font-serif text-lg font-bold text-amber-800">{pendingUsers.length}</span>
-          <span className="text-[9px] text-amber-600 block">Menunggu Arahan</span>
+          <span className="text-xs text-amber-800 block">Menunggu</span>
+          <span className="font-display text-lg font-bold text-amber-900">{pendingUsers.length}</span>
         </div>
       </div>
 
       {/* ================= TAB 1: PENDING CREW APPROVALS & DIRECTION ================= */}
       {activeTab === 'approvals' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="rounded-3xl border border-amber-200 bg-amber-50/40 p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <AlertTriangle size={18} className="text-amber-600" />
-              <h3 className="font-bold text-sm text-slate-900">
-                Pendaftaran Crew yang Menunggu Arahan Anda ({pendingUsers.length})
-              </h3>
+              <h2 className="font-display text-base font-bold text-slate-900">
+                Persetujuan Anggota ({pendingUsers.length})
+              </h2>
             </div>
-            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-              Setiap anggota crew mendaftar menggunakan email pribadi mereka masing-masing. Sesuai aturan perusahaan, <strong>yang mengarahkan dan menetapkan dia menjadi apa adalah Owner</strong>. Silakan pilih peran dan divisinya di bawah ini lalu tekan <strong>Setujui & Tetapkan</strong>.
-            </p>
 
             {pendingUsers.length === 0 ? (
-              <div className="text-xs text-slate-500 italic bg-white p-5 rounded-2xl border border-slate-200 text-center">
-                ✨ Tidak ada crew yang menunggu persetujuan. Semua crew telah diarahkan ke divisinya masing-masing.
+              <div className="text-xs text-slate-500 bg-white p-5 rounded-2xl border border-slate-200 text-center">
+                Tidak ada pendaftaran anggota yang menunggu persetujuan.
               </div>
             ) : (
               <div className="space-y-4">
@@ -318,43 +275,43 @@ export default function OwnerDashboard() {
                   return (
                     <div
                       key={user.id}
-                      className="rounded-3xl border border-amber-300 bg-white p-5 shadow-sm space-y-4 hover:border-brand-lavender transition-all"
+                      className="rounded-2xl border border-amber-300 bg-white p-5 shadow-sm space-y-4"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-base text-slate-900">{user.fullName}</span>
-                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
-                              Menunggu Arahan Owner
+                            <span className="font-semibold text-sm text-slate-900">{user.fullName}</span>
+                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs text-amber-800">
+                              Menunggu
                             </span>
                           </div>
                           <p className="text-xs text-slate-600 mt-0.5">
-                            Email Pribadi: <strong className="text-slate-800">{user.email}</strong> · WhatsApp: {user.phone}
+                            Email: {user.email} · WhatsApp: {user.phone}
                           </p>
-                          <p className="text-xs text-brand-slate font-medium">
-                            Minat Divisi Awal: <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">{user.division || 'Belum Ditentukan'}</span>
+                          <p className="text-xs text-brand-slate">
+                            Minat Divisi: {user.division || 'Belum Ditentukan'}
                           </p>
                         </div>
 
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => rejectStaff(user.id)}
-                            className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+                            className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 transition-colors"
                           >
-                            ✕ Tolak
+                            Tolak
                           </button>
                         </div>
                       </div>
 
-                      {/* Direction Controls (Owner Assigns Role) */}
+                      {/* Direction Controls */}
                       <div className="rounded-2xl bg-brand-surface/50 border border-brand-lavender/30 p-4 space-y-3">
-                        <span className="font-bold text-xs text-brand-navy block">
-                          Arahkan Anggota Ini Menjadi:
+                        <span className="text-xs font-medium text-brand-navy block">
+                          Tetapkan Peran:
                         </span>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                           <div>
-                            <label className="font-semibold text-slate-700 block mb-1">
+                            <label className="font-medium text-slate-700 block mb-1">
                               Hak Akses Role
                             </label>
                             <select
@@ -385,22 +342,22 @@ export default function OwnerDashboard() {
                                   setPendingPositionMap((prev) => ({ ...prev, [user.id]: 'Chief Executive Officer' }));
                                 }
                               }}
-                              className="w-full rounded-xl border border-slate-200 p-2 bg-white font-medium focus:border-brand-slate focus:outline-none"
+                              className="w-full rounded-xl border border-slate-200 p-2 bg-white font-normal focus:border-brand-slate focus:outline-none"
                             >
-                              <option value="production">✂️ Divisi Produksi (Rajutan)</option>
-                              <option value="sales">🚚 Divisi Sales & Distribusi</option>
-                              <option value="finance">💰 Divisi Finance (Keuangan)</option>
-                              <option value="marketing">🎨 Divisi Marketing</option>
-                              <option value="hrd">👥 Divisi HRD</option>
-                              <option value="pr">📢 Divisi Public Relations (PR)</option>
-                              <option value="ceo">💼 CEO Executive</option>
-                              <option value="member">📝 Anggota Umum</option>
-                              <option value="owner">👑 Super Admin / Owner</option>
+                              <option value="production">Divisi Produksi</option>
+                              <option value="sales">Divisi Sales & Distribusi</option>
+                              <option value="finance">Divisi Finance</option>
+                              <option value="marketing">Divisi Marketing</option>
+                              <option value="hrd">Divisi HRD</option>
+                              <option value="pr">Divisi Public Relations</option>
+                              <option value="ceo">CEO Executive</option>
+                              <option value="member">Anggota Umum</option>
+                              <option value="owner">Owner</option>
                             </select>
                           </div>
 
                           <div>
-                            <label className="font-semibold text-slate-700 block mb-1">
+                            <label className="font-medium text-slate-700 block mb-1">
                               Nama Divisi
                             </label>
                             <input
@@ -414,8 +371,8 @@ export default function OwnerDashboard() {
                           </div>
 
                           <div>
-                            <label className="font-semibold text-slate-700 block mb-1">
-                              Jabatan / Posisi
+                            <label className="font-medium text-slate-700 block mb-1">
+                              Jabatan
                             </label>
                             <input
                               type="text"
@@ -428,10 +385,10 @@ export default function OwnerDashboard() {
                           </div>
                         </div>
 
-                        {/* Quick Presets & Confirm */}
+                        {/* Presets & Confirm */}
                         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-brand-lavender/30">
-                          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                            <span className="text-slate-400 font-semibold mr-1">Preset Cepat:</span>
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                            <span className="text-slate-400 mr-1">Preset:</span>
                             <button
                               type="button"
                               onClick={() => {
@@ -492,10 +449,10 @@ export default function OwnerDashboard() {
                           <button
                             type="button"
                             onClick={() => handleApproveWithCustom(user)}
-                            className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-1.5"
+                            className="rounded-xl bg-brand-navy px-4 py-2 text-xs font-medium text-white hover:bg-brand-slate shadow-sm transition-all flex items-center gap-1.5"
                           >
                             <Check size={14} />
-                            <span>Tetapkan & Aktifkan Crew</span>
+                            <span>Setujui & Tetapkan</span>
                           </button>
                         </div>
                       </div>
@@ -508,59 +465,59 @@ export default function OwnerDashboard() {
         </div>
       )}
 
-      {/* ================= TAB 2: ALL CREW MANAGEMENT (CHANGE ROLES) ================= */}
+      {/* ================= TAB 2: ALL CREW MANAGEMENT ================= */}
       {activeTab === 'all_crew' && (
         <div className="space-y-6">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-display text-lg font-bold text-brand-navy">
-                  Daftar Seluruh Anggota Tim & Otoritas Penugasan
+                  Daftar Anggota Tim
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Sebagai Owner, Anda dapat memindahkan divisi atau mengubah jabatan anggota kapan saja.
+                  Pengelolaan divisi dan jabatan anggota.
                 </p>
               </div>
             </div>
 
             {/* Inline Editor if active */}
             {editingUserId && (
-              <div className="rounded-2xl border-2 border-brand-slate bg-brand-surface/40 p-4 space-y-3">
+              <div className="rounded-2xl border border-brand-slate bg-brand-surface/40 p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-xs text-brand-navy">
-                    Ubah Penugasan Crew: {users.find((u) => u.id === editingUserId)?.fullName}
+                  <h4 className="font-semibold text-xs text-brand-navy">
+                    Ubah Penugasan: {users.find((u) => u.id === editingUserId)?.fullName}
                   </h4>
                   <button
                     type="button"
                     onClick={() => setEditingUserId(null)}
-                    className="text-slate-400 hover:text-slate-700 text-xs font-bold"
+                    className="text-slate-400 hover:text-slate-700 text-xs"
                   >
-                    ✕ Batal
+                    Batal
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Role Dashboard</label>
+                    <label className="font-medium text-slate-700 block mb-1">Role Dashboard</label>
                     <select
                       value={editRole}
                       onChange={(e) => setEditRole(e.target.value as UserRole)}
                       className="w-full rounded-xl border border-slate-200 p-2 bg-white"
                     >
-                      <option value="production">✂️ Divisi Produksi</option>
-                      <option value="sales">🚚 Divisi Sales & Distribusi</option>
-                      <option value="finance">💰 Divisi Finance</option>
-                      <option value="marketing">🎨 Divisi Marketing</option>
-                      <option value="hrd">👥 Divisi HRD</option>
-                      <option value="pr">📢 Divisi Public Relations</option>
-                      <option value="ceo">💼 CEO Executive</option>
-                      <option value="member">📝 Anggota Umum</option>
-                      <option value="owner">👑 Super Admin / Owner</option>
+                      <option value="production">Divisi Produksi</option>
+                      <option value="sales">Divisi Sales & Distribusi</option>
+                      <option value="finance">Divisi Finance</option>
+                      <option value="marketing">Divisi Marketing</option>
+                      <option value="hrd">Divisi HRD</option>
+                      <option value="pr">Divisi Public Relations</option>
+                      <option value="ceo">CEO Executive</option>
+                      <option value="member">Anggota Umum</option>
+                      <option value="owner">Owner</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Divisi</label>
+                    <label className="font-medium text-slate-700 block mb-1">Divisi</label>
                     <input
                       type="text"
                       value={editDivision}
@@ -570,7 +527,7 @@ export default function OwnerDashboard() {
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Posisi / Jabatan</label>
+                    <label className="font-medium text-slate-700 block mb-1">Posisi / Jabatan</label>
                     <input
                       type="text"
                       value={editPosition}
@@ -584,16 +541,16 @@ export default function OwnerDashboard() {
                   <button
                     type="button"
                     onClick={() => setEditingUserId(null)}
-                    className="rounded-xl border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                    className="rounded-xl border border-slate-200 px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
                   >
                     Batal
                   </button>
                   <button
                     type="button"
                     onClick={saveEditUser}
-                    className="rounded-xl bg-brand-slate px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-navy shadow-sm"
+                    className="rounded-xl bg-brand-navy px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-slate shadow-sm"
                   >
-                    Simpan Arahan Baru
+                    Simpan Perubahan
                   </button>
                 </div>
               </div>
@@ -602,14 +559,14 @@ export default function OwnerDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
-                    <th className="pb-3 font-semibold">Nama Crew</th>
-                    <th className="pb-3 font-semibold">Email Pribadi</th>
-                    <th className="pb-3 font-semibold">Role Terpasang</th>
-                    <th className="pb-3 font-semibold">Divisi</th>
-                    <th className="pb-3 font-semibold">Jabatan</th>
-                    <th className="pb-3 font-semibold">Status</th>
-                    <th className="pb-3 font-semibold text-right">Opsi Owner</th>
+                  <tr className="border-b border-slate-200 text-slate-400 text-xs">
+                    <th className="pb-3 font-medium">Nama Anggota</th>
+                    <th className="pb-3 font-medium">Email</th>
+                    <th className="pb-3 font-medium">Role</th>
+                    <th className="pb-3 font-medium">Divisi</th>
+                    <th className="pb-3 font-medium">Jabatan</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium text-right">Opsi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -618,17 +575,17 @@ export default function OwnerDashboard() {
 
                     return (
                       <tr key={usr.id} className="hover:bg-slate-50/80">
-                        <td className="py-3 font-bold text-slate-900">
+                        <td className="py-3 font-semibold text-slate-900">
                           {usr.fullName}
                           {isUserOwner && (
-                            <span className="ml-1.5 rounded-full bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.2 font-bold">
-                              👑 Owner
+                            <span className="ml-1.5 rounded-full bg-brand-surface px-1.5 py-0.5 text-[10px] text-brand-slate border border-brand-lavender/30">
+                              Owner
                             </span>
                           )}
                         </td>
                         <td className="py-3 text-slate-600 font-mono text-[11px]">{usr.email}</td>
                         <td className="py-3">
-                          <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-[10px] font-bold text-brand-slate uppercase border border-brand-lavender/30">
+                          <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs text-brand-slate border border-brand-lavender/30">
                             {usr.role}
                           </span>
                         </td>
@@ -636,7 +593,7 @@ export default function OwnerDashboard() {
                         <td className="py-3 text-slate-600">{usr.position || '-'}</td>
                         <td className="py-3">
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                               usr.status === 'active'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : 'bg-amber-100 text-amber-800'
@@ -652,16 +609,16 @@ export default function OwnerDashboard() {
                                 <>
                                   <button
                                     onClick={() => confirmCrewAccount(usr.id)}
-                                    className="rounded-lg border border-emerald-200 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors inline-flex items-center gap-1"
-                                    title="Konfirmasi akun agar crew dapat masuk tanpa verifikasi email"
+                                    className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1"
+                                    title="Konfirmasi akun"
                                   >
                                     <ShieldCheck size={11} />
-                                    <span>Konfirmasi Akun</span>
+                                    <span>Konfirmasi</span>
                                   </button>
                                   <button
                                     onClick={() => resendApprovalEmail(usr.id)}
-                                    className="rounded-lg border border-sky-200 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-50 transition-colors inline-flex items-center gap-1"
-                                    title="Kirim ulang email persetujuan"
+                                    className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1"
+                                    title="Kirim email persetujuan"
                                   >
                                     <Mail size={11} />
                                     <span>Kirim Email</span>
@@ -670,10 +627,10 @@ export default function OwnerDashboard() {
                               )}
                               <button
                                 onClick={() => startEditUser(usr)}
-                                className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center gap-1"
+                                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center gap-1"
                               >
                                 <Edit2 size={11} />
-                                <span>Arahkan Role</span>
+                                <span>Ubah Peran</span>
                               </button>
                               <button
                                 onClick={() => {
@@ -681,15 +638,15 @@ export default function OwnerDashboard() {
                                     deleteUser(usr.id);
                                   }
                                 }}
-                                className="rounded-lg border border-rose-200 px-2 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                                className="rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors"
                                 title="Hapus Akun"
                               >
                                 <Trash2 size={11} />
                               </button>
                             </>
                           ) : (
-                            <span className="text-[10px] text-slate-400 italic font-medium">
-                              Pemegang Kendali
+                            <span className="text-xs text-slate-400">
+                              Owner
                             </span>
                           )}
                         </td>
@@ -706,63 +663,63 @@ export default function OwnerDashboard() {
       {/* ================= TAB 3: PLATFORM SETTINGS & RESET ================= */}
       {activeTab === 'settings' && (
         <div className="space-y-6">
-          {/* Reset All Operational Data to 0 Card */}
-          <div className="rounded-3xl border-2 border-rose-200 bg-rose-50/40 p-6 shadow-sm space-y-3">
+          {/* Reset Operational Data Card */}
+          <div className="rounded-3xl border border-rose-200 bg-rose-50/40 p-6 shadow-sm space-y-3">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
                   <RotateCcw size={18} className="text-rose-600" />
-                  <h3 className="font-serif text-lg font-bold text-rose-950">
-                    Reset Semua Data Operasional ke 0
+                  <h3 className="font-display text-base font-bold text-rose-950">
+                    Reset Data Operasional ke 0
                   </h3>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                  Gunakan tombol ini untuk mengosongkan semua data pesanan pelanggan, buku kas keuangan, riwayat ulasan HRD, tugas, dan stok bahan agar <strong>semuanya bernilai 0</strong> dan siap diedit secara mandiri oleh masing-masing crew divisi.
+                  Gunakan tombol ini untuk mengosongkan semua data pesanan pelanggan, buku kas keuangan, riwayat ulasan HRD, tugas, dan stok bahan agar siap diedit secara mandiri oleh masing-masing divisi.
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleResetConfirm}
-                className="shrink-0 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-5 py-2.5 shadow-sm transition-all flex items-center gap-1.5"
+                className="shrink-0 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs px-5 py-2.5 shadow-sm transition-all flex items-center gap-1.5"
               >
                 <RotateCcw size={14} />
-                <span>Buat Semua Jadi 0</span>
+                <span>Reset ke 0</span>
               </button>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs text-slate-600">
               <div className="bg-white p-2.5 rounded-xl border border-rose-100">
-                <span className="text-[10px] text-slate-400 block">Total Pesanan:</span>
-                <span className="font-bold text-sm text-slate-800">{orders.length} pesanan</span>
+                <span className="text-xs text-slate-400 block">Total Pesanan:</span>
+                <span className="font-semibold text-sm text-slate-800">{orders.length} pesanan</span>
               </div>
               <div className="bg-white p-2.5 rounded-xl border border-rose-100">
-                <span className="text-[10px] text-slate-400 block">Total Transaksi Kas:</span>
-                <span className="font-bold text-sm text-slate-800">{transactions.length} catatan</span>
+                <span className="text-xs text-slate-400 block">Total Transaksi Kas:</span>
+                <span className="font-semibold text-sm text-slate-800">{transactions.length} catatan</span>
               </div>
               <div className="bg-white p-2.5 rounded-xl border border-rose-100">
-                <span className="text-[10px] text-slate-400 block">Total Stok Bahan:</span>
-                <span className="font-bold text-sm text-slate-800">
+                <span className="text-xs text-slate-400 block">Total Stok Bahan:</span>
+                <span className="font-semibold text-sm text-slate-800">
                   {inventory.reduce((a, b) => a + b.stock, 0)} unit
                 </span>
               </div>
               <div className="bg-white p-2.5 rounded-xl border border-rose-100">
-                <span className="text-[10px] text-slate-400 block">Pesanan PO Masuk:</span>
-                <span className="font-bold text-sm text-slate-800">{poPeriod.orderedCount} pcs</span>
+                <span className="text-xs text-slate-400 block">Pesanan PO Masuk:</span>
+                <span className="font-semibold text-sm text-slate-800">{poPeriod.orderedCount} pcs</span>
               </div>
             </div>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-6">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-              <h3 className="font-display text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
-                Informasi Kontak & Komunikasi Resmi
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+              <h3 className="font-display text-base font-bold text-brand-navy border-b border-slate-100 pb-3">
+                Informasi Kontak
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="font-semibold text-slate-800 block mb-1">
-                    Nomor WhatsApp Gateway Perusahaan
+                  <label className="font-medium text-slate-800 block mb-1">
+                    Nomor WhatsApp Perusahaan
                   </label>
                   <input
                     type="text"
@@ -771,12 +728,12 @@ export default function OwnerDashboard() {
                     className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Digunakan untuk menerima konfirmasi checkout otomatis dari pelanggan.
+                    Digunakan untuk menerima konfirmasi checkout dari pelanggan.
                   </p>
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-800 block mb-1">
+                  <label className="font-medium text-slate-800 block mb-1">
                     Email Perusahaan
                   </label>
                   <input
@@ -788,8 +745,8 @@ export default function OwnerDashboard() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-semibold text-slate-800 block mb-1">
-                    Alamat Resmi & Titik Acuan Pengiriman
+                  <label className="font-medium text-slate-800 block mb-1">
+                    Alamat Operasional
                   </label>
                   <input
                     type="text"
@@ -801,15 +758,15 @@ export default function OwnerDashboard() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-              <h3 className="font-display text-lg font-bold text-brand-navy border-b border-slate-100 pb-3">
-                Rekening Penerimaan & Aturan Ongkir Dinamis
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+              <h3 className="font-display text-base font-bold text-brand-navy border-b border-slate-100 pb-3">
+                Rekening Pembayaran & Pengiriman
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="font-semibold text-slate-800 block mb-1">
-                    Nomor Rekening Bank Resmi
+                  <label className="font-medium text-slate-800 block mb-1">
+                    Nomor Rekening Bank
                   </label>
                   <input
                     type="text"
@@ -820,7 +777,7 @@ export default function OwnerDashboard() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-800 block mb-1">
+                  <label className="font-medium text-slate-800 block mb-1">
                     Atas Nama Pemilik Rekening
                   </label>
                   <input
@@ -832,8 +789,8 @@ export default function OwnerDashboard() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-800 block mb-1">
-                    Tarif Ongkir Jarak 6–7 km (Dapat Diatur Admin)
+                  <label className="font-medium text-slate-800 block mb-1">
+                    Tarif Pengiriman 6–7 km
                   </label>
                   <input
                     type="number"
@@ -841,18 +798,15 @@ export default function OwnerDashboard() {
                     onChange={(e) => setShippingRange6To7(Number(e.target.value))}
                     className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-brand-slate focus:outline-none"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Jarak 1-2 km: Rp0 (Gratis SMKN 2), 3-5 km: Rp3.000, &gt;7 km: Rp5.000.
-                  </p>
                 </div>
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 rounded-full bg-brand-slate px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-brand-navy"
+                  className="flex items-center gap-2 rounded-full bg-brand-navy px-6 py-2.5 text-xs font-medium text-white shadow-xs hover:bg-brand-slate"
                 >
-                  <Save size={14} /> Simpan Seluruh Pengaturan
+                  <Save size={14} /> Simpan Pengaturan
                 </button>
               </div>
             </div>
@@ -862,18 +816,18 @@ export default function OwnerDashboard() {
 
       {/* ================= TAB 4: PO CONTROL ================= */}
       {activeTab === 'po' && (
-        <form onSubmit={handleSavePO} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+        <form onSubmit={handleSavePO} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="font-display text-lg font-bold text-brand-navy">
+              <h3 className="font-display text-base font-bold text-brand-navy">
                 Manajemen Periode Pre-Order (PO)
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Atur kuota PO, pengumuman, dan status yang tampil di banner countdown publik.
+                Atur kuota PO, pengumuman, dan status periode.
               </p>
             </div>
             <span
-              className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
                 poPeriod.status === 'open'
                   ? 'bg-emerald-100 text-emerald-800'
                   : 'bg-rose-100 text-rose-800'
@@ -885,7 +839,7 @@ export default function OwnerDashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">
+              <label className="font-medium text-slate-800 block mb-1">
                 Judul Periode Pre-Order
               </label>
               <input
@@ -897,7 +851,7 @@ export default function OwnerDashboard() {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">
+              <label className="font-medium text-slate-800 block mb-1">
                 Batas Kuota Pesanan (Pcs)
               </label>
               <input
@@ -912,7 +866,7 @@ export default function OwnerDashboard() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="font-semibold text-slate-800 block mb-1">
+              <label className="font-medium text-slate-800 block mb-1">
                 Pengumuman Tambahan PO
               </label>
               <textarea
@@ -927,9 +881,9 @@ export default function OwnerDashboard() {
           <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-full bg-brand-slate px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-brand-navy"
+              className="flex items-center gap-2 rounded-full bg-brand-navy px-6 py-2.5 text-xs font-medium text-white shadow-xs hover:bg-brand-slate"
             >
-              <Save size={14} /> Simpan Perubahan PO
+              <Save size={14} /> Simpan Perubahan
             </button>
             <button
               type="button"
@@ -937,9 +891,9 @@ export default function OwnerDashboard() {
                 const nextStatus = poPeriod.status === 'open' ? 'closed' : 'open';
                 updatePOPeriod({ status: nextStatus });
               }}
-              className="rounded-full border border-slate-300 px-5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+              className="rounded-full border border-slate-300 px-5 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
             >
-              {poPeriod.status === 'open' ? 'Tutup PO Secara Manual' : 'Buka Kembali Periode PO'}
+              {poPeriod.status === 'open' ? 'Tutup PO' : 'Buka Periode PO'}
             </button>
           </div>
         </form>

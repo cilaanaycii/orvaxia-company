@@ -153,16 +153,15 @@ export default function PRDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-brand">Komunikasi & Hubungan Masyarakat</span>
-            <span className="rounded-full bg-rose-100 text-rose-800 px-2.5 py-0.5 text-[10px] font-bold">
-              DIVISI PUBLIC RELATIONS
+            <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+              Divisi Public Relations
             </span>
           </div>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
-            PR & Public Communications
-          </h2>
+          <h1 className="font-display text-2xl font-bold text-brand-navy tracking-tight mt-1 sm:text-3xl">
+            Dashboard Public Relations
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Kelola galeri kegiatan SMKN 2 Buduran, rilis pengumuman, media sosial resmi, dan FAQ pelanggan.
+            Kelola galeri kegiatan, rilis pengumuman, media sosial resmi, dan FAQ pelanggan.
           </p>
         </div>
 

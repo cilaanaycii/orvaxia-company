@@ -60,17 +60,16 @@ export default function MemberDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-brand">Portal Anggota Internal</span>
-            <span className="rounded-full bg-slate-100 text-slate-800 px-2.5 py-0.5 text-[10px] font-bold">
-              31 ANGGOTA ORVAXIA
+            <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+              Dashboard Anggota
             </span>
           </div>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
-            Personal Workspace: {currentUser?.fullName || 'Anggota Orvaxia'}
-          </h2>
+          <h1 className="font-display text-2xl font-bold text-brand-navy tracking-tight mt-1 sm:text-3xl">
+            Workspace: {currentUser?.fullName || 'Anggota Orvaxia'}
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Divisi: {currentUser?.division || 'Produksi'} · Jabatan: {currentUser?.position || 'Staff'} · Status:{' '}
-            <span className="text-emerald-700 font-bold">{currentUser?.status || 'Active'}</span>
+            <span className="text-brand-navy font-medium">{currentUser?.status || 'Active'}</span>
           </p>
         </div>
       </div>
@@ -99,7 +98,7 @@ export default function MemberDashboard() {
 
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-xs font-bold">
-              <UserCheck size={14} /> Anggota Resmi Terverifikasi
+              <UserCheck size={14} /> Anggota Aktif
             </span>
           </div>
         </div>
@@ -110,7 +109,7 @@ export default function MemberDashboard() {
         <div className="lg:col-span-7 space-y-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h4 className="font-serif font-bold text-base text-brand-navy">
+              <h4 className="font-display font-bold text-base text-brand-navy">
                 Daftar Tugas & Tanggung Jawab ({myTasks.length})
               </h4>
               <span className="text-xs text-slate-400">Tenggat Waktu Pre-Order</span>

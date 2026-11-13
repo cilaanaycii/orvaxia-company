@@ -172,8 +172,8 @@ export default function PRContentPage() {
   return (
     <div className="space-y-6">
       <header className="border-b border-brand-lavender/30 pb-5">
-        <span className="badge-brand">Public Relations</span>
-        <h1 className="mt-2 font-display text-3xl font-extrabold text-brand-navy tracking-tight">CMS Konten Publik</h1>
+        <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">Public Relations</span>
+        <h1 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight">CMS Konten Publik</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
           Simpan draft atau publikasikan konten tanpa deployment. Konten hanya tampil di halaman publik setelah dipublikasikan.
         </p>

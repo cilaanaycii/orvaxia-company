@@ -49,16 +49,12 @@ function MemberPortrait({ member, large = false }: { member: TeamMember; large?:
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
       ) : (
-        /* Fallback Area Gambar Kosong Rapi (Tanpa Monogram, Tanpa AI/Foto Palsu) */
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#F4F2F7] p-4 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-lavender/30 bg-white text-brand-slate shadow-2xs">
             <User size={22} strokeWidth={1.5} />
           </div>
-          <span className="mt-2.5 text-[10px] font-semibold uppercase tracking-wider text-brand-slate">
-            Foto Belum Tersedia
-          </span>
-          <span className="mt-0.5 text-[9px] text-slate-400">
-            Kru SMKN 2 Buduran
+          <span className="mt-2.5 text-xs text-brand-slate">
+            Foto belum tersedia
           </span>
         </div>
       )}
@@ -149,11 +145,11 @@ export function TeamRoster() {
               placeholder="Cari nama anggota, jabatan, atau divisi..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="w-full rounded-full border border-brand-lavender/30 bg-white py-3 pl-11 pr-4 text-xs text-brand-navy shadow-2xs focus:border-brand-slate focus:outline-none focus:ring-2 focus:ring-brand-slate/20"
+              className="w-full rounded-full border border-brand-lavender/30 bg-white py-2.5 pl-11 pr-4 text-xs text-brand-navy shadow-2xs focus:border-brand-slate focus:outline-none focus:ring-2 focus:ring-brand-slate/20"
             />
           </label>
-          <span className="text-xs font-semibold text-brand-slate">
-            {filteredMembers.length} dari {visibleMembers.length} anggota tercatat
+          <span className="text-xs text-brand-slate">
+            {filteredMembers.length} dari {visibleMembers.length} anggota
           </span>
         </div>
 
@@ -165,7 +161,7 @@ export function TeamRoster() {
               type="button"
               onClick={() => setSelectedDivision(division.id)}
               aria-pressed={selectedDivision === division.id}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-medium transition-all ${
                 selectedDivision === division.id
                   ? 'bg-brand-navy text-white shadow-brand-sm'
                   : 'border border-brand-lavender/30 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface'
@@ -185,14 +181,14 @@ export function TeamRoster() {
             type="button"
             onClick={() => setActiveMember(member)}
             aria-label={`Lihat profil ${member.name}`}
-            className="group overflow-hidden rounded-[1.75rem] border border-brand-lavender/30 bg-white text-left shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-brand-slate hover:shadow-brand-sm focus:outline-none focus:ring-2 focus:ring-brand-slate"
+            className="group overflow-hidden rounded-2xl border border-brand-lavender/30 bg-white text-left shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-brand-slate hover:shadow-brand-sm focus:outline-none focus:ring-2 focus:ring-brand-slate"
           >
             <MemberPortrait member={member} />
-            <span className="block p-4 sm:p-5">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-slate">
+            <span className="block p-4">
+              <span className="block text-xs text-brand-slate">
                 {member.division}
               </span>
-              <span className="mt-1 block line-clamp-1 font-display text-sm font-bold text-brand-navy sm:text-base">
+              <span className="mt-1 block line-clamp-1 font-display text-sm font-semibold text-brand-navy">
                 {member.name}
               </span>
               <span className="mt-0.5 block line-clamp-2 min-h-8 text-[11px] leading-4 text-slate-500">
@@ -205,7 +201,7 @@ export function TeamRoster() {
 
       {/* Pesan Jika Hasil Pencarian Kosong */}
       {filteredMembers.length === 0 && (
-        <div className="rounded-[2rem] border border-dashed border-brand-lavender/40 bg-white p-12 text-center text-xs text-slate-500">
+        <div className="rounded-2xl border border-dashed border-brand-lavender/40 bg-white p-12 text-center text-xs text-slate-500">
           Tidak ada anggota yang sesuai dengan filter atau kata kunci pencarian.
         </div>
       )}
@@ -223,7 +219,7 @@ export function TeamRoster() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="team-member-title"
-            className="grid w-full max-w-3xl overflow-hidden rounded-[2.25rem] bg-white shadow-2xl sm:grid-cols-[0.85fr_1.15fr] border border-brand-lavender/30"
+            className="grid w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl sm:grid-cols-[0.85fr_1.15fr] border border-brand-lavender/30"
           >
             <div className="group">
               <MemberPortrait member={activeMember} large />
@@ -232,7 +228,7 @@ export function TeamRoster() {
             <div className="flex flex-col p-6 sm:p-8 justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <span className="badge-brand">
+                  <span className="text-xs text-brand-slate">
                     Divisi {activeMember.division}
                   </span>
                   <button
@@ -246,29 +242,29 @@ export function TeamRoster() {
                   </button>
                 </div>
 
-                <h2 id="team-member-title" className="mt-3 font-display text-2xl font-bold text-brand-navy sm:text-3xl">
+                <h2 id="team-member-title" className="mt-3 font-display text-xl font-bold text-brand-navy sm:text-2xl">
                   {activeMember.name}
                 </h2>
-                <p className="mt-1 text-xs font-semibold text-brand-slate">{activeMember.position}</p>
+                <p className="mt-1 text-xs text-brand-slate">{activeMember.position}</p>
 
                 <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-slate-100 py-3 text-xs">
                   <div>
                     <dt className="text-slate-400">Kelas</dt>
-                    <dd className="mt-0.5 font-semibold text-brand-navy">{activeMember.className || 'SMKN 2 Buduran'}</dd>
+                    <dd className="mt-0.5 font-medium text-brand-navy">{activeMember.className || 'SMKN 2 Buduran'}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-400">Status Kru</dt>
-                    <dd className="mt-0.5 font-semibold text-emerald-700">{activeMember.status}</dd>
+                    <dt className="text-slate-400">Status</dt>
+                    <dd className="mt-0.5 font-medium text-brand-navy">{activeMember.status}</dd>
                   </div>
                 </dl>
 
                 <p className="mt-4 text-xs leading-6 text-slate-600">
-                  {activeMember.bio || 'Profil anggota terdaftar resmi dalam struktur organisasi ORVAXIA COMPANY.'}
+                  {activeMember.bio || 'Profil anggota terdaftar dalam tim Orvaxia.'}
                 </p>
 
                 {activeMember.responsibilities && activeMember.responsibilities.length > 0 && (
                   <div className="mt-4 space-y-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-brand-slate block">
+                    <span className="text-xs font-medium text-brand-slate block">
                       Tanggung Jawab Utama
                     </span>
                     <ul className="space-y-1.5 text-xs text-slate-600">
@@ -287,7 +283,7 @@ export function TeamRoster() {
                 <button
                   type="button"
                   onClick={() => setActiveMember(null)}
-                  className="rounded-full border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all"
+                  className="rounded-full border border-slate-200 px-5 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all"
                 >
                   Tutup
                 </button>
@@ -296,9 +292,9 @@ export function TeamRoster() {
                     href={instagramUrl(activeMember) || undefined}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-slate transition-all"
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-xs font-medium text-white hover:bg-brand-slate transition-all"
                   >
-                    <Instagram size={14} /> Kunjungi Instagram
+                    <Instagram size={14} /> Instagram
                   </a>
                 )}
               </div>

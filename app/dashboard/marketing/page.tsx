@@ -3,18 +3,12 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useCompanyStore } from '@/lib/store/company-store';
-import { Product, ProductVariant } from '@/lib/types';
+import { ProductVariant } from '@/lib/types';
 import {
-  Palette,
   Plus,
   Edit3,
   Trash2,
-  Sparkles,
-  ShoppingBag,
-  Eye,
-  CheckCircle,
-  Image as ImageIcon,
-  Save,
+  ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProductPriceManager } from '@/components/shop/ProductPriceManager';
@@ -56,7 +50,7 @@ export default function MarketingDashboard() {
       const imageUrl = await uploadImage(file, 'catalog');
       if (target === 'edit') setVariantImage(imageUrl);
       else setNewVarImage(imageUrl);
-      toast.success('Foto berhasil diunggah dari galeri.');
+      toast.success('Foto berhasil diunggah.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Foto gagal diunggah.');
     } finally {
@@ -75,7 +69,7 @@ export default function MarketingDashboard() {
     e.preventDefault();
     if (!rovella || !editingVariant) return;
     if (!variantImage) {
-      toast.error('Pilih foto model dari galeri terlebih dahulu.');
+      toast.error('Pilih foto model terlebih dahulu.');
       return;
     }
 
@@ -93,14 +87,14 @@ export default function MarketingDashboard() {
     const saved = await updateProduct(rovella.id, { variants: updatedVariants });
     if (!saved) return;
     setEditingVariant(null);
-    toast.success(`Model varian "${variantName}" berhasil diperbarui!`);
+    toast.success(`Model varian "${variantName}" berhasil diperbarui.`);
   };
 
   const handleAddVariant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rovella || !newVarName) return;
     if (!newVarImage) {
-      toast.error('Pilih foto model dari galeri terlebih dahulu.');
+      toast.error('Pilih foto model terlebih dahulu.');
       return;
     }
 
@@ -118,7 +112,7 @@ export default function MarketingDashboard() {
     setNewVarImage('');
     setNewVarDesc('');
     setShowAddModal(false);
-    toast.success(`Model varian "${newVarName}" berhasil ditambahkan ke katalog!`);
+    toast.success(`Model varian "${newVarName}" berhasil ditambahkan.`);
   };
 
   const handleDeleteVariant = async (variantId: string) => {
@@ -131,7 +125,7 @@ export default function MarketingDashboard() {
     const updatedVariants = rovella.variants.filter((v) => v.id !== variantId);
     const saved = await updateProduct(rovella.id, { variants: updatedVariants });
     if (!saved) return;
-    toast.success('Model varian berhasil dihapus');
+    toast.success('Model varian berhasil dihapus.');
   };
 
   return (
@@ -141,22 +135,21 @@ export default function MarketingDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-brand">Pemasaran & Display</span>
-            <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-[10px] font-bold">
-              DIVISI MARKETING
+            <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+              Divisi Marketing
             </span>
           </div>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
-            Kelola Gambar & Model Varian Produk
-          </h2>
+          <h1 className="font-display text-2xl font-bold text-brand-navy tracking-tight mt-1 sm:text-3xl">
+            Dashboard Marketing
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Divisi marketing memiliki wewenang mengunggah dan mengatur foto model rajutan Rovella yang ditampilkan kepada pemesan.
+            Pengelolaan foto model rajutan Rovella, varian produk, dan display katalog toko.
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-brand-navy px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-brand-slate active:scale-[0.98] transition-all duration-150"
+          className="flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-xs font-medium text-white shadow-xs hover:bg-brand-slate active:scale-[0.98] transition-all"
         >
           <Plus size={15} /> Tambah Model Baru
         </button>
@@ -166,10 +159,10 @@ export default function MarketingDashboard() {
       {editingVariant && (
         <form
           onSubmit={handleSaveVariant}
-          className="rounded-3xl border border-brand-lavender bg-white p-6 shadow-md space-y-4 text-xs"
+          className="rounded-3xl border border-brand-lavender/30 bg-white p-6 shadow-md space-y-4 text-xs"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="font-serif text-base font-bold text-brand-navy flex items-center gap-2">
+            <h3 className="font-display text-base font-bold text-brand-navy flex items-center gap-2">
               <ImageIcon size={16} className="text-brand-slate" />
               <span>Edit Model: {editingVariant.name}</span>
             </h3>
@@ -178,13 +171,13 @@ export default function MarketingDashboard() {
               onClick={() => setEditingVariant(null)}
               className="text-slate-400 hover:text-slate-700"
             >
-              ✕ Batal
+              Batal
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">Nama Model / Desain *</label>
+              <label className="font-medium text-slate-800 block mb-1">Nama Model *</label>
               <input
                 type="text"
                 required
@@ -195,15 +188,15 @@ export default function MarketingDashboard() {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">Foto Model dari Galeri *</label>
+              <label className="font-medium text-slate-800 block mb-1">Foto Model *</label>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(event) => void handleImageSelect(event, 'edit')}
-                className="w-full rounded-xl border border-slate-200 p-2.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-surface file:px-3 file:py-2 file:font-semibold file:text-brand-slate"
+                className="w-full rounded-xl border border-slate-200 p-2.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-surface file:px-3 file:py-2 file:font-medium file:text-brand-slate"
               />
               <p className="mt-1 text-[10px] text-slate-500">
-                {isUploadingImage ? 'Mengunggah foto...' : 'Pilih foto dari galeri perangkat (JPG, PNG, WEBP, maks. 5MB).'}
+                {isUploadingImage ? 'Mengunggah foto...' : 'Pilih foto (JPG, PNG, WEBP, maks. 5MB).'}
               </p>
               {variantImage && (
                 <div className="relative mt-2 h-28 overflow-hidden rounded-xl border border-slate-200">
@@ -213,7 +206,7 @@ export default function MarketingDashboard() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="font-semibold text-slate-800 block mb-1">Deskripsi Model Rajutan</label>
+              <label className="font-medium text-slate-800 block mb-1">Deskripsi Model</label>
               <textarea
                 rows={2}
                 value={variantDesc}
@@ -227,14 +220,14 @@ export default function MarketingDashboard() {
             <button
               type="button"
               onClick={() => setEditingVariant(null)}
-              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isUploadingImage}
-              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-slate disabled:opacity-50"
+              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-medium text-white shadow-xs hover:bg-brand-slate disabled:opacity-50"
             >
               Simpan Perubahan
             </button>
@@ -249,7 +242,7 @@ export default function MarketingDashboard() {
           className="rounded-3xl border border-brand-slate bg-brand-surface/40 p-6 shadow-md space-y-4 text-xs"
         >
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-            <h3 className="font-serif text-base font-bold text-brand-navy flex items-center gap-2">
+            <h3 className="font-display text-base font-bold text-brand-navy flex items-center gap-2">
               <Plus size={16} className="text-brand-slate" />
               <span>Tambah Model Desain Rajutan Baru</span>
             </h3>
@@ -258,13 +251,13 @@ export default function MarketingDashboard() {
               onClick={() => setShowAddModal(false)}
               className="text-slate-400 hover:text-slate-700"
             >
-              ✕ Batal
+              Batal
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">Nama Model Baru *</label>
+              <label className="font-medium text-slate-800 block mb-1">Nama Model Baru *</label>
               <input
                 type="text"
                 required
@@ -276,15 +269,15 @@ export default function MarketingDashboard() {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-800 block mb-1">Foto Model dari Galeri *</label>
+              <label className="font-medium text-slate-800 block mb-1">Foto Model *</label>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(event) => void handleImageSelect(event, 'new')}
-                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-surface file:px-3 file:py-2 file:font-semibold file:text-brand-slate"
+                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-brand-surface file:px-3 file:py-2 file:font-medium file:text-brand-slate"
               />
               <p className="mt-1 text-[10px] text-slate-500">
-                {isUploadingImage ? 'Mengunggah foto...' : 'Pilih foto dari galeri perangkat (JPG, PNG, WEBP, maks. 5MB).'}
+                {isUploadingImage ? 'Mengunggah foto...' : 'Pilih foto (JPG, PNG, WEBP, maks. 5MB).'}
               </p>
               {newVarImage && (
                 <div className="relative mt-2 h-28 overflow-hidden rounded-xl border border-slate-200">
@@ -294,7 +287,7 @@ export default function MarketingDashboard() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="font-semibold text-slate-800 block mb-1">Deskripsi Singkat</label>
+              <label className="font-medium text-slate-800 block mb-1">Deskripsi Singkat</label>
               <textarea
                 rows={2}
                 placeholder="Jelaskan karakteristik rajutan model ini..."
@@ -309,14 +302,14 @@ export default function MarketingDashboard() {
             <button
               type="button"
               onClick={() => setShowAddModal(false)}
-              className="rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-white"
+              className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-white"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isUploadingImage}
-              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-slate disabled:opacity-50"
+              className="rounded-full bg-brand-navy px-6 py-2 text-xs font-medium text-white shadow-xs hover:bg-brand-slate disabled:opacity-50"
             >
               Tambahkan ke Etalase
             </button>
@@ -328,11 +321,11 @@ export default function MarketingDashboard() {
       {rovella && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-lg font-bold text-brand-navy">
+            <h2 className="font-display text-base font-bold text-brand-navy">
               Daftar Model Varian Aktif ({rovella.variants.length})
-            </h3>
+            </h2>
             <span className="text-xs text-slate-500">
-              Setiap foto yang diubah di sini langsung tampil di etalase pembeli
+              Perubahan langsung tampil di etalase toko
             </span>
           </div>
 
@@ -355,21 +348,18 @@ export default function MarketingDashboard() {
                       />
                     ) : (
                       <div
-                        className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                        className="w-full h-full flex items-center justify-center text-white font-medium text-sm"
                         style={{ backgroundColor: variant.colorHex }}
                       >
                         {variant.name}
                       </div>
                     )}
-                    <span className="absolute top-3 left-3 rounded-full bg-black/60 text-white backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold">
-                      Model Resmi
-                    </span>
                   </div>
 
                   <div className="p-4 space-y-1">
-                    <h4 className="font-serif font-bold text-sm text-brand-navy">
+                    <h3 className="font-display font-semibold text-sm text-brand-navy">
                       {variant.name}
-                    </h4>
+                    </h3>
                     <p className="text-xs text-slate-500 line-clamp-2">
                       {variant.description}
                     </p>
@@ -379,7 +369,7 @@ export default function MarketingDashboard() {
                 <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between mt-2">
                   <button
                     onClick={() => handleStartEditVariant(variant)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-brand-slate hover:text-brand-navy pt-2"
+                    className="flex items-center gap-1.5 text-xs font-medium text-brand-slate hover:text-brand-navy pt-2"
                   >
                     <Edit3 size={13} /> Edit Gambar
                   </button>

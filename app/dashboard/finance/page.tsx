@@ -80,14 +80,13 @@ export default function FinanceDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-brand">Manajemen Arus Kas & Verifikasi</span>
-            <span className="rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-[10px] font-bold">
-              DIVISI FINANCE
+            <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+              Divisi Finance
             </span>
           </div>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
-            Financial Ledger & Payment Reconciliation
-          </h2>
+          <h1 className="font-display text-2xl font-bold text-brand-navy tracking-tight mt-1 sm:text-3xl">
+            Dashboard Finance
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Verifikasi pembayaran pesanan tunai sekolah & QRIS, pencatatan biaya benang & packaging, dan laporan laba bersih.
           </p>
@@ -135,7 +134,7 @@ export default function FinanceDashboard() {
             <span>Pemasukan Terverifikasi</span>
             <ArrowDownRight size={18} className="text-emerald-600" />
           </div>
-          <p className="font-serif text-2xl font-bold text-emerald-600 mt-2">
+          <p className="font-display text-2xl font-bold text-emerald-600 mt-2">
             Rp{totalIncome.toLocaleString('id-ID')}
           </p>
           <p className="text-[10px] text-slate-400 mt-1">
@@ -148,7 +147,7 @@ export default function FinanceDashboard() {
             <span>Total Pengeluaran (Bahan & Ops)</span>
             <ArrowUpRight size={18} className="text-rose-600" />
           </div>
-          <p className="font-serif text-2xl font-bold text-rose-600 mt-2">
+          <p className="font-display text-2xl font-bold text-rose-600 mt-2">
             Rp{totalExpense.toLocaleString('id-ID')}
           </p>
           <p className="text-[10px] text-slate-400 mt-1">
@@ -161,7 +160,7 @@ export default function FinanceDashboard() {
             <span>Saldo Bersih Kas Perusahaan</span>
             <DollarSign size={18} className="text-brand-slate" />
           </div>
-          <p className="font-serif text-2xl font-bold text-brand-navy mt-2">
+          <p className="font-display text-2xl font-bold text-brand-navy mt-2">
             Rp{netBalance.toLocaleString('id-ID')}
           </p>
           <p className="text-[10px] text-brand-slate mt-1 font-semibold">

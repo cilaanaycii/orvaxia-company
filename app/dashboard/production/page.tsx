@@ -6,17 +6,10 @@ import { useCompanyStore } from '@/lib/store/company-store';
 import { OrderStatus } from '@/lib/types';
 import {
   Scissors,
-  CheckCircle,
-  AlertCircle,
-  Package,
-  Layers,
-  Sparkles,
   ArrowRight,
   ShieldAlert,
-  Clock,
   Plus,
   Minus,
-  Edit2,
   Check,
   X,
 } from 'lucide-react';
@@ -107,16 +100,15 @@ export default function ProductionDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-lavender/30 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-brand">Manufaktur & Rajutan</span>
-            <span className="rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-[10px] font-bold">
-              DIVISI PRODUKSI
+            <span className="rounded-full bg-brand-surface px-2.5 py-0.5 text-xs font-medium text-brand-slate border border-brand-lavender/30">
+              Divisi Produksi
             </span>
           </div>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight mt-1">
-            Production Management & Quality Control
-          </h2>
+          <h1 className="font-display text-2xl font-bold text-brand-navy tracking-tight mt-1 sm:text-3xl">
+            Dashboard Produksi
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Daftar antrean pengerjaan rajut Rovella, catatan kustomisasi botol, kontrol stok benang, dan inspeksi QC.
+            Daftar antrean pengerjaan rajut Rovella, catatan kustomisasi botol, kontrol stok benang, dan inspeksi mutu.
           </p>
         </div>
 
@@ -124,7 +116,7 @@ export default function ProductionDashboard() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('queue')}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-medium transition-all ${
               activeTab === 'queue'
                 ? 'bg-brand-navy text-white shadow-xs'
                 : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
@@ -134,13 +126,13 @@ export default function ProductionDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('inventory')}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-medium transition-all ${
               activeTab === 'inventory'
                 ? 'bg-brand-navy text-white shadow-xs'
                 : 'border border-brand-lavender/35 bg-white text-slate-600 hover:border-brand-slate hover:bg-brand-surface hover:text-brand-navy'
             }`}
           >
-            Stok Bahan Baku & Benang ({inventory.length})
+            Stok Bahan Baku ({inventory.length})
           </button>
         </div>
       </div>
@@ -156,14 +148,14 @@ export default function ProductionDashboard() {
               { id: 'in_production', label: 'Sedang Dirajut' },
               { id: 'quality_check', label: 'Pemeriksaan QC' },
               { id: 'packaging', label: 'Pengemasan' },
-              { id: 'ready_to_ship', label: 'Siap Diserahkan ke Sales' },
+              { id: 'ready_to_ship', label: 'Siap Kirim' },
             ].map((st) => (
               <button
                 key={st.id}
                 onClick={() => setFilterStatus(st.id)}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                   filterStatus === st.id
-                    ? 'bg-brand-slate text-white shadow-xs'
+                    ? 'bg-brand-navy text-white shadow-xs'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -178,11 +170,11 @@ export default function ProductionDashboard() {
               <div className="h-14 w-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
                 <Scissors size={28} />
               </div>
-              <h3 className="font-serif text-base font-bold text-slate-800">
+              <h3 className="font-display text-base font-bold text-slate-800">
                 Belum Ada Antrean Pesanan Rajutan
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Saat pembeli melakukan pre-order di etalase Rovella dan diverifikasi, pesanan rajutan akan otomatis masuk ke antrean kerja di sini.
+                Saat pembeli melakukan pemesanan dan terverifikasi, pesanan rajutan akan masuk ke antrean kerja di sini.
               </p>
             </div>
           ) : (
@@ -198,20 +190,20 @@ export default function ProductionDashboard() {
                     <div className="flex items-start justify-between border-b border-slate-100 pb-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-xs text-brand-slate">
+                          <span className="font-mono text-xs text-brand-slate">
                             {order.referenceCode}
                           </span>
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-700 uppercase">
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">
                             {order.deliveryType}
                           </span>
                         </div>
-                        <h4 className="font-bold text-sm text-slate-900 mt-1">
+                        <h4 className="font-semibold text-sm text-slate-900 mt-1">
                           {order.customerName} ({order.schoolName} - {order.className})
                         </h4>
                       </div>
 
                       <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${
                           order.orderStatus === 'in_production'
                             ? 'bg-blue-100 text-blue-800'
                             : order.orderStatus === 'quality_check'
@@ -230,15 +222,15 @@ export default function ProductionDashboard() {
                     {/* Order Details & Customization Note */}
                     <div className="space-y-2 text-xs">
                       <div className="flex items-center justify-between text-slate-700">
-                        <span className="font-semibold">Varian Warna:</span>
-                        <span className="font-bold text-brand-slate">{item?.variantName}</span>
+                        <span className="text-slate-500">Varian Warna:</span>
+                        <span className="font-medium text-brand-navy">{item?.variantName}</span>
                       </div>
                       <div className="flex items-center justify-between text-slate-700">
-                        <span className="font-semibold">Ukuran Tumbler:</span>
+                        <span className="text-slate-500">Ukuran Tumbler:</span>
                         <span>{item?.sizeName}</span>
                       </div>
                       <div className="flex items-center justify-between text-slate-700">
-                        <span className="font-semibold">Charm Tambahan:</span>
+                        <span className="text-slate-500">Charm Tambahan:</span>
                         <span>{item?.customCharm || 'Tidak ada'}</span>
                       </div>
 
@@ -249,7 +241,7 @@ export default function ProductionDashboard() {
                           </p>
                         )}
                         {item?.customization?.customNotes && (
-                          <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 font-medium">
+                          <p className="bg-amber-50 p-2 rounded-lg border border-amber-200 text-amber-900 font-normal">
                             Catatan Pemesan: &quot;{item.customization.customNotes}&quot;
                           </p>
                         )}
@@ -269,7 +261,7 @@ export default function ProductionDashboard() {
                                 className="object-cover"
                               />
                             </span>
-                            <span className="font-semibold">Lihat foto referensi pelanggan</span>
+                            <span className="font-medium">Lihat foto referensi pelanggan</span>
                           </a>
                         )}
                       </div>
@@ -284,15 +276,15 @@ export default function ProductionDashboard() {
                       {order.orderStatus !== 'ready_to_ship' && order.orderStatus !== 'shipped' && order.orderStatus !== 'completed' && (
                         <button
                           onClick={() => handleAdvanceStatus(order.id, order.orderStatus)}
-                          className="flex items-center gap-1.5 rounded-full bg-brand-slate px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-navy shadow-sm transition-all"
+                          className="flex items-center gap-1.5 rounded-full bg-brand-navy px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-slate shadow-xs transition-all"
                         >
                           {order.orderStatus === 'pending_confirmation' || order.orderStatus === 'payment_verified'
                             ? 'Mulai Perajutan'
                             : order.orderStatus === 'in_production'
-                            ? 'Kirim ke Quality Check'
+                            ? 'Kirim ke QC'
                             : order.orderStatus === 'quality_check'
-                            ? 'QC Lolos, Masuk Pengemasan'
-                            : 'Selesai Kemas (Siap Kirim)'}{' '}
+                            ? 'Lolos QC, Masuk Kemas'
+                            : 'Selesai Kemas'}{' '}
                           <ArrowRight size={12} />
                         </button>
                       )}
@@ -310,17 +302,17 @@ export default function ProductionDashboard() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <h3 className="font-display text-lg font-bold text-brand-navy">
-                Inventaris Bahan Baku & Aksesoris Rajutan
+              <h3 className="font-display text-base font-bold text-brand-navy">
+                Inventaris Bahan Baku
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Stok awal telah di-reset ke 0. Crew produksi dapat mengubah angka stok langsung atau menambah jenis bahan baru.
+                Pengelolaan stok benang dan aksesoris rajutan.
               </p>
             </div>
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 rounded-full bg-brand-slate px-4 py-2 text-xs font-bold text-white hover:bg-brand-navy shadow-xs transition-all"
+              className="flex items-center gap-1.5 rounded-full bg-brand-navy px-4 py-2 text-xs font-medium text-white hover:bg-brand-slate shadow-xs transition-all"
             >
               <Plus size={14} />
               <span>Tambah Material Baru</span>
@@ -331,22 +323,22 @@ export default function ProductionDashboard() {
           {showAddModal && (
             <form
               onSubmit={handleCreateMaterial}
-              className="rounded-2xl border-2 border-brand-slate bg-brand-surface/40 p-4 space-y-3 text-xs"
+              className="rounded-2xl border border-brand-slate bg-brand-surface/40 p-4 space-y-3 text-xs"
             >
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <h4 className="font-bold text-brand-navy">Tambah Data Material / Benang Baru</h4>
+                <h4 className="font-semibold text-brand-navy">Tambah Data Material Baru</h4>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="text-slate-400 hover:text-slate-700 font-bold"
+                  className="text-slate-400 hover:text-slate-700"
                 >
-                  ✕ Batal
+                  Batal
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Nama Material *</label>
+                  <label className="font-medium text-slate-700 block mb-1">Nama Material *</label>
                   <input
                     type="text"
                     required
@@ -358,7 +350,7 @@ export default function ProductionDashboard() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Kategori</label>
+                  <label className="font-medium text-slate-700 block mb-1">Kategori</label>
                   <select
                     value={newMatCat}
                     onChange={(e) => setNewMatCat(e.target.value as any)}
@@ -372,7 +364,7 @@ export default function ProductionDashboard() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Stok Awal</label>
+                  <label className="font-medium text-slate-700 block mb-1">Stok Awal</label>
                   <input
                     type="number"
                     value={newMatStock}
@@ -382,7 +374,7 @@ export default function ProductionDashboard() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Satuan Ukuran</label>
+                  <label className="font-medium text-slate-700 block mb-1">Satuan Ukuran</label>
                   <input
                     type="text"
                     value={newMatUnit}
@@ -392,7 +384,7 @@ export default function ProductionDashboard() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Batas Minimum Peringatan</label>
+                  <label className="font-medium text-slate-700 block mb-1">Batas Minimum Peringatan</label>
                   <input
                     type="number"
                     value={newMatMin}
@@ -402,7 +394,7 @@ export default function ProductionDashboard() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Estimasi Biaya Satuan (Rp)</label>
+                  <label className="font-medium text-slate-700 block mb-1">Estimasi Biaya Satuan (Rp)</label>
                   <input
                     type="number"
                     value={newMatCost}
@@ -416,13 +408,13 @@ export default function ProductionDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-1.5 font-semibold text-slate-600 hover:bg-slate-100"
+                  className="rounded-xl border border-slate-200 px-4 py-1.5 font-medium text-slate-600 hover:bg-slate-100"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-brand-slate px-5 py-1.5 font-bold text-white hover:bg-brand-navy shadow-sm"
+                  className="rounded-xl bg-brand-navy px-5 py-1.5 font-medium text-white hover:bg-brand-slate shadow-sm"
                 >
                   Simpan Material
                 </button>
@@ -433,13 +425,13 @@ export default function ProductionDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
-                  <th className="pb-3 font-semibold">Nama Material</th>
-                  <th className="pb-3 font-semibold">Kategori</th>
-                  <th className="pb-3 font-semibold">Sisa Stok</th>
-                  <th className="pb-3 font-semibold">Batas Minimum</th>
-                  <th className="pb-3 font-semibold">Biaya Satuan</th>
-                  <th className="pb-3 font-semibold text-right">Kelola & Edit Angka</th>
+                <tr className="border-b border-slate-200 text-slate-400 text-xs">
+                  <th className="pb-3 font-medium">Nama Material</th>
+                  <th className="pb-3 font-medium">Kategori</th>
+                  <th className="pb-3 font-medium">Sisa Stok</th>
+                  <th className="pb-3 font-medium">Batas Minimum</th>
+                  <th className="pb-3 font-medium">Biaya Satuan</th>
+                  <th className="pb-3 font-medium text-right">Kelola</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -448,16 +440,16 @@ export default function ProductionDashboard() {
 
                   return (
                     <tr key={item.id} className="hover:bg-slate-50">
-                      <td className="py-3 font-bold text-slate-900">{item.name}</td>
+                      <td className="py-3 font-medium text-slate-900">{item.name}</td>
                       <td className="py-3 text-slate-600">{item.category}</td>
-                      <td className="py-3 font-bold">
+                      <td className="py-3 font-medium">
                         {isEditing ? (
                           <div className="flex items-center gap-1.5">
                             <input
                               type="number"
                               value={editingStockVal}
                               onChange={(e) => setEditingStockVal(Number(e.target.value))}
-                              className="w-20 rounded-lg border border-brand-slate p-1 text-xs font-bold"
+                              className="w-20 rounded-lg border border-brand-slate p-1 text-xs font-medium"
                             />
                             <span className="text-[10px] text-slate-500">{item.unit}</span>
                             <button
@@ -500,7 +492,7 @@ export default function ProductionDashboard() {
                                 setEditingItemId(item.id);
                                 setEditingStockVal(item.stock);
                               }}
-                              className="rounded-lg border border-slate-200 px-2 py-1 text-slate-700 hover:bg-slate-100 font-semibold"
+                              className="rounded-lg border border-slate-200 px-2 py-1 text-slate-700 hover:bg-slate-100 font-medium"
                               title="Ubah Angka Stok"
                             >
                               Edit Angka

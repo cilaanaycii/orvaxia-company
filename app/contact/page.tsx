@@ -7,9 +7,6 @@ import {
   MapPin,
   MessageCircle,
   Music2,
-  Sparkles,
-  Phone,
-  Clock,
   ArrowRight,
 } from 'lucide-react';
 import { TopNav } from '@/components/navigation/TopNav';
@@ -39,18 +36,14 @@ export default function ContactPage() {
       {/* 2. Konten Kontak Resmi */}
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:px-10 space-y-8">
         {/* Header Kontak */}
-        <section className="rounded-[2.25rem] border border-brand-lavender/30 bg-white p-6 sm:p-10 shadow-xs bg-grain">
-          <div className="max-w-2xl space-y-3">
-            <span className="badge-brand">
-              <Sparkles size={12} className="text-brand-slate" />
-              Layanan Pelanggan
-            </span>
-            <h1 className="font-display text-3xl font-extrabold text-brand-navy sm:text-4xl">
-              Hubungi ORVAXIA COMPANY
+        <section className="rounded-3xl border border-brand-lavender/30 bg-white p-6 sm:p-10 shadow-xs">
+          <div className="max-w-2xl space-y-2">
+            <h1 className="font-display text-2xl font-bold text-brand-navy sm:text-3xl">
+              Hubungi Orvaxia
             </h1>
             <p className="text-xs leading-6 text-slate-600 sm:text-sm sm:leading-7">
               {bySlug['contact-introduction']?.body ||
-                'Kami siap melayani pertanyaan seputar produk ROVELLA, konsultasi ukuran botol custom, informasi pre-order, dan koordinasi pengambilan pesanan.'}
+                'Kami siap melayani pertanyaan seputar produk Rovella, konsultasi ukuran botol custom, informasi pre-order, dan koordinasi pengambilan pesanan.'}
             </p>
           </div>
 
@@ -68,10 +61,10 @@ export default function ContactPage() {
                   <MessageCircle size={22} />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-slate block">
+                  <span className="text-xs text-brand-slate block">
                     WhatsApp Resmi
                   </span>
-                  <span className="text-sm font-bold text-brand-navy mt-0.5 block">
+                  <span className="text-sm font-semibold text-brand-navy mt-0.5 block">
                     {siteSettings.whatsappNumber || 'Nomor WhatsApp belum diisi'}
                   </span>
                   <span className="text-[11px] text-slate-500">Respon cepat via chat</span>
@@ -90,10 +83,10 @@ export default function ContactPage() {
                   <Mail size={22} />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-slate block">
+                  <span className="text-xs text-brand-slate block">
                     Email Resmi
                   </span>
-                  <span className="text-sm font-bold text-brand-navy mt-0.5 block">
+                  <span className="text-sm font-semibold text-brand-navy mt-0.5 block">
                     {siteSettings.email || 'Email belum diisi'}
                   </span>
                   <span className="text-[11px] text-slate-500">Pertanyaan dan korespondensi</span>
@@ -114,10 +107,10 @@ export default function ContactPage() {
                   <Instagram size={22} />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-slate block">
+                  <span className="text-xs text-brand-slate block">
                     Instagram Resmi
                   </span>
-                  <span className="text-sm font-bold text-brand-navy mt-0.5 block">
+                  <span className="text-sm font-semibold text-brand-navy mt-0.5 block">
                     @{instagramHandle || 'orvaxia.company'}
                   </span>
                   <span className="text-[11px] text-slate-500">Katalog dan dokumentasi visual</span>
@@ -138,10 +131,10 @@ export default function ContactPage() {
                   <Music2 size={22} />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-slate block">
+                  <span className="text-xs text-brand-slate block">
                     TikTok Resmi
                   </span>
-                  <span className="text-sm font-bold text-brand-navy mt-0.5 block">
+                  <span className="text-sm font-semibold text-brand-navy mt-0.5 block">
                     @{tiktokHandle || 'orvaxia.company'}
                   </span>
                   <span className="text-[11px] text-slate-500">Video tutorial dan kreasi</span>
@@ -153,13 +146,13 @@ export default function ContactPage() {
         </section>
 
         {/* Alamat & Informasi Lokasi Sekolah */}
-        <section className="rounded-[2.25rem] border border-brand-lavender/30 bg-white p-6 sm:p-10 shadow-xs space-y-4">
+        <section className="rounded-3xl border border-brand-lavender/30 bg-white p-6 sm:p-10 shadow-xs space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-surface text-brand-slate">
               <MapPin size={20} />
             </div>
             <div>
-              <h2 className="font-display text-xl font-bold text-brand-navy">
+              <h2 className="font-display text-lg font-bold text-brand-navy">
                 Alamat & Lokasi Operasional
               </h2>
               <p className="text-xs text-slate-500">Basis produksi dan kegiatan siswa</p>
@@ -171,7 +164,7 @@ export default function ContactPage() {
           </p>
 
           <div className="rounded-2xl border border-brand-lavender/25 bg-[#FAF8F5] p-4 text-xs leading-6 text-slate-600">
-            <strong>Catatan Pengambilan Pesanan:</strong> Siswa-siswi dan kru SMKN 2 Buduran yang memilih opsi pengambilan di sekolah dapat mengambil pesanan di area ruang kelas atau titik kumpul yang dikoordinasikan oleh tim Sales pada saat jam istirahat.
+            <strong className="font-medium text-brand-navy">Catatan Pengambilan Pesanan:</strong> Siswa-siswi dan anggota yang memilih opsi pengambilan di sekolah dapat mengambil pesanan di titik kumpul yang dikoordinasikan oleh tim Sales pada saat jam istirahat.
           </div>
         </section>
       </div>

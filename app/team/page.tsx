@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, Users2 } from 'lucide-react';
 import { TeamRoster } from '@/components/team/TeamRoster';
 import { TopNav } from '@/components/navigation/TopNav';
 import { Footer } from '@/components/navigation/Footer';
@@ -14,17 +13,16 @@ export default function TeamPage() {
       <TopNav />
 
       {/* 2. Konten Roster Anggota */}
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-10 space-y-10">
-        <div className="mx-auto max-w-2xl text-center space-y-3">
-          <span className="badge-brand">
-            <Users2 size={13} className="text-brand-slate" />
-            Kru & Anggota Tim
-          </span>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-brand-navy sm:text-5xl">
-            Sinergi 31 Anggota ORVAXIA
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-10 space-y-8">
+        <div className="mx-auto max-w-2xl text-center space-y-2">
+          <p className="text-xs font-semibold text-brand-slate">
+            Anggota Perusahaan
+          </p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-brand-navy sm:text-4xl">
+            Tim Orvaxia
           </h1>
-          <p className="text-xs leading-6 text-slate-600 sm:text-sm">
-            Mengenal para siswa-siswi SMKN 2 Buduran di balik setiap proses perancangan, produksi, promosi, dan pelayanan produk ROVELLA.
+          <p className="text-xs leading-6 text-slate-600 sm:text-sm font-normal">
+            Mengenal para personil di balik perancangan, produksi, promosi, dan pelayanan produk Rovella.
           </p>
         </div>
 
